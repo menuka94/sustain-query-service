@@ -3,7 +3,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
 }
 
-group 'org.sustain'
+group 'org.sustain.census'
 version '1.0-SNAPSHOT'
 
 repositories {

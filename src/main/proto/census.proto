@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.sustain.census";
+option java_outer_classname = "SustainCensus";
+//option objc_class_prefix = "";
+
+package census;
+
+service Census {
+  rpc GetData (CensusRequest) returns (CensusResponse) {}
+}
+
+message CensusRequest {
+}
+
+message CensusResponse {
+  string message = 1;
+}
