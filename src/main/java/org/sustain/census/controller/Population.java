@@ -27,7 +27,7 @@ public class Population {
             dbConnection = DBConnection.getConnection(Constants.DB_NAME);
         }
         // state_total_population
-        String tableName = resolutionKey + "_" + TOTAL_POPULATION;
+        String tableName = "2014_" + resolutionKey + "_" + TOTAL_POPULATION;
 
         String query = "SELECT total FROM " + tableName + " WHERE geoid=?";
 
@@ -64,5 +64,11 @@ public class Population {
         }
 
         return valueByAge;
+    }
+
+    public static void main(String[] args) throws SQLException {
+        int stateCode = 50;
+        int totalPopulation = fetchTotalPopulation("state", stateCode);
+        log.info("Total Population for state " + stateCode + ": " + totalPopulation);
     }
 }
