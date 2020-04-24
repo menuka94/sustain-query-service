@@ -13,7 +13,7 @@ service Census {
 
 message CensusRequest {
   string resolutionKey = 1;
-  string resolutionValue = 2;
+  int32 resolutionValue = 2;
   string aspect = 3;
 }
 

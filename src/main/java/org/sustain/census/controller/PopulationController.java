@@ -10,8 +10,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class Population {
-    private static final Logger log = LogManager.getLogger(Population.class);
+public class PopulationController {
+    private static final Logger log = LogManager.getLogger(PopulationController.class);
     private static final String TOTAL_POPULATION = "total_population";
     private static final String POPULATION_BY_AGE = "population_by_age";
     private static Connection dbConnection = null;
