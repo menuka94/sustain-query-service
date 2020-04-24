@@ -13,7 +13,7 @@ public class DBConnection {
 
     private static final String username = "root";
 
-    private static final String password = "toor";
+    private static final String password = "root";
 
     public static Connection getConnection(String dbName) {
         log.info("DBName: " + dbName);
