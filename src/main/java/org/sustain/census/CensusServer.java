@@ -5,6 +5,7 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.census.controller.GeoIdResolver;
 import org.sustain.census.controller.PopulationController;
 
 import java.io.IOException;
@@ -15,6 +16,12 @@ public class CensusServer {
     private static final Logger log = LogManager.getLogger(CensusServer.class);
 
     private Server server;
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        final CensusServer server = new CensusServer();
+        server.start();
+        server.blockUntilShutdown();
+    }
 
     private void start() throws IOException {
         int port = 50051;   // TODO: Read port from config
@@ -48,20 +55,18 @@ public class CensusServer {
         }
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
-        final CensusServer server = new CensusServer();
-        server.start();
-        server.blockUntilShutdown();
-    }
-
     static class CensusServerImpl extends CensusGrpc.CensusImplBase {
         @Override
         public void getData(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
             String resolutionKey = request.getResolutionKey();
-            int resolutionValue = request.getResolutionValue();
+            double latitude = request.getLatitude();
+            double longitude = request.getLongitude();
             String aspect = request.getAspect();
+
+
             // TODO: implement controller selection w.r.t. aspect
             try {
+                int resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, aspect);
                 int totalPopulation = PopulationController.fetchTotalPopulation(resolutionKey, resolutionValue);
 
                 CensusResponse response = CensusResponse.newBuilder().setResponse(totalPopulation).build();

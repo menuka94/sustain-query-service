@@ -13,8 +13,9 @@ service Census {
 
 message CensusRequest {
   string resolutionKey = 1;
-  int32 resolutionValue = 2;
-  string aspect = 3;
+  double latitude = 2;
+  double longitude = 3;
+  string aspect = 4;
 }
 
 message CensusResponse {
