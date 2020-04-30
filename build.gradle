@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'java-library'
     id 'com.google.protobuf' version '0.8.8'
 }
 
@@ -7,6 +8,7 @@ group 'org.sustain.census'
 version '1.0-SNAPSHOT'
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 
@@ -63,6 +65,9 @@ sourceSets {
 }
 
 jar {
+    manifest {
+        attributes "Main-Class": "org.sustain.census.CensusServer"
+    }
     from {
         configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
     }
