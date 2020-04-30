@@ -19,7 +19,7 @@ public class GeoIdResolver {
         log.info("Fetching " + resolution + " FIPS code for (" + lat + ", " + lng + ")");
 
         if (dbConnection == null) {
-            dbConnection = DBConnection.getConnection(Constants.DB_NAME);
+            dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
 
         String query = "SELECT " + resolution + "_fips FROM " + TABLE_NAME + " latitude=? AND longitude=?";

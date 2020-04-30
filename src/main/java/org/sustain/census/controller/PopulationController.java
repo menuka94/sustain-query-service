@@ -24,7 +24,7 @@ public class PopulationController {
     public static int fetchTotalPopulation(String resolutionKey, int resolutionValue) throws SQLException {
         log.info("Fetching " + TOTAL_POPULATION + " for " + resolutionKey + ": " + resolutionValue);
         if (dbConnection == null) {
-            dbConnection = DBConnection.getConnection(Constants.DB_NAME);
+            dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
         // state_total_population
         String tableName = "2014_" + resolutionKey + "_" + TOTAL_POPULATION;
@@ -46,7 +46,7 @@ public class PopulationController {
     public static int fetchPopulationByAge(String resolutionKey, int resolutionValue, String age) throws SQLException {
         log.info("Fetching " + POPULATION_BY_AGE + " for " + resolutionKey + ": " + resolutionValue);
         if (dbConnection == null) {
-            dbConnection = DBConnection.getConnection(Constants.DB_NAME);
+            dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
         // state_total_population
         String tableName = resolutionKey + "_" + POPULATION_BY_AGE;

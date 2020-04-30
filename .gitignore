@@ -165,3 +165,5 @@ gradle-app.setting
 **/build/
 
 # End of https://www.gitignore.io/api/java,macos,gradle,java-web,intellij+all
+
+src/main/resources/config.properties
