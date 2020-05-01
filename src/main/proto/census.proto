@@ -12,13 +12,15 @@ service Census {
 }
 
 message CensusRequest {
-  string resolutionKey = 1;
+  string resolutionKey = 1; // Example:- 'state', 'county', 'tract'
   double latitude = 2;
   double longitude = 3;
-  string aspect = 4;
+  string feature = 4; // Example: 'total_population', 'median_household_income'
+  // TODO: get a list of features in the request
 }
 
 message CensusResponse {
-  int64 response = 1;
+  int64 response = 1; // a single integer value for now
+  // TODO: return a CensusResults object
 }
 

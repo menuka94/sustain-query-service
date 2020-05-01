@@ -10,8 +10,8 @@ import java.util.Properties;
 public class Util {
     private static final Logger log = LogManager.getLogger(Util.class);
 
-    public static String constructTableName(String aspect, String resolution) {
-        return resolution + "_" + aspect;
+    public static String constructTableName(String feature, String resolution) {
+        return resolution + "_" + feature;
     }
 
     public static String getProperty(String property) {

@@ -22,7 +22,9 @@ public class GeoIdResolver {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
 
-        String query = "SELECT " + resolution + "_fips FROM " + TABLE_NAME + " latitude=? AND longitude=?";
+        resolution += "_fips";
+        String query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE latitude=? AND longitude=?";
+        log.info("Query: " + query);
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setDouble(1, lat);

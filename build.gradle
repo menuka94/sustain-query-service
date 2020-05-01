@@ -62,15 +62,6 @@ sourceSets {
     }
 }
 
-//jar {
-//    manifest {
-//        attributes "Main-Class": "org.sustain.census.CensusServer"
-//    }
-//    from {
-//        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-//    }
-//}
-
 
 startScripts.enabled = false
 

@@ -16,12 +16,11 @@ public class CensusClient {
 
     public CensusClient(Channel channel) {
         censusBlockingStub = CensusGrpc.newBlockingStub(channel);
-        TARGET = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;
     }
 
     public static void main(String[] args) {
         if (args.length != 4) {
-            log.error("Usage: CensusClient <resolutionKey> <latitude> <longitude> <aspect>\n" +
+            log.error("Usage: CensusClient <resolutionKey> <latitude> <longitude> <feature>\n" +
                     "Example: CensusClient state 24.5 -82 total_population");
             System.exit(0);
         }
@@ -29,15 +28,16 @@ public class CensusClient {
         String resolutionKey = args[0];
         double latitude = Double.parseDouble(args[1]);
         double longitude = Double.parseDouble(args[2]);
-        String aspect = args[3];
+        String feature = args[3];
 
+        TARGET = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;
         log.info("Target: " + TARGET);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(TARGET).usePlaintext().build();
 
         try {
             CensusClient client = new CensusClient(channel);
-            client.requestData(resolutionKey, latitude, longitude, aspect);
+            client.requestData(resolutionKey, latitude, longitude, feature);
         } finally {
             try {
                 channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
@@ -47,13 +47,13 @@ public class CensusClient {
         }
     }
 
-    private void requestData(String resolutionKey, double latitude, double longitude, String aspect) {
-        log.info("Processing request (" + resolutionKey + ", " + latitude + ", " + longitude + ", " + aspect + ")");
+    private void requestData(String resolutionKey, double latitude, double longitude, String feature) {
+        log.info("Processing request (" + resolutionKey + ", " + latitude + ", " + longitude + ", " + feature + ")");
         CensusRequest request = CensusRequest.newBuilder()
                 .setResolutionKey(resolutionKey)
                 .setLatitude(latitude)
                 .setLongitude(longitude)
-                .setAspect(aspect)
+                .setFeature(feature)
                 .build();
 
 

@@ -61,12 +61,12 @@ public class CensusServer {
             String resolutionKey = request.getResolutionKey();
             double latitude = request.getLatitude();
             double longitude = request.getLongitude();
-            String aspect = request.getAspect();
+            String feature = request.getFeature();
 
-
-            // TODO: implement controller selection w.r.t. aspect
+            // TODO: implement controller selection w.r.t. feature
             try {
-                int resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, aspect);
+                int resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                log.info("Resolved GeoID (FIPS): " + resolutionValue);
                 int totalPopulation = PopulationController.fetchTotalPopulation(resolutionKey, resolutionValue);
 
                 CensusResponse response = CensusResponse.newBuilder().setResponse(totalPopulation).build();
