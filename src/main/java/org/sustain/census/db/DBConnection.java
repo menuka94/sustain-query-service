@@ -4,12 +4,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.Constants;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
 
 public class DBConnection {
     private static final Logger log = LogManager.getLogger(DBConnection.class);
@@ -20,30 +17,9 @@ public class DBConnection {
     private static String host;
 
     private static void initDatabaseProperties() {
-        Properties properties = new Properties();
-        String propFile = "config.properties";
-
-        InputStream inputStream = DBConnection.class.getClassLoader().getResourceAsStream(propFile);
-
-        if (inputStream != null) {
-            try {
-                properties.load(inputStream);
-
-                username = properties.getProperty(Constants.DB.USERNAME);
-                assert !"".equals(username);
-
-                password = properties.getProperty(Constants.DB.PASSWORD);
-                assert !"".equals(password);
-
-                host = properties.getProperty(Constants.DB.HOST);
-                assert !"".equals(host);
-
-            } catch (IOException e) {
-                e.printStackTrace();
-                log.error("Error reading file: " + propFile);
-                System.exit(0);
-            }
-        }
+        username = Util.getProperty(Constants.DB.PASSWORD);
+        password = Util.getProperty(Constants.DB.PASSWORD);
+        host = Util.getProperty(Constants.DB.HOST);
     }
 
     public static Connection getConnection(String dbName) {
