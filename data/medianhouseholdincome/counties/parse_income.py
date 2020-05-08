@@ -1,24 +1,23 @@
-file = open('2014_state_total_population.csv')
+from csv import reader
+
+file = open('acs5_2011_medianhouseholdincome_counties.csv')
 
 lines = []
 
-line = file.readline().replace('\n', '')
-while line != "":
-    lines.append(line.split(','))
-    line = file.readline().replace('\n', '')
-
+for line in reader(file):
+    lines.append(line)
 
 # drop headings
 lines = lines[1:]
 
-table_name = "2014_state_total_population"
+table_name = "2011_county_medianhouseholdincome"
 
 sql = ""
 
 for line in lines:
     sql += "INSERT INTO " + table_name + " VALUES (" + line[0] + ",'" + line[1] + "'," + line[2] + ");\n"
 
-outputFile = open('insert_statements.sql', 'a')
+outputFile = open('insert_statements.sql', 'w')
 outputFile.write(sql)
 outputFile.flush()
 outputFile.close()
