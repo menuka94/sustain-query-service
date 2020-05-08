@@ -27,7 +27,7 @@ public class PopulationController {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
         // state_total_population
-        String tableName = "2014_" + resolutionKey + "_" + TOTAL_POPULATION;
+        String tableName = "2011_" + resolutionKey + "_" + TOTAL_POPULATION;
 
         String query = "SELECT total FROM " + tableName + " WHERE geoid=?";
 

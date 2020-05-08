@@ -21,7 +21,8 @@ public class CensusClient {
     public static void main(String[] args) {
         if (args.length != 4) {
             log.error("Usage: CensusClient <resolutionKey> <latitude> <longitude> <feature>\n" +
-                    "Example: CensusClient state 24.5 -82 total_population");
+                    "Example: CensusClient state 24.5 -82 total_population\n" +
+                    "Example: CensusClient county 24.5 -82 total_population");
             System.exit(0);
         }
 
