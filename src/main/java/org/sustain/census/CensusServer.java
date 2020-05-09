@@ -6,6 +6,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.controller.GeoIdResolver;
+import org.sustain.census.controller.IncomeController;
 import org.sustain.census.controller.PopulationController;
 
 import java.io.IOException;
@@ -45,7 +46,7 @@ public class CensusServer {
 
     private void stop() throws InterruptedException {
         if (server != null) {
-            server.awaitTermination(30, TimeUnit.SECONDS);
+            server.awaitTermination(10, TimeUnit.SECONDS);
         }
     }
 
@@ -63,13 +64,21 @@ public class CensusServer {
             double longitude = request.getLongitude();
             String feature = request.getFeature();
 
-            // TODO: implement controller selection w.r.t. feature
             try {
                 int resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
-                int totalPopulation = PopulationController.fetchTotalPopulation(resolutionKey, resolutionValue);
 
-                CensusResponse response = CensusResponse.newBuilder().setResponse(totalPopulation).build();
+                double returnValue = 0;
+                switch (feature) {
+                    case Constants.CensusFeatures.TOTAL_POPULATION:
+                        returnValue = PopulationController.fetchTotalPopulation(resolutionKey, resolutionValue);
+                        break;
+                    case Constants.CensusFeatures.MEDIAN_HOUSEHOLD_INCOME:
+                        returnValue = IncomeController.fetchMedianHouseholdIncome(resolutionKey, resolutionValue);
+                        break;
+                }
+
+                CensusResponse response = CensusResponse.newBuilder().setResponse(returnValue).build();
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
 

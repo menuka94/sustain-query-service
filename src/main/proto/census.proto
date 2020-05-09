@@ -20,7 +20,7 @@ message CensusRequest {
 }
 
 message CensusResponse {
-  int64 response = 1; // a single integer value for now
+  double response = 1; // a single integer value for now
   // TODO: return a CensusResults object
 }
 
