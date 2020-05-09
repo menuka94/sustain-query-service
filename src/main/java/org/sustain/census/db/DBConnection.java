@@ -17,7 +17,7 @@ public class DBConnection {
     private static String host;
 
     private static void initDatabaseProperties() {
-        username = Util.getProperty(Constants.DB.PASSWORD);
+        username = Util.getProperty(Constants.DB.USERNAME);
         password = Util.getProperty(Constants.DB.PASSWORD);
         host = Util.getProperty(Constants.DB.HOST);
     }
