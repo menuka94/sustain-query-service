@@ -3,7 +3,7 @@ package org.sustain.census;
 public class Constants {
     public static class Server {
         public static final String HOST = "SERVER_HOST";
-        public static final String PORT = "50051";
+        public static final int PORT = 50051;
     }
 
     public static class DB {

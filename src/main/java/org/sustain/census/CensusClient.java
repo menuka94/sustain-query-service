@@ -59,8 +59,11 @@ public class CensusClient {
                 .setFeature(feature)
                 .build();
 
-
         CensusResponse response = censusBlockingStub.getData(request);
         log.info("Response: " + response.getResponse());
+    }
+
+    public static void getCentroidOfGeoHash(double lat, double lng) {
+
     }
 }

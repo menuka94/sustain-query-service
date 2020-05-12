@@ -25,7 +25,7 @@ public class CensusServer {
     }
 
     private void start() throws IOException {
-        int port = 50051;   // TODO: Read port from config
+        final int port = Constants.Server.PORT;
         server = ServerBuilder.forPort(port)
                 .addService(new CensusServerImpl())
                 .build().start();
