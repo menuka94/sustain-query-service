@@ -5,11 +5,13 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.census.controller.AgeController;
 import org.sustain.census.controller.GeoIdResolver;
 import org.sustain.census.controller.IncomeController;
 import org.sustain.census.controller.PopulationController;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
@@ -65,17 +67,19 @@ public class CensusServer {
             String feature = request.getFeature();
 
             try {
-                int resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                BigInteger resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
                 double returnValue = 0;
                 switch (feature) {
                     case Constants.CensusFeatures.TOTAL_POPULATION:
-                        returnValue = PopulationController.fetchTotalPopulation(resolutionKey, resolutionValue);
+                        returnValue = PopulationController.fetchTotalPopulation(resolutionKey, resolutionValue.intValue());
                         break;
                     case Constants.CensusFeatures.MEDIAN_HOUSEHOLD_INCOME:
-                        returnValue = IncomeController.fetchMedianHouseholdIncome(resolutionKey, resolutionValue);
+                        returnValue = IncomeController.fetchMedianHouseholdIncome(resolutionKey, resolutionValue.intValue());
                         break;
+                    case Constants.CensusFeatures.MEDIAN_AGE:
+                        returnValue = AgeController.fetchMedianAge(resolutionKey, resolutionValue.intValue());
                 }
 
                 CensusResponse response = CensusResponse.newBuilder().setResponse(returnValue).build();

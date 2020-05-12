@@ -17,11 +17,14 @@ public class Constants {
         public static final String TOTAL_POPULATION = "total_population";
         public static final String MEDIAN_HOUSEHOLD_INCOME = "medianhouseholdincome";
         public static final String POPULATION_BY_AGE = "population_by_age";
+        public static final String MEDIAN_AGE = "medianage";
     }
 
     public static class CensusResolutions {
+        public static final String GEO_ID = "geoid";
         public static final String STATE = "state";
         public static final String COUNTY = "county";
         public static final String TRACT = "tract";
+        public static final String BLOCK = "block";
     }
 }

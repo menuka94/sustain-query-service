@@ -10,10 +10,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import static org.sustain.census.Constants.CensusFeatures.POPULATION_BY_AGE;
+import static org.sustain.census.Constants.CensusFeatures.TOTAL_POPULATION;
+
 public class PopulationController {
     private static final Logger log = LogManager.getLogger(PopulationController.class);
-    private static final String TOTAL_POPULATION = "total_population";
-    private static final String POPULATION_BY_AGE = "population_by_age";
     private static Connection dbConnection = null;
 
     /**
@@ -23,10 +24,11 @@ public class PopulationController {
      */
     public static int fetchTotalPopulation(String resolutionKey, int resolutionValue) throws SQLException {
         log.info("Fetching " + TOTAL_POPULATION + " for " + resolutionKey + ": " + resolutionValue);
+
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
-        // state_total_population
+
         String tableName = "2011_" + resolutionKey + "_" + TOTAL_POPULATION;
 
         String query = "SELECT total FROM " + tableName + " WHERE geoid=?";
