@@ -26,5 +26,7 @@ public class Constants {
         public static final String COUNTY = "county";
         public static final String TRACT = "tract";
         public static final String BLOCK = "block";
+        public static final String LATITUDE = "latitude";
+        public static final String LONGITUDE = "longitude";
     }
 }

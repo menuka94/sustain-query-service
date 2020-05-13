@@ -2,7 +2,6 @@ package org.sustain.census.controller;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.Constants;
 import org.sustain.census.db.DBConnection;
 
 import java.math.BigInteger;
@@ -10,6 +9,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import static org.sustain.census.Constants.CensusResolutions.*;
+import static org.sustain.census.Constants.DB.DB_NAME;
 
 public class GeoIdResolver {
     private static final Logger log = LogManager.getLogger(GeoIdResolver.class);
@@ -20,22 +22,24 @@ public class GeoIdResolver {
         log.info("Fetching " + resolution + " FIPS code for (" + lat + ", " + lng + ")");
 
         if (dbConnection == null) {
-            dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
+            dbConnection = DBConnection.getConnection(DB_NAME);
         }
 
-        if (Constants.CensusResolutions.TRACT.equals(resolution)) {
+        boolean isTract = false;
+        if (TRACT.equals(resolution)) {
             // tract_fips is not available in the table, but block_fips is
             // proceed to calculate tract_fips from block_fips
-            resolution = Constants.CensusResolutions.BLOCK;
+            resolution = BLOCK;
+            isTract = true;
         }
 
         resolution += "_fips";
         log.info("Resolution: " + resolution);
         String query = "";
-        if (Constants.CensusResolutions.TRACT.equals(resolution)) {
-            query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE latitude like ? AND longitude like ?";
+        if (isTract) {
+            query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + " like ? AND " + LONGITUDE + " like ?";
         } else {
-            query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE latitude=? AND longitude=?";
+            query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + "=? AND " + LONGITUDE + "=?";
         }
         log.info("Query: " + query);
 
@@ -46,9 +50,9 @@ public class GeoIdResolver {
 
         BigInteger geoId = BigInteger.valueOf(0);
         while (resultSet.next()) {
-            geoId = (BigInteger) resultSet.getObject(resolution);
+            geoId = new BigInteger(resultSet.getObject(resolution).toString());
             log.info("Geo ID form resultSet: " + geoId);
-            if (Constants.CensusResolutions.TRACT.equals(resolution)) {
+            if (isTract) {
                 String geoIdString = String.valueOf(geoId);
                 // block_fips = 482012231001050
                 // tract_fips = 48201223100
@@ -60,7 +64,9 @@ public class GeoIdResolver {
     }
 
     public static void main(String[] args) throws SQLException {
-        BigInteger geoId = GeoIdResolver.resolveGeoId(30.2, -88.0, Constants.CensusResolutions.TRACT);
+//        double[] coordinates = new double[]{30.2, -88};
+        double[] coordinates = new double[]{24.5, -82};
+        BigInteger geoId = GeoIdResolver.resolveGeoId(coordinates[0], coordinates[1], COUNTY);
         log.info("GeoID: " + geoId);
     }
 }
