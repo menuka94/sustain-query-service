@@ -11,7 +11,6 @@ import java.util.concurrent.TimeUnit;
 
 public class CensusClient {
     private static final Logger log = LogManager.getLogger(CensusClient.class);
-    private static String TARGET;
     private final CensusGrpc.CensusBlockingStub censusBlockingStub;
 
     public CensusClient(Channel channel) {
@@ -19,28 +18,46 @@ public class CensusClient {
     }
 
     public static void main(String[] args) {
-        if (args.length != 4) {
-            log.error("Usage: CensusClient <resolutionKey> <latitude> <longitude> <feature>\n" +
-                    "Example: CensusClient " + Constants.CensusResolutions.STATE + " 24.5 -82 " + Constants.CensusFeatures.TOTAL_POPULATION + "\n" +
-                    "Example: CensusClient " + Constants.CensusResolutions.STATE + " 24.5 -82 " + Constants.CensusFeatures.MEDIAN_HOUSEHOLD_INCOME + "\n" +
-                    "Example: CensusClient " + Constants.CensusResolutions.COUNTY + " 24.5 -82 " + Constants.CensusFeatures.TOTAL_POPULATION + "\n" +
-                    "Example: CensusClient " + Constants.CensusResolutions.COUNTY + " 24.5 -82 " + Constants.CensusFeatures.MEDIAN_HOUSEHOLD_INCOME);
-            System.exit(0);
-        }
+        String resolution = args[0];
+        double latitude = 24.5;
+        double longitude = -82;
 
-        String resolutionKey = args[0];
-        double latitude = Double.parseDouble(args[1]);
-        double longitude = Double.parseDouble(args[2]);
-        String feature = args[3];
+        String target = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;
+        log.info("Target: " + target);
 
-        TARGET = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;
-        log.info("Target: " + TARGET);
-
-        ManagedChannel channel = ManagedChannelBuilder.forTarget(TARGET).usePlaintext().build();
+        ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
         try {
             CensusClient client = new CensusClient(channel);
-            client.requestData(resolutionKey, latitude, longitude, feature);
+
+            // Total Population
+            TotalPopulationResponse totalPopulation = client.requestTotalPopulation(resolution, latitude, longitude);
+            log.info(totalPopulation.getPopulation());
+
+            // PopulationByAge
+            PopulationByAgeResponse populationByAge = client.requestPopulationByAge(resolution, latitude, longitude);
+            AgeCategories malePopulation = populationByAge.getMaleAgeCategories().getAgeCategories();
+            log.info(malePopulation.getTotal());
+            log.info(malePopulation.getUnder5());
+            log.info(malePopulation.get5To9());
+            log.info(malePopulation.get10To14());
+            log.info(malePopulation.get15To17());
+
+            AgeCategories femalePopulation = populationByAge.getFemaleAgeCategories().getAgeCategories();
+            log.info(femalePopulation.getTotal());
+            log.info(femalePopulation.getUnder5());
+            log.info(femalePopulation.get5To9());
+            log.info(femalePopulation.get10To14());
+            log.info(femalePopulation.get15To17());
+
+            // MedianHouseholdIncome
+            MedianHouseholdIncomeResponse medianHouseholdIncome = client.requestMedianHouseholdIncome(resolution,
+                    latitude, longitude);
+            log.info(medianHouseholdIncome.getMedianHouseholdIncome());
+
+            // MedianAge
+            MedianAgeResponse medianAge = client.requestMedianAge(resolution, latitude, longitude);
+            log.info(medianAge.getMedianAge());
         } finally {
             try {
                 channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
@@ -50,21 +67,49 @@ public class CensusClient {
         }
     }
 
-    private void requestData(String resolutionKey, double latitude, double longitude, String feature) {
-        log.info("Processing request (" + resolutionKey + ", " + latitude + ", " + longitude + ", " + feature + ")");
-        CensusRequest request = CensusRequest.newBuilder()
-                .setResolution(resolutionKey)
-                .setLatitude(latitude)
-                .setLongitude(longitude)
-                .setFeature(feature)
-                .build();
+    private TotalPopulationResponse requestTotalPopulation(String resolution, double latitude, double longitude) {
+        TotalPopulationRequest request =
+                TotalPopulationRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+                        .setResolution(resolution)
+                        .setLatitude(latitude)
+                        .setLongitude(longitude).build()
+                ).build();
 
-
-        CensusResponse response = censusBlockingStub.getData(request);
-        log.info("Response: " + response.get());
+        return censusBlockingStub.getTotalPopulation(request);
     }
 
-    public static void getCentroidOfGeoHash(double lat, double lng) {
 
+    private PopulationByAgeResponse requestPopulationByAge(String resolution, double latitude, double longitude) {
+        PopulationByAgeRequest request =
+                PopulationByAgeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+                        .setResolution(resolution)
+                        .setLatitude(latitude)
+                        .setLongitude(longitude).build()
+                ).build();
+
+        return censusBlockingStub.getPopulationByAge(request);
+    }
+
+    private MedianHouseholdIncomeResponse requestMedianHouseholdIncome(String resolution, double latitude,
+                                                                       double longitude) {
+        MedianHouseholdIncomeRequest request =
+                MedianHouseholdIncomeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+                        .setResolution(resolution)
+                        .setLatitude(latitude)
+                        .setLongitude(longitude).build()
+                ).build();
+
+        return censusBlockingStub.getMedianHouseholdIncome(request);
+    }
+
+    private MedianAgeResponse requestMedianAge(String resolution, double latitude, double longitude) {
+        MedianAgeRequest request =
+                MedianAgeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+                        .setResolution(resolution)
+                        .setLatitude(latitude)
+                        .setLongitude(longitude).build()
+                ).build();
+
+        return censusBlockingStub.getMedianAge(request);
     }
 }

@@ -5,6 +5,7 @@
 
 .PHONY: build
 build:
+	chmod +x gradlew
 	./gradlew install
 
 .PHONY: run-census-server
