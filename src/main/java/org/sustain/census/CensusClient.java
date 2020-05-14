@@ -53,14 +53,15 @@ public class CensusClient {
     private void requestData(String resolutionKey, double latitude, double longitude, String feature) {
         log.info("Processing request (" + resolutionKey + ", " + latitude + ", " + longitude + ", " + feature + ")");
         CensusRequest request = CensusRequest.newBuilder()
-                .setResolutionKey(resolutionKey)
+                .setResolution(resolutionKey)
                 .setLatitude(latitude)
                 .setLongitude(longitude)
                 .setFeature(feature)
                 .build();
 
+
         CensusResponse response = censusBlockingStub.getData(request);
-        log.info("Response: " + response.getResponse());
+        log.info("Response: " + response.get());
     }
 
     public static void getCentroidOfGeoHash(double lat, double lng) {

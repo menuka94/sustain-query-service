@@ -3,6 +3,8 @@ package org.sustain.census.controller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.Constants;
+import org.sustain.census.PopulationByAgeResponse;
+import org.sustain.census.TotalPopulationResponse;
 import org.sustain.census.db.DBConnection;
 
 import java.sql.Connection;
@@ -22,7 +24,7 @@ public class PopulationController {
      * @param resolutionValue : ex:- stateID, or countyID
      * @return totalPopulation for the area specified by resolutionValue
      */
-    public static int fetchTotalPopulation(String resolutionKey, int resolutionValue) throws SQLException {
+    public static TotalPopulationResponse fetchTotalPopulation(String resolutionKey, int resolutionValue) throws SQLException {
         log.info("Fetching " + TOTAL_POPULATION + " for " + resolutionKey + ": " + resolutionValue);
 
         if (dbConnection == null) {
@@ -31,7 +33,7 @@ public class PopulationController {
 
         String tableName = "2011_" + resolutionKey + "_" + TOTAL_POPULATION;
 
-        String query = "SELECT total FROM " + tableName + " WHERE geoid=?";
+        String query = "SELECT total FROM " + tableName + " WHERE " + Constants.CensusResolutions.GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setInt(1, resolutionValue);
@@ -42,10 +44,11 @@ public class PopulationController {
             total = resultSet.getInt("total");
         }
 
-        return total;
+        TotalPopulationResponse response = TotalPopulationResponse.newBuilder().setPopulation(total).build();
+        return response;
     }
 
-    public static int fetchPopulationByAge(String resolutionKey, int resolutionValue, String age) throws SQLException {
+    public static PopulationByAgeResponse fetchPopulationByAge(String resolutionKey, int resolutionValue) throws SQLException {
         log.info("Fetching " + POPULATION_BY_AGE + " for " + resolutionKey + ": " + resolutionValue);
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
@@ -53,24 +56,30 @@ public class PopulationController {
         // state_total_population
         String tableName = resolutionKey + "_" + POPULATION_BY_AGE;
 
-        String query = "SELECT total FROM " + tableName + " WHERE geoid=? AND age=?";
+        String query = "SELECT * FROM " + tableName + " WHERE " + Constants.CensusResolutions.GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setInt(1, resolutionValue);
-        statement.setString(2, age);
         ResultSet resultSet = statement.executeQuery();
 
-        int valueByAge = 0;
+        int maleTotal = 0;
+        int male5To9 = 0;
+        int male10To14 = 0;
         while (resultSet.next()) {
-            valueByAge = resultSet.getInt(age);
+            maleTotal = resultSet.getInt("male_total");
+            male5To9 = resultSet.getInt("male_5_to_9");
+            male10To14 = resultSet.getInt("male_10_to_14");
         }
 
-        return valueByAge;
+        PopulationByAgeResponse response = PopulationByAgeResponse.newBuilder()
+                .setMaleTotal(maleTotal).setMale5To9(male5To9).setMale10To14(male10To14).build();
+
+        return response;
     }
 
     public static void main(String[] args) throws SQLException {
         int stateCode = 50;
-        int totalPopulation = fetchTotalPopulation("state", stateCode);
-        log.info("Total Population for state " + stateCode + ": " + totalPopulation);
+        TotalPopulationResponse totalPopulation = fetchTotalPopulation("state", stateCode);
+        log.info("Total Population for state " + stateCode + ": " + totalPopulation.getPopulation());
     }
 }

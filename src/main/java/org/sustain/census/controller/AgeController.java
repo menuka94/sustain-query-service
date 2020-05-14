@@ -3,6 +3,7 @@ package org.sustain.census.controller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.Constants;
+import org.sustain.census.MedianAgeResponse;
 import org.sustain.census.db.DBConnection;
 
 import java.sql.Connection;
@@ -17,7 +18,7 @@ public class AgeController {
     private static final Logger log = LogManager.getLogger(AgeController.class);
     private static Connection dbConnection = null;
 
-    public static double fetchMedianAge(String resolutionKey, int resolutionValue) throws SQLException {
+    public static MedianAgeResponse fetchMedianAge(String resolutionKey, int resolutionValue) throws SQLException {
         log.info("Fetching " + MEDIAN_AGE + " for " + resolutionKey + ": " + resolutionValue);
 
         if (dbConnection == null) {
@@ -37,6 +38,8 @@ public class AgeController {
             medianage = resultSet.getInt(MEDIAN_AGE);
         }
 
-        return medianage;
+        MedianAgeResponse response = MedianAgeResponse.newBuilder().setMedianAge(medianage).build();
+
+        return response;
     }
 }

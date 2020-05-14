@@ -60,35 +60,80 @@ public class CensusServer {
 
     static class CensusServerImpl extends CensusGrpc.CensusImplBase {
         @Override
-        public void getData(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
-            String resolutionKey = request.getResolutionKey();
-            double latitude = request.getLatitude();
-            double longitude = request.getLongitude();
-            String feature = request.getFeature();
+        public void getTotalPopulation(TotalPopulationRequest request,
+                                       StreamObserver<TotalPopulationResponse> responseObserver) {
+            String resolutionKey = request.getSpatialInfo().getResolution();
+            double latitude = request.getSpatialInfo().getLatitude();
+            double longitude = request.getSpatialInfo().getLongitude();
 
+            BigInteger resolutionValue = null;
             try {
-                BigInteger resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
-                double returnValue = 0;
-                switch (feature) {
-                    case Constants.CensusFeatures.TOTAL_POPULATION:
-                        returnValue = PopulationController.fetchTotalPopulation(resolutionKey, resolutionValue.intValue());
-                        break;
-                    case Constants.CensusFeatures.MEDIAN_HOUSEHOLD_INCOME:
-                        returnValue = IncomeController.fetchMedianHouseholdIncome(resolutionKey, resolutionValue.intValue());
-                        break;
-                    case Constants.CensusFeatures.MEDIAN_AGE:
-                        returnValue = AgeController.fetchMedianAge(resolutionKey, resolutionValue.intValue());
-                }
-
-                CensusResponse response = CensusResponse.newBuilder().setResponse(returnValue).build();
-                responseObserver.onNext(response);
+                responseObserver.onNext(PopulationController.fetchTotalPopulation(resolutionKey,
+                        resolutionValue.intValue()));
                 responseObserver.onCompleted();
-
             } catch (SQLException e) {
-                log.error("Error in fetching data");
-                e.printStackTrace();
+                log.error(e);
+            }
+        }
+
+        @Override
+        public void getMedianAge(MedianAgeRequest request, StreamObserver<MedianAgeResponse> responseObserver) {
+            String resolutionKey = request.getSpatialInfo().getResolution();
+            double latitude = request.getSpatialInfo().getLatitude();
+            double longitude = request.getSpatialInfo().getLongitude();
+
+            BigInteger resolutionValue = null;
+            try {
+                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                log.info("Resolved GeoID (FIPS): " + resolutionValue);
+
+                responseObserver.onNext(AgeController.fetchMedianAge(resolutionKey, resolutionValue.intValue()));
+                responseObserver.onCompleted();
+            } catch (SQLException e) {
+                log.error(e);
+            }
+        }
+
+        @Override
+        public void getMedianHouseholdIncome(MedianHouseholdIncomeRequest request,
+                                             StreamObserver<MedianHouseholdIncomeResponse> responseObserver) {
+            String resolutionKey = request.getSpatialInfo().getResolution();
+            double latitude = request.getSpatialInfo().getLatitude();
+            double longitude = request.getSpatialInfo().getLongitude();
+
+            BigInteger resolutionValue = null;
+            try {
+                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                log.info("Resolved GeoID (FIPS): " + resolutionValue);
+
+                responseObserver.onNext(IncomeController.fetchMedianHouseholdIncome(resolutionKey,
+                        resolutionValue.intValue()));
+                responseObserver.onCompleted();
+            } catch (SQLException e) {
+                log.error(e);
+            }
+        }
+
+        @Override
+        public void getPopulationByAge(PopulationByAgeRequest request,
+                                       StreamObserver<PopulationByAgeResponse> responseObserver) {
+            String resolutionKey = request.getSpatialInfo().getResolution();
+            double latitude = request.getSpatialInfo().getLatitude();
+            double longitude = request.getSpatialInfo().getLongitude();
+
+            BigInteger resolutionValue = null;
+            try {
+                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                log.info("Resolved GeoID (FIPS): " + resolutionValue);
+
+                responseObserver.onNext(PopulationController.fetchPopulationByAge(resolutionKey,
+                        resolutionValue.intValue()));
+                responseObserver.onCompleted();
+            } catch (SQLException e) {
+                log.error(e);
             }
         }
     }

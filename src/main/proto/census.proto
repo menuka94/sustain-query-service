@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/api/http.proto";
+
 option java_multiple_files = true;
 option java_package = "org.sustain.census";
 option java_outer_classname = "SustainCensus";
@@ -8,19 +10,90 @@ option java_outer_classname = "SustainCensus";
 package census;
 
 service Census {
-  rpc GetData (CensusRequest) returns (CensusResponse) {}
+  rpc GetTotalPopulation (TotalPopulationRequest) returns (TotalPopulationResponse) {}
+  rpc GetMedianAge (MedianAgeRequest) returns (MedianAgeResponse) {}
+  rpc GetMedianHouseholdIncome (MedianHouseholdIncomeRequest) returns (MedianHouseholdIncomeResponse) {}
+  rpc GetPopulationByAge (PopulationByAgeRequest) returns (PopulationByAgeResponse) {}
 }
 
-message CensusRequest {
-  string resolutionKey = 1; // Example:- 'state', 'county', 'tract'
+message TotalPopulationRequest {
+  SpatialInfoInRequest spatialInfo = 1;
+}
+
+message PopulationByAgeRequest {
+  SpatialInfoInRequest spatialInfo = 1;
+}
+
+message MedianAgeRequest {
+  SpatialInfoInRequest spatialInfo = 1;
+}
+
+message MedianHouseholdIncomeRequest {
+  SpatialInfoInRequest spatialInfo = 1;
+}
+
+// geographic information included in every CensusRequest
+message SpatialInfoInRequest {
+  string resolution = 1; // Example:- 'state', 'county', 'tract'
   double latitude = 2;
   double longitude = 3;
-  string feature = 4; // Example: 'total_population', 'median_household_income'
-  // TODO: get a list of features in the request
 }
 
-message CensusResponse {
-  double response = 1; // a single integer value for now
-  // TODO: return a CensusResults object
+message TotalPopulationResponse {
+  double population = 1;
+}
+
+message MedianAgeResponse {
+  double medianAge = 1;
+}
+
+message MedianHouseholdIncomeResponse {
+  double medianHouseholdIncome = 1;
+}
+
+message PopulationByAgeResponse {
+  MaleAgeCategories maleAgeCategories = 1;
+  FemaleAgeCategories femaleAgeCategories = 2;
+}
+
+message MaleAgeCategories {
+  AgeCategories ageCategories = 1;
+}
+
+message FemaleAgeCategories {
+  AgeCategories ageCategories = 2;
+}
+
+message AgeCategories {
+  int32 total = 1;
+  int32 under5 = 2;
+  int32 _5to9 = 3;
+  int32 _10to14 = 4;
+  int32 _15to17 = 5;
+  int32 _18to19 = 6;
+  int32 _20 = 7;
+  int32 _21 = 8;
+  int32 _22to24 = 9;
+  int32 _25to29 = 10;
+  int32 _30to34 = 11;
+  int32 _35to39 = 12;
+  int32 _40to44 = 13;
+  int32 _45to49 = 14;
+  int32 _50to54 = 15;
+  int32 _55to59 = 16;
+  int32 _60to61 = 17;
+  int32 _62to64 = 18;
+  int32 _65to66 = 19;
+  int32 _67to69 = 20;
+  int32 _70to74 = 21;
+  int32 _75to79 = 22;
+  int32 _80to84 = 23;
+  int32 _85andOver = 24;
+}
+
+message GeographicInfo {
+  // TODO: include GeographicInfo in every CensusResponse
+  string geoId = 1;
+  string resolution = 2;
 }
 

@@ -3,6 +3,7 @@ package org.sustain.census.controller;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.Constants;
+import org.sustain.census.MedianHouseholdIncomeResponse;
 import org.sustain.census.db.DBConnection;
 
 import java.sql.Connection;
@@ -21,7 +22,7 @@ public class IncomeController {
      * @param resolutionValue : ex:- stateID, or countyID
      * @return totalPopulation for the area specified by resolutionValue
      */
-    public static int fetchMedianHouseholdIncome(String resolutionKey, int resolutionValue) throws SQLException {
+    public static MedianHouseholdIncomeResponse fetchMedianHouseholdIncome(String resolutionKey, int resolutionValue) throws SQLException {
         log.info("Fetching " + MEDIAN_HOUSEHOLD_INCOME + " for " + resolutionKey + ": " + resolutionValue);
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
@@ -29,23 +30,25 @@ public class IncomeController {
         // state_total_population
         String tableName = "2011_" + resolutionKey + "_" + MEDIAN_HOUSEHOLD_INCOME;
 
-        String query = "SELECT income FROM " + tableName + " WHERE geoid=?";
+        String query = "SELECT income FROM " + tableName + " WHERE " + Constants.CensusResolutions.GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setInt(1, resolutionValue);
         ResultSet resultSet = statement.executeQuery();
 
-        int total = 0;
+        int income = 0;
         while (resultSet.next()) {
-            total = resultSet.getInt("income");
+            income = resultSet.getInt("income");
         }
 
-        return total;
+        MedianHouseholdIncomeResponse response = MedianHouseholdIncomeResponse.newBuilder()
+                .setMedianHouseholdIncome(income).build();
+        return response;
     }
 
     public static void main(String[] args) throws SQLException {
         int stateId = 05;
-        int income = fetchMedianHouseholdIncome(Constants.CensusResolutions.STATE, stateId);
-        log.info("Median Household Income for state " + stateId + " is $" + income + "/year");
+        MedianHouseholdIncomeResponse response = fetchMedianHouseholdIncome(Constants.CensusResolutions.STATE, stateId);
+        log.info("Median Household Income for state " + stateId + " is $" + response.getMedianHouseholdIncome() + "/year");
     }
 }
