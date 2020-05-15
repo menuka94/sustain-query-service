@@ -48,7 +48,7 @@ public class CensusServer {
 
     private void stop() throws InterruptedException {
         if (server != null) {
-            server.awaitTermination(10, TimeUnit.SECONDS);
+            server.awaitTermination(5, TimeUnit.SECONDS);
         }
     }
 
@@ -66,7 +66,7 @@ public class CensusServer {
             double latitude = request.getSpatialInfo().getLatitude();
             double longitude = request.getSpatialInfo().getLongitude();
 
-            BigInteger resolutionValue = null;
+            BigInteger resolutionValue;
             try {
                 resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
@@ -85,7 +85,7 @@ public class CensusServer {
             double latitude = request.getSpatialInfo().getLatitude();
             double longitude = request.getSpatialInfo().getLongitude();
 
-            BigInteger resolutionValue = null;
+            BigInteger resolutionValue;
             try {
                 resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
@@ -104,7 +104,7 @@ public class CensusServer {
             double latitude = request.getSpatialInfo().getLatitude();
             double longitude = request.getSpatialInfo().getLongitude();
 
-            BigInteger resolutionValue = null;
+            BigInteger resolutionValue;
             try {
                 resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
@@ -124,7 +124,7 @@ public class CensusServer {
             double latitude = request.getSpatialInfo().getLatitude();
             double longitude = request.getSpatialInfo().getLongitude();
 
-            BigInteger resolutionValue = null;
+            BigInteger resolutionValue;
             try {
                 resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);

@@ -18,6 +18,10 @@ public class CensusClient {
     }
 
     public static void main(String[] args) {
+        if (args.length != 1) {
+            log.warn("Enter resolution. Example: CensusClient state, or CensusClient county");
+            System.exit(0);
+        }
         String resolution = args[0];
         double latitude = 24.5;
         double longitude = -82;
@@ -32,32 +36,32 @@ public class CensusClient {
 
             // Total Population
             TotalPopulationResponse totalPopulation = client.requestTotalPopulation(resolution, latitude, longitude);
-            log.info(totalPopulation.getPopulation());
+            log.info("Total Population:" + totalPopulation.getPopulation());
 
             // PopulationByAge
-            PopulationByAgeResponse populationByAge = client.requestPopulationByAge(resolution, latitude, longitude);
-            AgeCategories malePopulation = populationByAge.getMaleAgeCategories().getAgeCategories();
-            log.info(malePopulation.getTotal());
-            log.info(malePopulation.getUnder5());
-            log.info(malePopulation.get5To9());
-            log.info(malePopulation.get10To14());
-            log.info(malePopulation.get15To17());
-
-            AgeCategories femalePopulation = populationByAge.getFemaleAgeCategories().getAgeCategories();
-            log.info(femalePopulation.getTotal());
-            log.info(femalePopulation.getUnder5());
-            log.info(femalePopulation.get5To9());
-            log.info(femalePopulation.get10To14());
-            log.info(femalePopulation.get15To17());
+//            PopulationByAgeResponse populationByAge = client.requestPopulationByAge(resolution, latitude, longitude);
+//            AgeCategories malePopulation = populationByAge.getMaleAgeCategories().getAgeCategories();
+//            log.info(malePopulation.getTotal());
+//            log.info(malePopulation.getUnder5());
+//            log.info(malePopulation.get5To9());
+//            log.info(malePopulation.get10To14());
+//            log.info(malePopulation.get15To17());
+//
+//            AgeCategories femalePopulation = populationByAge.getFemaleAgeCategories().getAgeCategories();
+//            log.info(femalePopulation.getTotal());
+//            log.info(femalePopulation.getUnder5());
+//            log.info(femalePopulation.get5To9());
+//            log.info(femalePopulation.get10To14());
+//            log.info(femalePopulation.get15To17());
 
             // MedianHouseholdIncome
             MedianHouseholdIncomeResponse medianHouseholdIncome = client.requestMedianHouseholdIncome(resolution,
                     latitude, longitude);
-            log.info(medianHouseholdIncome.getMedianHouseholdIncome());
+            log.info("Median Household Income: " + medianHouseholdIncome.getMedianHouseholdIncome());
 
             // MedianAge
             MedianAgeResponse medianAge = client.requestMedianAge(resolution, latitude, longitude);
-            log.info(medianAge.getMedianAge());
+            log.info("Median Age: " + medianAge.getMedianAge());
         } finally {
             try {
                 channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
