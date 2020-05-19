@@ -52,7 +52,7 @@ public class PopulationController {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
         // state_Total_population
-        String tableName = resolutionKey + "_" + POPULATION_BY_AGE;
+        String tableName = "2011_" + resolutionKey + "_" + POPULATION_BY_AGE;
 
         String query = "SELECT * FROM " + tableName + " WHERE " + Constants.CensusResolutions.GEO_ID + "=?";
 
@@ -92,8 +92,8 @@ public class PopulationController {
             male10To14 = resultSet.getInt("male_10_To_14");
             male15To17 = resultSet.getInt("male_15_To_17");
             male18To19 = resultSet.getInt("male_18_To_19");
-            male20 = resultSet.getInt("male20");
-            male21 = resultSet.getInt("male21");
+            male20 = resultSet.getInt("male_20");
+            male21 = resultSet.getInt("male_21");
             male22To24 = resultSet.getInt("male_22_To_24");
             male25To29 = resultSet.getInt("male_25_To_29");
             male30To34 = resultSet.getInt("male_30_To_34");
@@ -117,8 +117,8 @@ public class PopulationController {
             female10To14 = resultSet.getInt("female_10_To_14");
             female15To17 = resultSet.getInt("female_15_To_17");
             female18To19 = resultSet.getInt("female_18_To_19");
-            female20 = resultSet.getInt("female20");
-            female21 = resultSet.getInt("female21");
+            female20 = resultSet.getInt("female_20");
+            female21 = resultSet.getInt("female_21");
             female22To24 = resultSet.getInt("female_22_To_24");
             female25To29 = resultSet.getInt("female_25_To_29");
             female30To34 = resultSet.getInt("female_30_To_34");

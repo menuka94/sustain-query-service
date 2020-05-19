@@ -48,7 +48,7 @@ public class CensusServer {
 
     private void stop() throws InterruptedException {
         if (server != null) {
-            server.awaitTermination(5, TimeUnit.SECONDS);
+            server.awaitTermination(2, TimeUnit.SECONDS);
         }
     }
 

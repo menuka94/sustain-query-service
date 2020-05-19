@@ -12,14 +12,16 @@ import java.util.concurrent.TimeUnit;
 public class CensusClient {
     private static final Logger log = LogManager.getLogger(CensusClient.class);
     private final CensusGrpc.CensusBlockingStub censusBlockingStub;
+    private final ClientHelper clientHelper;
 
     public CensusClient(Channel channel) {
         censusBlockingStub = CensusGrpc.newBlockingStub(channel);
+        clientHelper = new ClientHelper(censusBlockingStub);
     }
 
     public static void main(String[] args) {
         if (args.length != 1) {
-            log.warn("Enter resolution. Example: CensusClient state, or CensusClient county");
+            log.warn("Enter resolution. Example: CensusClient <state/county/tract>");
             System.exit(0);
         }
         String resolution = args[0];
@@ -35,32 +37,79 @@ public class CensusClient {
             CensusClient client = new CensusClient(channel);
 
             // Total Population
-            TotalPopulationResponse totalPopulation = client.requestTotalPopulation(resolution, latitude, longitude);
+            TotalPopulationResponse totalPopulation = client.clientHelper.requestTotalPopulation(resolution, latitude
+                    , longitude);
             log.info("Total Population:" + totalPopulation.getPopulation());
 
             // PopulationByAge
-//            PopulationByAgeResponse populationByAge = client.requestPopulationByAge(resolution, latitude, longitude);
-//            AgeCategories malePopulation = populationByAge.getMaleAgeCategories().getAgeCategories();
-//            log.info(malePopulation.getTotal());
-//            log.info(malePopulation.getUnder5());
-//            log.info(malePopulation.get5To9());
-//            log.info(malePopulation.get10To14());
-//            log.info(malePopulation.get15To17());
-//
-//            AgeCategories femalePopulation = populationByAge.getFemaleAgeCategories().getAgeCategories();
-//            log.info(femalePopulation.getTotal());
-//            log.info(femalePopulation.getUnder5());
-//            log.info(femalePopulation.get5To9());
-//            log.info(femalePopulation.get10To14());
-//            log.info(femalePopulation.get15To17());
+            PopulationByAgeResponse populationByAge =
+                    client.clientHelper.requestPopulationByAge(Constants.CensusResolutions.STATE, latitude, longitude);
+            AgeCategories malePopulation = populationByAge.getMaleAgeCategories().getAgeCategories();
+            System.out.println();
+            log.info("Male Population by age categories:");
+            log.info(malePopulation.getTotal());
+            log.info(malePopulation.getUnder5());
+            log.info(malePopulation.get5To9());
+            log.info(malePopulation.get10To14());
+            log.info(malePopulation.get15To17());
+            log.info(malePopulation.get18To19());
+            log.info(malePopulation.get20());
+            log.info(malePopulation.get21());
+            log.info(malePopulation.get22To24());
+            log.info(malePopulation.get25To29());
+            log.info(malePopulation.get30To34());
+            log.info(malePopulation.get35To39());
+            log.info(malePopulation.get40To44());
+            log.info(malePopulation.get45To49());
+            log.info(malePopulation.get50To54());
+            log.info(malePopulation.get55To59());
+            log.info(malePopulation.get60To61());
+            log.info(malePopulation.get62To64());
+            log.info(malePopulation.get65To66());
+            log.info(malePopulation.get67To69());
+            log.info(malePopulation.get70To74());
+            log.info(malePopulation.get75To79());
+            log.info(malePopulation.get80To84());
+            log.info(malePopulation.get85AndOver());
+
+            AgeCategories femalePopulation = populationByAge.getFemaleAgeCategories().getAgeCategories();
+            System.out.println();
+            log.info("Female population by age categories");
+            log.info(femalePopulation.getTotal());
+            log.info(femalePopulation.getUnder5());
+            log.info(femalePopulation.get5To9());
+            log.info(femalePopulation.get10To14());
+            log.info(femalePopulation.get15To17());
+            log.info(femalePopulation.get18To19());
+            log.info(femalePopulation.get20());
+            log.info(femalePopulation.get21());
+            log.info(femalePopulation.get22To24());
+            log.info(femalePopulation.get25To29());
+            log.info(femalePopulation.get30To34());
+            log.info(femalePopulation.get35To39());
+            log.info(femalePopulation.get40To44());
+            log.info(femalePopulation.get45To49());
+            log.info(femalePopulation.get50To54());
+            log.info(femalePopulation.get55To59());
+            log.info(femalePopulation.get60To61());
+            log.info(femalePopulation.get62To64());
+            log.info(femalePopulation.get65To66());
+            log.info(femalePopulation.get67To69());
+            log.info(femalePopulation.get70To74());
+            log.info(femalePopulation.get75To79());
+            log.info(femalePopulation.get80To84());
+            log.info(femalePopulation.get85AndOver());
+
 
             // MedianHouseholdIncome
-            MedianHouseholdIncomeResponse medianHouseholdIncome = client.requestMedianHouseholdIncome(resolution,
-                    latitude, longitude);
+            MedianHouseholdIncomeResponse medianHouseholdIncome =
+                    client.clientHelper.requestMedianHouseholdIncome(resolution,
+                            latitude, longitude);
+            System.out.println();
             log.info("Median Household Income: " + medianHouseholdIncome.getMedianHouseholdIncome());
 
             // MedianAge
-            MedianAgeResponse medianAge = client.requestMedianAge(resolution, latitude, longitude);
+            MedianAgeResponse medianAge = client.clientHelper.requestMedianAge(resolution, latitude, longitude);
             log.info("Median Age: " + medianAge.getMedianAge());
         } finally {
             try {
@@ -71,49 +120,5 @@ public class CensusClient {
         }
     }
 
-    private TotalPopulationResponse requestTotalPopulation(String resolution, double latitude, double longitude) {
-        TotalPopulationRequest request =
-                TotalPopulationRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
-                        .setResolution(resolution)
-                        .setLatitude(latitude)
-                        .setLongitude(longitude).build()
-                ).build();
 
-        return censusBlockingStub.getTotalPopulation(request);
-    }
-
-
-    private PopulationByAgeResponse requestPopulationByAge(String resolution, double latitude, double longitude) {
-        PopulationByAgeRequest request =
-                PopulationByAgeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
-                        .setResolution(resolution)
-                        .setLatitude(latitude)
-                        .setLongitude(longitude).build()
-                ).build();
-
-        return censusBlockingStub.getPopulationByAge(request);
-    }
-
-    private MedianHouseholdIncomeResponse requestMedianHouseholdIncome(String resolution, double latitude,
-                                                                       double longitude) {
-        MedianHouseholdIncomeRequest request =
-                MedianHouseholdIncomeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
-                        .setResolution(resolution)
-                        .setLatitude(latitude)
-                        .setLongitude(longitude).build()
-                ).build();
-
-        return censusBlockingStub.getMedianHouseholdIncome(request);
-    }
-
-    private MedianAgeResponse requestMedianAge(String resolution, double latitude, double longitude) {
-        MedianAgeRequest request =
-                MedianAgeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
-                        .setResolution(resolution)
-                        .setLatitude(latitude)
-                        .setLongitude(longitude).build()
-                ).build();
-
-        return censusBlockingStub.getMedianAge(request);
-    }
 }
