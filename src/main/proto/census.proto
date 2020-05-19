@@ -14,6 +14,34 @@ service Census {
   rpc GetMedianAge (MedianAgeRequest) returns (MedianAgeResponse) {}
   rpc GetMedianHouseholdIncome (MedianHouseholdIncomeRequest) returns (MedianHouseholdIncomeResponse) {}
   rpc GetPopulationByAge (PopulationByAgeRequest) returns (PopulationByAgeResponse) {}
+  rpc GetPoverty (PovertyRequest) returns (PovertyResponse) {}
+  rpc GetRace (RaceRequest) returns (RaceResponse) {}
+}
+
+message RaceRequest {
+  SpatialInfoInRequest spatialInfo = 1;
+}
+
+message RaceResponse {
+  int32 whiteAlone = 1;
+  int32 blackAlone = 2;
+  int32 americanIndianAndAlaskaNative = 3;
+  int32 asianAlone = 4;
+  int32 nativeHawaiianAndPacificIslander = 5;
+  int32 otherAlone = 6;
+  int32 twoOrMoreRaces = 7;
+  int32 latinoAlone = 8;
+  int32 asiansAll = 9;
+  int32 otherAll = 10;
+}
+
+message PovertyRequest {
+  SpatialInfoInRequest spatialInfo = 1;
+}
+
+message PovertyResponse {
+  int32 incomeBelowPovertyLevel = 1;
+  int32 incomeAtOrAbovePovertyLevel = 2;
 }
 
 message TotalPopulationRequest {
