@@ -18,6 +18,8 @@ public class Constants {
         public static final String MEDIAN_HOUSEHOLD_INCOME = "medianhouseholdincome";
         public static final String POPULATION_BY_AGE = "population_by_age";
         public static final String MEDIAN_AGE = "medianage";
+        public static final String POVERTY = "poverty";
+        public static final String RACE = "race";
     }
 
     public static class CensusResolutions {

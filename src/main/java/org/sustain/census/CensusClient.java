@@ -111,6 +111,12 @@ public class CensusClient {
             // MedianAge
             MedianAgeResponse medianAge = client.clientHelper.requestMedianAge(resolution, latitude, longitude);
             log.info("Median Age: " + medianAge.getMedianAge());
+
+            // Poverty
+            System.out.println();
+            PovertyResponse poverty = client.clientHelper.requestPovertyInfo("state", latitude, longitude);
+            log.info("Income level below poverty level: " + poverty.getIncomeBelowPovertyLevel());
+            log.info("Income level at or above poverty level: " + poverty.getIncomeAtOrAbovePovertyLevel());
         } finally {
             try {
                 channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);

@@ -9,6 +9,7 @@ import org.sustain.census.controller.AgeController;
 import org.sustain.census.controller.GeoIdResolver;
 import org.sustain.census.controller.IncomeController;
 import org.sustain.census.controller.PopulationController;
+import org.sustain.census.controller.PovertyController;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -76,6 +77,7 @@ public class CensusServer {
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
+                e.printStackTrace();
             }
         }
 
@@ -94,6 +96,7 @@ public class CensusServer {
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
+                e.printStackTrace();
             }
         }
 
@@ -114,6 +117,7 @@ public class CensusServer {
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
+                e.printStackTrace();
             }
         }
 
@@ -134,6 +138,27 @@ public class CensusServer {
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        public void getPoverty(PovertyRequest request, StreamObserver<PovertyResponse> responseObserver) {
+            String resolutionKey = request.getSpatialInfo().getResolution();
+            double latitude = request.getSpatialInfo().getLatitude();
+            double longitude = request.getSpatialInfo().getLongitude();
+
+            BigInteger resolutionValue;
+            try {
+                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                log.info("Resolved GeoID (FIPS): " + resolutionValue);
+
+                responseObserver.onNext(PovertyController.fetchPovertyData(resolutionKey,
+                        resolutionValue.intValue()));
+                responseObserver.onCompleted();
+            } catch (SQLException e) {
+                log.error(e);
+                e.printStackTrace();
             }
         }
     }
