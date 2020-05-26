@@ -88,7 +88,7 @@ public class ClientHelper {
         return censusBlockingStub.getRace(request);
     }
 
-    public TargetQueryResponse requestTargetedInfo(CensusResolution resolution, Decade decade,
+    public TargetQueryResponse requestTargetedInfo(Predicate.Feature feature, CensusResolution resolution, Decade decade,
                                                    Predicate.ComparisonOperator comparisonOperator,
                                                    double comparisonValue) {
 
@@ -96,6 +96,7 @@ public class ClientHelper {
                 .setComparisonOp(comparisonOperator)
                 .setComparisonValue(comparisonValue)
                 .setDecade(decade)
+                .setFeature(feature)
                 .build();
 
         TargetQueryRequest request = TargetQueryRequest.newBuilder()

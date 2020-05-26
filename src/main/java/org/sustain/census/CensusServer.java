@@ -189,23 +189,39 @@ public class CensusServer {
                                 PopulationController.fetchTargetedInfo(decade,
                                         resolution, comparisonOp, comparisonValue);
 
-                        TargetQueryResponse.Builder responseBuilder = TargetQueryResponse.newBuilder();
+                        TargetQueryResponse.Builder populationResponseBuilder = TargetQueryResponse.newBuilder();
 
-                        // iterator over results, create SpatialInfo objects, attach to responseBuilder
+                        // iterator over results, create SpatialInfo objects, attach to populationResponseBuilder
                         for (String key : targetedPopulationResults.keySet()) {
                             TargetQueryResponse.SpatialInfo spatialInfo = TargetQueryResponse.SpatialInfo.newBuilder()
                                     .setGeoid(Integer.parseInt(key))
                                     .setName(targetedPopulationResults.get(key))
                                     .build();
-                            responseBuilder.addSpatialInfo(spatialInfo);
+                            populationResponseBuilder.addSpatialInfo(spatialInfo);
                         }
 
-                        TargetQueryResponse response = responseBuilder.build();
-                        responseObserver.onNext(response);
+                        TargetQueryResponse populationResponse = populationResponseBuilder.build();
+                        responseObserver.onNext(populationResponse);
                         responseObserver.onCompleted();
                         break;
                     case Income:
-                        IncomeController.fetchTargetedInfo(decade, resolution, comparisonOp, comparisonValue);
+                        HashMap<String, String> targetedIncomeResults = IncomeController.fetchTargetedInfo(decade,
+                                resolution, comparisonOp, comparisonValue);
+
+                        TargetQueryResponse.Builder incomeResponseBuilder = TargetQueryResponse.newBuilder();
+
+                        // iterator over results, create SpatialInfo objects, attach to populationResponseBuilder
+                        for (String key : targetedIncomeResults.keySet()) {
+                            TargetQueryResponse.SpatialInfo spatialInfo = TargetQueryResponse.SpatialInfo.newBuilder()
+                                    .setGeoid(Integer.parseInt(key))
+                                    .setName(targetedIncomeResults.get(key))
+                                    .build();
+                            incomeResponseBuilder.addSpatialInfo(spatialInfo);
+                        }
+
+                        TargetQueryResponse incomeResponse = incomeResponseBuilder.build();
+                        responseObserver.onNext(incomeResponse);
+                        responseObserver.onCompleted();
                         break;
                     case UNRECOGNIZED:
                         log.warn("Invalid Census feature found in the request");
