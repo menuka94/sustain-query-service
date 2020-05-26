@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/api/http.proto";
+import "targeted_census.proto";
 
 option java_multiple_files = true;
 option java_package = "org.sustain.census";
@@ -16,6 +17,9 @@ service Census {
   rpc GetPopulationByAge (PopulationByAgeRequest) returns (PopulationByAgeResponse) {}
   rpc GetPoverty (PovertyRequest) returns (PovertyResponse) {}
   rpc GetRace (RaceRequest) returns (RaceResponse) {}
+
+  // targeted queries
+  rpc ExecuteTargetedQuery(TargetQueryRequest) returns (TargetQueryResponse) {}
 }
 
 message RaceRequest {
