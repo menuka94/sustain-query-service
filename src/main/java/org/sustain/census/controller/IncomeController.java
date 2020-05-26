@@ -49,6 +49,11 @@ public class IncomeController {
     public static void main(String[] args) throws SQLException {
         int stateId = 05;
         MedianHouseholdIncomeResponse response = fetchMedianHouseholdIncome(Constants.CensusResolutions.STATE, stateId);
-        log.info("Median Household Income for state " + stateId + " is $" + response.getMedianHouseholdIncome() + "/year");
+        log.info("Median Household Income for state " + stateId + " is $" +
+                response.getMedianHouseholdIncome() + "/year");
+    }
+
+    public static void fetchTargetedInfo(String decade, String resolution, String comparisonOp, double comparisonValue) {
+
     }
 }

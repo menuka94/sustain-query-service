@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.db.Util;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class CensusClient {
@@ -38,13 +39,13 @@ public class CensusClient {
 
             // Total Population
             TotalPopulationResponse totalPopulation = client.clientHelper.requestTotalPopulation(resolution, latitude
-                    , longitude, SpatialTemporalInfo.Decade._2010);
+                    , longitude, Decade._2010);
             log.info("Total Population:" + totalPopulation.getPopulation());
 
             // PopulationByAge
             PopulationByAgeResponse populationByAge =
                     client.clientHelper.requestPopulationByAge(Constants.CensusResolutions.STATE, latitude, longitude
-                            , SpatialTemporalInfo.Decade._2010);
+                            , Decade._2010);
             AgeCategories malePopulation = populationByAge.getMaleAgeCategories().getAgeCategories();
             System.out.println();
             log.info("Male Population by age categories:");
@@ -100,26 +101,38 @@ public class CensusClient {
             log.info(femalePopulation.get75To79());
             log.info(femalePopulation.get80To84());
             log.info(femalePopulation.get85AndOver());
-
+            System.out.println();
 
             // MedianHouseholdIncome
             MedianHouseholdIncomeResponse medianHouseholdIncome =
                     client.clientHelper.requestMedianHouseholdIncome(resolution,
-                            latitude, longitude, SpatialTemporalInfo.Decade._2010);
-            System.out.println();
+                            latitude, longitude, Decade._2010);
             log.info("Median Household Income: " + medianHouseholdIncome.getMedianHouseholdIncome());
+            System.out.println();
 
             // MedianAge
             MedianAgeResponse medianAge = client.clientHelper.requestMedianAge(resolution, latitude, longitude,
-                    SpatialTemporalInfo.Decade._2010);
+                    Decade._2010);
             log.info("Median Age: " + medianAge.getMedianAge());
+            System.out.println();
 
             // Poverty
-            System.out.println();
             PovertyResponse poverty = client.clientHelper.requestPovertyInfo("state", latitude, longitude,
-                    SpatialTemporalInfo.Decade._2010);
+                    Decade._2010);
             log.info("Income level below poverty level: " + poverty.getIncomeBelowPovertyLevel());
             log.info("Income level at or above poverty level: " + poverty.getIncomeAtOrAbovePovertyLevel());
+            System.out.println();
+
+            // Targeted Query
+            // retrieve all states where population is greater than 10 million
+            TargetQueryResponse targetQueryResponse = client.clientHelper.requestTargetedInfo(CensusResolution.State,
+                    Decade._2010,
+                    Predicate.ComparisonOperator.GREATER_THAN, 10000000);
+            List<TargetQueryResponse.SpatialInfo> spatialInfoList = targetQueryResponse.getSpatialInfoList();
+            for (TargetQueryResponse.SpatialInfo spatialInfo : spatialInfoList) {
+                log.info(spatialInfo.getGeoid() + ": " + spatialInfo.getName());
+            }
+
         } finally {
             try {
                 channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
@@ -128,6 +141,4 @@ public class CensusClient {
             }
         }
     }
-
-
 }

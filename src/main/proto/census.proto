@@ -70,12 +70,7 @@ message SpatialTemporalInfo {
   double latitude = 2;
   double longitude = 3;
   Decade decade = 4;
-  enum Decade {
-    _2010 = 0;
-    _2000 = 1;
-    _1990 = 2;
-    _1980 = 3;
-  }
+
 }
 
 message TotalPopulationResponse {

@@ -14,6 +14,7 @@ import org.sustain.census.controller.PovertyController;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 public class CensusServer {
@@ -66,7 +67,7 @@ public class CensusServer {
             String resolutionKey = request.getSpatialTemporalInfo().getResolution();
             double latitude = request.getSpatialTemporalInfo().getLatitude();
             double longitude = request.getSpatialTemporalInfo().getLongitude();
-            SpatialTemporalInfo.Decade _decade = request.getSpatialTemporalInfo().getDecade();
+            Decade _decade = request.getSpatialTemporalInfo().getDecade();
             String decade = Constants.DECADES.get(_decade);
 
             BigInteger resolutionValue;
@@ -158,6 +159,58 @@ public class CensusServer {
                 responseObserver.onNext(PovertyController.fetchPovertyData(resolutionKey,
                         resolutionValue.intValue()));
                 responseObserver.onCompleted();
+            } catch (SQLException e) {
+                log.error(e);
+                e.printStackTrace();
+            }
+        }
+
+        /**
+         * Execute a TargetedQuery - return geographical areas that satisfy a given value range of a census feature
+         * Example 1: Retrieve all states where (population >= 1,000,000)
+         * Example 2: Retrieve all counties where (median household income < $50,000/year)
+         */
+        @Override
+        public void executeTargetedQuery(TargetQueryRequest request,
+                                         StreamObserver<TargetQueryResponse> responseObserver) {
+            Predicate predicate = request.getPredicate();
+            String comparisonOp = Constants.COMPARISON_OPS.get(predicate.getComparisonOp());
+            double comparisonValue = predicate.getComparisonValue();
+            Predicate.Feature feature = predicate.getFeature();
+            Decade _decade = predicate.getDecade();
+            String resolution = Constants.TARGET_RESOLUTIONS.get(request.getResolution());
+
+            String decade = Constants.DECADES.get(_decade);
+
+            try {
+                switch (feature) {
+                    case Population:
+                        HashMap<String, String> targetedPopulationResults =
+                                PopulationController.fetchTargetedInfo(decade,
+                                        resolution, comparisonOp, comparisonValue);
+
+                        TargetQueryResponse.Builder responseBuilder = TargetQueryResponse.newBuilder();
+
+                        // iterator over results, create SpatialInfo objects, attach to responseBuilder
+                        for (String key : targetedPopulationResults.keySet()) {
+                            TargetQueryResponse.SpatialInfo spatialInfo = TargetQueryResponse.SpatialInfo.newBuilder()
+                                    .setGeoid(Integer.parseInt(key))
+                                    .setName(targetedPopulationResults.get(key))
+                                    .build();
+                            responseBuilder.addSpatialInfo(spatialInfo);
+                        }
+
+                        TargetQueryResponse response = responseBuilder.build();
+                        responseObserver.onNext(response);
+                        responseObserver.onCompleted();
+                        break;
+                    case Income:
+                        IncomeController.fetchTargetedInfo(decade, resolution, comparisonOp, comparisonValue);
+                        break;
+                    case UNRECOGNIZED:
+                        log.warn("Invalid Census feature found in the request");
+                        break;
+                }
             } catch (SQLException e) {
                 log.error(e);
                 e.printStackTrace();

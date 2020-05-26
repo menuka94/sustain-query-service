@@ -14,9 +14,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 
+import static org.sustain.census.Constants.CensusFeatures.POPULATION;
 import static org.sustain.census.Constants.CensusFeatures.POPULATION_BY_AGE;
-import static org.sustain.census.Constants.CensusFeatures.TOTAL_POPULATION;
 
 
 public class PopulationController {
@@ -30,13 +31,13 @@ public class PopulationController {
      */
     public static TotalPopulationResponse fetchTotalPopulation(String resolutionKey, int resolutionValue,
                                                                String decade) throws SQLException {
-        log.info("Fetching " + TOTAL_POPULATION + " for " + resolutionKey + ": " + resolutionValue);
+        log.info("Fetching " + POPULATION + " for " + resolutionKey + ": " + resolutionValue);
 
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
 
-        String tableName = "all_decades_" + resolutionKey + "_" + TOTAL_POPULATION;
+        String tableName = "all_decades_" + resolutionKey + "_" + POPULATION;
         final String COLUMN = decade + "_population";
 
         String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " +
@@ -207,15 +208,56 @@ public class PopulationController {
         return response;
     }
 
+
+    public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution, String comparisonOp,
+                                                            double comparisonValue) throws SQLException {
+
+        if (dbConnection == null) {
+            dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
+        }
+
+        final String TABLE_NAME = "all_decades_" + resolution + "_" + POPULATION;
+        final String COLUMN = decade + "_population";
+
+        // no risk of SQL Injection since variables 'resolution' and 'comparisonOp' are validated through the
+        // CensusServer.
+        String query =
+                "SELECT geoid," + resolution + " FROM " + TABLE_NAME + " WHERE " + COLUMN + " " + comparisonOp + " ?";
+
+        PreparedStatement statement = dbConnection.prepareStatement(query);
+        statement.setString(1, Double.toString(comparisonValue));
+
+        log.info("Query: " + statement);
+
+        ResultSet resultSet = statement.executeQuery();
+
+        HashMap<String, String> results = new HashMap<>();
+        while (resultSet.next()) {
+            results.put(
+                    Integer.toString(resultSet.getInt(Constants.CensusResolutions.GEO_ID)),
+                    resultSet.getString(resolution)
+            );
+        }
+
+        return results;
+    }
+
+
     public static void main(String[] args) throws SQLException {
-        int stateCode = 50;
-        TotalPopulationResponse population2010 = fetchTotalPopulation("state", stateCode, "2010");
-        TotalPopulationResponse population2000 = fetchTotalPopulation("state", stateCode, "2000");
-        TotalPopulationResponse population1990 = fetchTotalPopulation("state", stateCode, "1990");
-        TotalPopulationResponse population1980 = fetchTotalPopulation("state", stateCode, "1980");
-        log.info("Total Population for state " + stateCode + " in 2010: " + population2010.getPopulation());
-        log.info("Total Population for state " + stateCode + " in 2000: " + population2000.getPopulation());
-        log.info("Total Population for state " + stateCode + " in 1990: " + population1990.getPopulation());
-        log.info("Total Population for state " + stateCode + " in 1980: " + population1980.getPopulation());
+        //int stateCode = 50;
+        //TotalPopulationResponse population2010 = fetchTotalPopulation("state", stateCode, "2010");
+        //TotalPopulationResponse population2000 = fetchTotalPopulation("state", stateCode, "2000");
+        //TotalPopulationResponse population1990 = fetchTotalPopulation("state", stateCode, "1990");
+        //TotalPopulationResponse population1980 = fetchTotalPopulation("state", stateCode, "1980");
+        //log.info("Total Population for state " + stateCode + " in 2010: " + population2010.getPopulation());
+        //log.info("Total Population for state " + stateCode + " in 2000: " + population2000.getPopulation());
+        //log.info("Total Population for state " + stateCode + " in 1990: " + population1990.getPopulation());
+        //log.info("Total Population for state " + stateCode + " in 1980: " + population1980.getPopulation());
+
+        // get states where population is greater than 10 million
+        HashMap<String, String> results = fetchTargetedInfo("2000", "state", ">", 10000000);
+        for (String geoId : results.keySet()) {
+            log.info(geoId + ": " + results.get(geoId));
+        }
     }
 }
