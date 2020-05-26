@@ -7,23 +7,27 @@ public class ClientHelper {
         this.censusBlockingStub = censusBlockingStub;
     }
 
-    PovertyResponse requestPovertyInfo(String resolution, double latitude, double longitude) {
-        PovertyRequest request = PovertyRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+    PovertyResponse requestPovertyInfo(String resolution, double latitude, double longitude,
+                                       SpatialTemporalInfo.Decade decade) {
+        PovertyRequest request = PovertyRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
                 .setLatitude(latitude)
                 .setLongitude(longitude)
+                .setDecade(decade)
                 .build()
         ).build();
 
         return censusBlockingStub.getPoverty(request);
     }
 
-    TotalPopulationResponse requestTotalPopulation(String resolution, double latitude, double longitude) {
+    TotalPopulationResponse requestTotalPopulation(String resolution, double latitude, double longitude,
+                                                   SpatialTemporalInfo.Decade decade) {
         TotalPopulationRequest request =
-                TotalPopulationRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+                TotalPopulationRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                         .setResolution(resolution)
                         .setLatitude(latitude)
                         .setLongitude(longitude)
+                        .setDecade(decade)
                         .build()
                 ).build();
 
@@ -31,47 +35,53 @@ public class ClientHelper {
     }
 
 
-    PopulationByAgeResponse requestPopulationByAge(String resolution, double latitude, double longitude) {
+    PopulationByAgeResponse requestPopulationByAge(String resolution, double latitude, double longitude,
+                                                   SpatialTemporalInfo.Decade decade) {
         PopulationByAgeRequest request =
-                PopulationByAgeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+                PopulationByAgeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                         .setResolution(resolution)
                         .setLatitude(latitude)
                         .setLongitude(longitude)
+                        .setDecade(decade)
                         .build()
                 ).build();
 
         return censusBlockingStub.getPopulationByAge(request);
     }
 
-    MedianHouseholdIncomeResponse requestMedianHouseholdIncome(String resolution, double latitude,
-                                                               double longitude) {
+    MedianHouseholdIncomeResponse requestMedianHouseholdIncome(String resolution, double latitude, double longitude,
+                                                               SpatialTemporalInfo.Decade decade) {
         MedianHouseholdIncomeRequest request =
-                MedianHouseholdIncomeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+                MedianHouseholdIncomeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                         .setResolution(resolution)
                         .setLatitude(latitude)
                         .setLongitude(longitude)
+                        .setDecade(decade)
                         .build()
                 ).build();
 
         return censusBlockingStub.getMedianHouseholdIncome(request);
     }
 
-    MedianAgeResponse requestMedianAge(String resolution, double latitude, double longitude) {
-        MedianAgeRequest request = MedianAgeRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+    MedianAgeResponse requestMedianAge(String resolution, double latitude, double longitude,
+                                       SpatialTemporalInfo.Decade decade) {
+        MedianAgeRequest request = MedianAgeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
                 .setLatitude(latitude)
                 .setLongitude(longitude)
+                .setDecade(decade)
                 .build()
         ).build();
 
         return censusBlockingStub.getMedianAge(request);
     }
 
-    RaceResponse requestRace(String resolution, double latitude, double longitude) {
-        RaceRequest request = RaceRequest.newBuilder().setSpatialInfo(SpatialInfoInRequest.newBuilder()
+    RaceResponse requestRace(String resolution, double latitude, double longitude, SpatialTemporalInfo.Decade decade) {
+        RaceRequest request = RaceRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
                 .setLatitude(latitude)
                 .setLongitude(longitude)
+                .setDecade(decade)
                 .build()
         ).build();
 

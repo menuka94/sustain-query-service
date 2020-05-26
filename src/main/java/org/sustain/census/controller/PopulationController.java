@@ -18,6 +18,7 @@ import java.sql.SQLException;
 import static org.sustain.census.Constants.CensusFeatures.POPULATION_BY_AGE;
 import static org.sustain.census.Constants.CensusFeatures.TOTAL_POPULATION;
 
+
 public class PopulationController {
     private static final Logger log = LogManager.getLogger(PopulationController.class);
     private static Connection dbConnection = null;
@@ -27,16 +28,21 @@ public class PopulationController {
      * @param resolutionValue : ex:- stateID, or countyID
      * @return TotalPopulation for the area specified by resolutionValue
      */
-    public static TotalPopulationResponse fetchTotalPopulation(String resolutionKey, int resolutionValue) throws SQLException {
+    public static TotalPopulationResponse fetchTotalPopulation(String resolutionKey, int resolutionValue,
+                                                               String decade) throws SQLException {
         log.info("Fetching " + TOTAL_POPULATION + " for " + resolutionKey + ": " + resolutionValue);
 
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
 
-        String tableName = "2011_" + resolutionKey + "_" + TOTAL_POPULATION;
+        String tableName = "all_decades_" + resolutionKey + "_" + TOTAL_POPULATION;
+        final String COLUMN = decade + "_population";
 
-        String query = "SELECT Total FROM " + tableName + " WHERE " + Constants.CensusResolutions.GEO_ID + "=?";
+        String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " +
+                Constants.CensusResolutions.GEO_ID + "=?";
+
+        log.info("Query: " + query);
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setInt(1, resolutionValue);
@@ -44,7 +50,7 @@ public class PopulationController {
 
         int Total = 0;
         while (resultSet.next()) {
-            Total = resultSet.getInt("Total");
+            Total = resultSet.getInt(COLUMN);
         }
 
         TotalPopulationResponse response = TotalPopulationResponse.newBuilder().setPopulation(Total).build();
@@ -203,7 +209,13 @@ public class PopulationController {
 
     public static void main(String[] args) throws SQLException {
         int stateCode = 50;
-        TotalPopulationResponse TotalPopulation = fetchTotalPopulation("state", stateCode);
-        log.info("Total Population for state " + stateCode + ": " + TotalPopulation.getPopulation());
+        TotalPopulationResponse population2010 = fetchTotalPopulation("state", stateCode, "2010");
+        TotalPopulationResponse population2000 = fetchTotalPopulation("state", stateCode, "2000");
+        TotalPopulationResponse population1990 = fetchTotalPopulation("state", stateCode, "1990");
+        TotalPopulationResponse population1980 = fetchTotalPopulation("state", stateCode, "1980");
+        log.info("Total Population for state " + stateCode + " in 2010: " + population2010.getPopulation());
+        log.info("Total Population for state " + stateCode + " in 2000: " + population2000.getPopulation());
+        log.info("Total Population for state " + stateCode + " in 1990: " + population1990.getPopulation());
+        log.info("Total Population for state " + stateCode + " in 1980: " + population1980.getPopulation());
     }
 }

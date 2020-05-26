@@ -17,3 +17,10 @@ run-census-server:
 run-census-client:
 	sh ./build/install/sustain-census-grpc/bin/census-client
 
+
+proto:
+	./gradlew generateProto
+
+
+clean:
+	rm -rf build

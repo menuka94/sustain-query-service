@@ -19,7 +19,7 @@ service Census {
 }
 
 message RaceRequest {
-  SpatialInfoInRequest spatialInfo = 1;
+  SpatialTemporalInfo spatialTemporalInfo = 1;
 }
 
 message RaceResponse {
@@ -36,7 +36,7 @@ message RaceResponse {
 }
 
 message PovertyRequest {
-  SpatialInfoInRequest spatialInfo = 1;
+  SpatialTemporalInfo spatialTemporalInfo = 1;
 }
 
 message PovertyResponse {
@@ -45,26 +45,33 @@ message PovertyResponse {
 }
 
 message TotalPopulationRequest {
-  SpatialInfoInRequest spatialInfo = 1;
+  SpatialTemporalInfo spatialTemporalInfo = 1;
 }
 
 message PopulationByAgeRequest {
-  SpatialInfoInRequest spatialInfo = 1;
+  SpatialTemporalInfo spatialTemporalInfo = 1;
 }
 
 message MedianAgeRequest {
-  SpatialInfoInRequest spatialInfo = 1;
+  SpatialTemporalInfo spatialTemporalInfo = 1;
 }
 
 message MedianHouseholdIncomeRequest {
-  SpatialInfoInRequest spatialInfo = 1;
+  SpatialTemporalInfo spatialTemporalInfo = 1;
 }
 
 // geographic information included in every CensusRequest
-message SpatialInfoInRequest {
+message SpatialTemporalInfo {
   string resolution = 1; // Example:- 'state', 'county', 'tract'
   double latitude = 2;
   double longitude = 3;
+  Decade decade = 4;
+  enum Decade {
+    _2010 = 0;
+    _2000 = 1;
+    _1990 = 2;
+    _1980 = 3;
+  }
 }
 
 message TotalPopulationResponse {

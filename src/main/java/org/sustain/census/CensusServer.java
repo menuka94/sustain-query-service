@@ -63,9 +63,11 @@ public class CensusServer {
         @Override
         public void getTotalPopulation(TotalPopulationRequest request,
                                        StreamObserver<TotalPopulationResponse> responseObserver) {
-            String resolutionKey = request.getSpatialInfo().getResolution();
-            double latitude = request.getSpatialInfo().getLatitude();
-            double longitude = request.getSpatialInfo().getLongitude();
+            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
+            double latitude = request.getSpatialTemporalInfo().getLatitude();
+            double longitude = request.getSpatialTemporalInfo().getLongitude();
+            SpatialTemporalInfo.Decade _decade = request.getSpatialTemporalInfo().getDecade();
+            String decade = Constants.DECADES.get(_decade);
 
             BigInteger resolutionValue;
             try {
@@ -73,7 +75,7 @@ public class CensusServer {
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
                 responseObserver.onNext(PopulationController.fetchTotalPopulation(resolutionKey,
-                        resolutionValue.intValue()));
+                        resolutionValue.intValue(), decade));
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
@@ -83,9 +85,9 @@ public class CensusServer {
 
         @Override
         public void getMedianAge(MedianAgeRequest request, StreamObserver<MedianAgeResponse> responseObserver) {
-            String resolutionKey = request.getSpatialInfo().getResolution();
-            double latitude = request.getSpatialInfo().getLatitude();
-            double longitude = request.getSpatialInfo().getLongitude();
+            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
+            double latitude = request.getSpatialTemporalInfo().getLatitude();
+            double longitude = request.getSpatialTemporalInfo().getLongitude();
 
             BigInteger resolutionValue;
             try {
@@ -103,9 +105,9 @@ public class CensusServer {
         @Override
         public void getMedianHouseholdIncome(MedianHouseholdIncomeRequest request,
                                              StreamObserver<MedianHouseholdIncomeResponse> responseObserver) {
-            String resolutionKey = request.getSpatialInfo().getResolution();
-            double latitude = request.getSpatialInfo().getLatitude();
-            double longitude = request.getSpatialInfo().getLongitude();
+            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
+            double latitude = request.getSpatialTemporalInfo().getLatitude();
+            double longitude = request.getSpatialTemporalInfo().getLongitude();
 
             BigInteger resolutionValue;
             try {
@@ -124,9 +126,9 @@ public class CensusServer {
         @Override
         public void getPopulationByAge(PopulationByAgeRequest request,
                                        StreamObserver<PopulationByAgeResponse> responseObserver) {
-            String resolutionKey = request.getSpatialInfo().getResolution();
-            double latitude = request.getSpatialInfo().getLatitude();
-            double longitude = request.getSpatialInfo().getLongitude();
+            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
+            double latitude = request.getSpatialTemporalInfo().getLatitude();
+            double longitude = request.getSpatialTemporalInfo().getLongitude();
 
             BigInteger resolutionValue;
             try {
@@ -144,9 +146,9 @@ public class CensusServer {
 
         @Override
         public void getPoverty(PovertyRequest request, StreamObserver<PovertyResponse> responseObserver) {
-            String resolutionKey = request.getSpatialInfo().getResolution();
-            double latitude = request.getSpatialInfo().getLatitude();
-            double longitude = request.getSpatialInfo().getLongitude();
+            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
+            double latitude = request.getSpatialTemporalInfo().getLatitude();
+            double longitude = request.getSpatialTemporalInfo().getLongitude();
 
             BigInteger resolutionValue;
             try {

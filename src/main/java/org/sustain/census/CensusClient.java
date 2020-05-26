@@ -38,12 +38,13 @@ public class CensusClient {
 
             // Total Population
             TotalPopulationResponse totalPopulation = client.clientHelper.requestTotalPopulation(resolution, latitude
-                    , longitude);
+                    , longitude, SpatialTemporalInfo.Decade._2010);
             log.info("Total Population:" + totalPopulation.getPopulation());
 
             // PopulationByAge
             PopulationByAgeResponse populationByAge =
-                    client.clientHelper.requestPopulationByAge(Constants.CensusResolutions.STATE, latitude, longitude);
+                    client.clientHelper.requestPopulationByAge(Constants.CensusResolutions.STATE, latitude, longitude
+                            , SpatialTemporalInfo.Decade._2010);
             AgeCategories malePopulation = populationByAge.getMaleAgeCategories().getAgeCategories();
             System.out.println();
             log.info("Male Population by age categories:");
@@ -104,17 +105,19 @@ public class CensusClient {
             // MedianHouseholdIncome
             MedianHouseholdIncomeResponse medianHouseholdIncome =
                     client.clientHelper.requestMedianHouseholdIncome(resolution,
-                            latitude, longitude);
+                            latitude, longitude, SpatialTemporalInfo.Decade._2010);
             System.out.println();
             log.info("Median Household Income: " + medianHouseholdIncome.getMedianHouseholdIncome());
 
             // MedianAge
-            MedianAgeResponse medianAge = client.clientHelper.requestMedianAge(resolution, latitude, longitude);
+            MedianAgeResponse medianAge = client.clientHelper.requestMedianAge(resolution, latitude, longitude,
+                    SpatialTemporalInfo.Decade._2010);
             log.info("Median Age: " + medianAge.getMedianAge());
 
             // Poverty
             System.out.println();
-            PovertyResponse poverty = client.clientHelper.requestPovertyInfo("state", latitude, longitude);
+            PovertyResponse poverty = client.clientHelper.requestPovertyInfo("state", latitude, longitude,
+                    SpatialTemporalInfo.Decade._2010);
             log.info("Income level below poverty level: " + poverty.getIncomeBelowPovertyLevel());
             log.info("Income level at or above poverty level: " + poverty.getIncomeAtOrAbovePovertyLevel());
         } finally {
