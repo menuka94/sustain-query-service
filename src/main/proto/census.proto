@@ -19,7 +19,7 @@ service Census {
   rpc GetRace (RaceRequest) returns (RaceResponse) {}
 
   // targeted queries
-  rpc ExecuteTargetedQuery(TargetQueryRequest) returns (TargetQueryResponse) {}
+  rpc ExecuteTargetedQuery(TargetedQueryRequest) returns (TargetedQueryResponse) {}
 }
 
 message RaceRequest {

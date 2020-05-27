@@ -3,15 +3,15 @@ syntax = "proto3";
 option java_multiple_files = true;
 option java_package = "org.sustain.census";
 
-message TargetQueryRequest {
+message TargetedQueryRequest {
   CensusResolution resolution = 1;
   Predicate predicate = 2;
 }
 
-message TargetQueryResponse {
+message TargetedQueryResponse {
   CensusResolution resolution = 1;
   message SpatialInfo {
-    sint32 geoid = 1;
+    sint32 geoId = 1;
     string name = 2;
   }
   repeated SpatialInfo spatialInfo = 2;

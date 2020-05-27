@@ -125,25 +125,25 @@ public class CensusClient {
 
             // Targeted Query - 1
             // retrieve all states where population is greater than 10 million
-            TargetQueryResponse populationTargetQueryResponse =
+            TargetedQueryResponse populationTargetedQueryResponse =
                     client.clientHelper.requestTargetedInfo(Predicate.Feature.Population, CensusResolution.State,
                             Decade._2010, Predicate.ComparisonOperator.GREATER_THAN, 10000000);
-            List<TargetQueryResponse.SpatialInfo> spatialInfoListPopulation =
-                    populationTargetQueryResponse.getSpatialInfoList();
-            for (TargetQueryResponse.SpatialInfo spatialInfo : spatialInfoListPopulation) {
-                log.info(spatialInfo.getGeoid() + ": " + spatialInfo.getName());
+            List<TargetedQueryResponse.SpatialInfo> spatialInfoListPopulation =
+                    populationTargetedQueryResponse.getSpatialInfoList();
+            for (TargetedQueryResponse.SpatialInfo spatialInfo : spatialInfoListPopulation) {
+                log.info(spatialInfo.getGeoId() + ": " + spatialInfo.getName());
             }
             System.out.println();
 
             // Targeted Query - 2
             // retrieve all counties where median household income is less than or equal to $20,000/year
-            TargetQueryResponse incomeTargetQueryResponse =
+            TargetedQueryResponse incomeTargetedQueryResponse =
                     client.clientHelper.requestTargetedInfo(Predicate.Feature.Income, CensusResolution.County,
                             Decade._2010, Predicate.ComparisonOperator.LESS_THAN_OR_EQUAL, 20000);
-            List<TargetQueryResponse.SpatialInfo> spatialInfoListIncome =
-                    incomeTargetQueryResponse.getSpatialInfoList();
-            for (TargetQueryResponse.SpatialInfo spatialInfo : spatialInfoListIncome) {
-                log.info(spatialInfo.getGeoid() + ": " + spatialInfo.getName());
+            List<TargetedQueryResponse.SpatialInfo> spatialInfoListIncome =
+                    incomeTargetedQueryResponse.getSpatialInfoList();
+            for (TargetedQueryResponse.SpatialInfo spatialInfo : spatialInfoListIncome) {
+                log.info(spatialInfo.getGeoId() + ": " + spatialInfo.getName());
             }
 
         } finally {

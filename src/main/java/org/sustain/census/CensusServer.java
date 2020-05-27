@@ -171,8 +171,8 @@ public class CensusServer {
          * Example 2: Retrieve all counties where (median household income < $50,000/year)
          */
         @Override
-        public void executeTargetedQuery(TargetQueryRequest request,
-                                         StreamObserver<TargetQueryResponse> responseObserver) {
+        public void executeTargetedQuery(TargetedQueryRequest request,
+                                         StreamObserver<TargetedQueryResponse> responseObserver) {
             Predicate predicate = request.getPredicate();
             String comparisonOp = Constants.COMPARISON_OPS.get(predicate.getComparisonOp());
             double comparisonValue = predicate.getComparisonValue();
@@ -189,18 +189,18 @@ public class CensusServer {
                                 PopulationController.fetchTargetedInfo(decade,
                                         resolution, comparisonOp, comparisonValue);
 
-                        TargetQueryResponse.Builder populationResponseBuilder = TargetQueryResponse.newBuilder();
+                        TargetedQueryResponse.Builder populationResponseBuilder = TargetedQueryResponse.newBuilder();
 
                         // iterator over results, create SpatialInfo objects, attach to populationResponseBuilder
                         for (String key : targetedPopulationResults.keySet()) {
-                            TargetQueryResponse.SpatialInfo spatialInfo = TargetQueryResponse.SpatialInfo.newBuilder()
-                                    .setGeoid(Integer.parseInt(key))
+                            TargetedQueryResponse.SpatialInfo spatialInfo = TargetedQueryResponse.SpatialInfo.newBuilder()
+                                    .setGeoId(Integer.parseInt(key))
                                     .setName(targetedPopulationResults.get(key))
                                     .build();
                             populationResponseBuilder.addSpatialInfo(spatialInfo);
                         }
 
-                        TargetQueryResponse populationResponse = populationResponseBuilder.build();
+                        TargetedQueryResponse populationResponse = populationResponseBuilder.build();
                         responseObserver.onNext(populationResponse);
                         responseObserver.onCompleted();
                         break;
@@ -208,18 +208,18 @@ public class CensusServer {
                         HashMap<String, String> targetedIncomeResults = IncomeController.fetchTargetedInfo(decade,
                                 resolution, comparisonOp, comparisonValue);
 
-                        TargetQueryResponse.Builder incomeResponseBuilder = TargetQueryResponse.newBuilder();
+                        TargetedQueryResponse.Builder incomeResponseBuilder = TargetedQueryResponse.newBuilder();
 
                         // iterator over results, create SpatialInfo objects, attach to populationResponseBuilder
                         for (String key : targetedIncomeResults.keySet()) {
-                            TargetQueryResponse.SpatialInfo spatialInfo = TargetQueryResponse.SpatialInfo.newBuilder()
-                                    .setGeoid(Integer.parseInt(key))
+                            TargetedQueryResponse.SpatialInfo spatialInfo = TargetedQueryResponse.SpatialInfo.newBuilder()
+                                    .setGeoId(Integer.parseInt(key))
                                     .setName(targetedIncomeResults.get(key))
                                     .build();
                             incomeResponseBuilder.addSpatialInfo(spatialInfo);
                         }
 
-                        TargetQueryResponse incomeResponse = incomeResponseBuilder.build();
+                        TargetedQueryResponse incomeResponse = incomeResponseBuilder.build();
                         responseObserver.onNext(incomeResponse);
                         responseObserver.onCompleted();
                         break;
