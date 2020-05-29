@@ -13,38 +13,41 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 import static org.sustain.census.Constants.CensusFeatures.MEDIAN_HOUSEHOLD_INCOME;
+import static org.sustain.census.Constants.CensusResolutions.GEO_ID;
 
 public class IncomeController {
     private static final Logger log = LogManager.getLogger(IncomeController.class);
     private static Connection dbConnection = null;
 
     /**
-     * @param resolutionKey   : ex:- "state", or "county"
-     * @param resolutionValue : ex:- stateID, or countyID
-     * @return totalPopulation for the area specified by resolutionValue
+     * @param resolutionKey   : ex:- "state", "county", or "tract"
+     * @param resolutionValue : ex:- state_fips, county_fips, or tract_fips
      */
-    public static MedianHouseholdIncomeResponse fetchMedianHouseholdIncome(String resolutionKey, int resolutionValue) throws SQLException {
+    public static MedianHouseholdIncomeResponse fetchMedianHouseholdIncome(String resolutionKey, int resolutionValue,
+                                                                           String decade) throws SQLException {
         log.info("Fetching " + MEDIAN_HOUSEHOLD_INCOME + " for " + resolutionKey + ": " + resolutionValue);
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
-        // state_total_population
-        String tableName = "2011_" + resolutionKey + "_" + MEDIAN_HOUSEHOLD_INCOME;
 
-        String query = "SELECT income FROM " + tableName + " WHERE " + Constants.CensusResolutions.GEO_ID + "=?";
+        String tableName = "all_decades_" + resolutionKey + "_" + MEDIAN_HOUSEHOLD_INCOME;
+        final String COLUMN = decade + "_" + MEDIAN_HOUSEHOLD_INCOME;
+
+        String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setInt(1, resolutionValue);
+
+        log.info("Query: " + query);
+
         ResultSet resultSet = statement.executeQuery();
 
         int income = 0;
         while (resultSet.next()) {
-            income = resultSet.getInt("income");
+            income = resultSet.getInt(COLUMN);
         }
 
-        MedianHouseholdIncomeResponse response = MedianHouseholdIncomeResponse.newBuilder()
-                .setMedianHouseholdIncome(income).build();
-        return response;
+        return MedianHouseholdIncomeResponse.newBuilder().setMedianHouseholdIncome(income).build();
     }
 
 
@@ -53,8 +56,8 @@ public class IncomeController {
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
         }
-        final String TABLE_NAME = "2011_" + resolution + "_" + MEDIAN_HOUSEHOLD_INCOME;
-        final String COLUMN = "income";
+        final String TABLE_NAME = "all_decades_" + resolution + "_" + MEDIAN_HOUSEHOLD_INCOME;
+        final String COLUMN = decade + "_" + MEDIAN_HOUSEHOLD_INCOME;
 
         // no risk of SQL Injection since variables 'resolution' and 'comparisonOp' are validated through the
         // CensusServer.
@@ -71,7 +74,7 @@ public class IncomeController {
         HashMap<String, String> results = new HashMap<>();
         while (resultSet.next()) {
             results.put(
-                    Integer.toString(resultSet.getInt(Constants.CensusResolutions.GEO_ID)),
+                    Integer.toString(resultSet.getInt(GEO_ID)),
                     resultSet.getString(resolution)
             );
         }
@@ -80,16 +83,21 @@ public class IncomeController {
     }
 
     public static void main(String[] args) throws SQLException {
-        int stateId = 05;
-        MedianHouseholdIncomeResponse response = fetchMedianHouseholdIncome(Constants.CensusResolutions.STATE,
-                stateId);
-        log.info("Median Household Income for state " + stateId + " is $" +
-                response.getMedianHouseholdIncome() + "/year");
+        int state_fips = 10;
+        MedianHouseholdIncomeResponse income2010 = fetchMedianHouseholdIncome("state", state_fips, "2010");
+        MedianHouseholdIncomeResponse income2000 = fetchMedianHouseholdIncome("state", state_fips, "2000");
+        MedianHouseholdIncomeResponse income1990 = fetchMedianHouseholdIncome("state", state_fips, "1990");
+        MedianHouseholdIncomeResponse income1980 = fetchMedianHouseholdIncome("state", state_fips, "1980");
 
-        HashMap<String, String> results = fetchTargetedInfo("2010", "county", "<=", 50000);
-        for (String geoid : results.keySet()) {
-            log.info(geoid + ": " + results.get(geoid));
-        }
+        log.info("Income 2010: " + income2010.getMedianHouseholdIncome());
+        log.info("Income 2000: " + income2000.getMedianHouseholdIncome());
+        log.info("Income 1990 " + income1990.getMedianHouseholdIncome());
+        log.info("Income 1980: " + income1980.getMedianHouseholdIncome());
+
+        //HashMap<String, String> results = fetchTargetedInfo("2010", "state", ">=", 50000);
+        //for (String geoid : results.keySet()) {
+        //    log.info(geoid + ": " + results.get(geoid));
+        //}
     }
 }
 

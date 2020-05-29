@@ -18,6 +18,7 @@ import java.util.HashMap;
 
 import static org.sustain.census.Constants.CensusFeatures.POPULATION;
 import static org.sustain.census.Constants.CensusFeatures.POPULATION_BY_AGE;
+import static org.sustain.census.Constants.CensusResolutions.GEO_ID;
 
 
 public class PopulationController {
@@ -27,7 +28,6 @@ public class PopulationController {
     /**
      * @param resolutionKey   : ex:- "state", or "county"
      * @param resolutionValue : ex:- stateID, or countyID
-     * @return TotalPopulation for the area specified by resolutionValue
      */
     public static TotalPopulationResponse fetchTotalPopulation(String resolutionKey, int resolutionValue,
                                                                String decade) throws SQLException {
@@ -38,10 +38,9 @@ public class PopulationController {
         }
 
         String tableName = "all_decades_" + resolutionKey + "_" + POPULATION;
-        final String COLUMN = decade + "_population";
+        final String COLUMN = decade + "_" + POPULATION;
 
-        String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " +
-                Constants.CensusResolutions.GEO_ID + "=?";
+        String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         log.info("Query: " + query);
 
@@ -49,13 +48,12 @@ public class PopulationController {
         statement.setInt(1, resolutionValue);
         ResultSet resultSet = statement.executeQuery();
 
-        int Total = 0;
+        int population = 0;
         while (resultSet.next()) {
-            Total = resultSet.getInt(COLUMN);
+            population = resultSet.getInt(COLUMN);
         }
 
-        TotalPopulationResponse response = TotalPopulationResponse.newBuilder().setPopulation(Total).build();
-        return response;
+        return TotalPopulationResponse.newBuilder().setPopulation(population).build();
     }
 
     public static PopulationByAgeResponse fetchPopulationByAge(String resolutionKey, int resolutionValue) throws SQLException {
@@ -66,7 +64,7 @@ public class PopulationController {
         // state_Total_population
         String tableName = "2011_" + resolutionKey + "_" + POPULATION_BY_AGE;
 
-        String query = "SELECT * FROM " + tableName + " WHERE " + Constants.CensusResolutions.GEO_ID + "=?";
+        String query = "SELECT * FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setInt(1, resolutionValue);
@@ -217,12 +215,12 @@ public class PopulationController {
         }
 
         final String TABLE_NAME = "all_decades_" + resolution + "_" + POPULATION;
-        final String COLUMN = decade + "_population";
+        final String COLUMN = decade + "_" + POPULATION;
 
         // no risk of SQL Injection since variables 'resolution' and 'comparisonOp' are validated through the
         // CensusServer.
-        String query =
-                "SELECT geoid," + resolution + " FROM " + TABLE_NAME + " WHERE " + COLUMN + " " + comparisonOp + " ?";
+        String query = "SELECT " + GEO_ID + "," + resolution + " FROM " + TABLE_NAME + " WHERE " + COLUMN + " " +
+                comparisonOp + " ?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setString(1, Double.toString(comparisonValue));
@@ -234,7 +232,7 @@ public class PopulationController {
         HashMap<String, String> results = new HashMap<>();
         while (resultSet.next()) {
             results.put(
-                    Integer.toString(resultSet.getInt(Constants.CensusResolutions.GEO_ID)),
+                    Integer.toString(resultSet.getInt(GEO_ID)),
                     resultSet.getString(resolution)
             );
         }
@@ -244,18 +242,18 @@ public class PopulationController {
 
 
     public static void main(String[] args) throws SQLException {
-        //int stateCode = 50;
-        //TotalPopulationResponse population2010 = fetchTotalPopulation("state", stateCode, "2010");
-        //TotalPopulationResponse population2000 = fetchTotalPopulation("state", stateCode, "2000");
-        //TotalPopulationResponse population1990 = fetchTotalPopulation("state", stateCode, "1990");
-        //TotalPopulationResponse population1980 = fetchTotalPopulation("state", stateCode, "1980");
-        //log.info("Total Population for state " + stateCode + " in 2010: " + population2010.getPopulation());
-        //log.info("Total Population for state " + stateCode + " in 2000: " + population2000.getPopulation());
-        //log.info("Total Population for state " + stateCode + " in 1990: " + population1990.getPopulation());
-        //log.info("Total Population for state " + stateCode + " in 1980: " + population1980.getPopulation());
+        int stateCode = 50;
+        TotalPopulationResponse population2010 = fetchTotalPopulation("state", stateCode, "2010");
+        TotalPopulationResponse population2000 = fetchTotalPopulation("state", stateCode, "2000");
+        TotalPopulationResponse population1990 = fetchTotalPopulation("state", stateCode, "1990");
+        TotalPopulationResponse population1980 = fetchTotalPopulation("state", stateCode, "1980");
+        log.info("Total Population for state " + stateCode + " in 2010: " + population2010.getPopulation());
+        log.info("Total Population for state " + stateCode + " in 2000: " + population2000.getPopulation());
+        log.info("Total Population for state " + stateCode + " in 1990: " + population1990.getPopulation());
+        log.info("Total Population for state " + stateCode + " in 1980: " + population1980.getPopulation());
 
         // get states where population is greater than 10 million
-        HashMap<String, String> results = fetchTargetedInfo("2000", "state", ">", 10000000);
+        HashMap<String, String> results = fetchTargetedInfo("2000", "county", ">", 1000000);
         for (String geoId : results.keySet()) {
             log.info(geoId + ": " + results.get(geoId));
         }

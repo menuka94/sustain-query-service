@@ -106,9 +106,11 @@ public class CensusServer {
         @Override
         public void getMedianHouseholdIncome(MedianHouseholdIncomeRequest request,
                                              StreamObserver<MedianHouseholdIncomeResponse> responseObserver) {
-            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
-            double latitude = request.getSpatialTemporalInfo().getLatitude();
-            double longitude = request.getSpatialTemporalInfo().getLongitude();
+            SpatialTemporalInfo spatialTemporalInfo = request.getSpatialTemporalInfo();
+            String resolutionKey = spatialTemporalInfo.getResolution();
+            double latitude = spatialTemporalInfo.getLatitude();
+            double longitude = spatialTemporalInfo.getLongitude();
+            String decade = Constants.DECADES.get(spatialTemporalInfo.getDecade());
 
             BigInteger resolutionValue;
             try {
@@ -116,7 +118,7 @@ public class CensusServer {
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
                 responseObserver.onNext(IncomeController.fetchMedianHouseholdIncome(resolutionKey,
-                        resolutionValue.intValue()));
+                        resolutionValue.intValue(), decade));
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
@@ -193,7 +195,8 @@ public class CensusServer {
 
                         // iterator over results, create SpatialInfo objects, attach to populationResponseBuilder
                         for (String key : targetedPopulationResults.keySet()) {
-                            TargetedQueryResponse.SpatialInfo spatialInfo = TargetedQueryResponse.SpatialInfo.newBuilder()
+                            TargetedQueryResponse.SpatialInfo spatialInfo =
+                                    TargetedQueryResponse.SpatialInfo.newBuilder()
                                     .setGeoId(Integer.parseInt(key))
                                     .setName(targetedPopulationResults.get(key))
                                     .build();
@@ -212,7 +215,8 @@ public class CensusServer {
 
                         // iterator over results, create SpatialInfo objects, attach to populationResponseBuilder
                         for (String key : targetedIncomeResults.keySet()) {
-                            TargetedQueryResponse.SpatialInfo spatialInfo = TargetedQueryResponse.SpatialInfo.newBuilder()
+                            TargetedQueryResponse.SpatialInfo spatialInfo =
+                                    TargetedQueryResponse.SpatialInfo.newBuilder()
                                     .setGeoId(Integer.parseInt(key))
                                     .setName(targetedIncomeResults.get(key))
                                     .build();

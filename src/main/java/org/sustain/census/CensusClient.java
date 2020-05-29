@@ -126,10 +126,11 @@ public class CensusClient {
             // Targeted Query - 1
             // retrieve all states where population is greater than 10 million
             TargetedQueryResponse populationTargetedQueryResponse =
-                    client.clientHelper.requestTargetedInfo(Predicate.Feature.Population, CensusResolution.State,
-                            Decade._2010, Predicate.ComparisonOperator.GREATER_THAN, 10000000);
+                    client.clientHelper.requestTargetedInfo(Predicate.Feature.Population, CensusResolution.County,
+                            Decade._2010, Predicate.ComparisonOperator.GREATER_THAN, 1000000);
             List<TargetedQueryResponse.SpatialInfo> spatialInfoListPopulation =
                     populationTargetedQueryResponse.getSpatialInfoList();
+            log.info("Counties where population is greater than 1 million");
             for (TargetedQueryResponse.SpatialInfo spatialInfo : spatialInfoListPopulation) {
                 log.info(spatialInfo.getGeoId() + ": " + spatialInfo.getName());
             }
@@ -142,6 +143,7 @@ public class CensusClient {
                             Decade._2010, Predicate.ComparisonOperator.LESS_THAN_OR_EQUAL, 20000);
             List<TargetedQueryResponse.SpatialInfo> spatialInfoListIncome =
                     incomeTargetedQueryResponse.getSpatialInfoList();
+            log.info("Counties where median household income is less than or equal to $20,000/year");
             for (TargetedQueryResponse.SpatialInfo spatialInfo : spatialInfoListIncome) {
                 log.info(spatialInfo.getGeoId() + ": " + spatialInfo.getName());
             }
