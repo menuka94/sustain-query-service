@@ -232,7 +232,7 @@ public class PopulationController {
         HashMap<String, String> results = new HashMap<>();
         while (resultSet.next()) {
             results.put(
-                    Integer.toString(resultSet.getInt(GEO_ID)),
+                    Long.toString(resultSet.getLong(GEO_ID)),
                     resultSet.getString(resolution)
             );
         }
@@ -253,7 +253,12 @@ public class PopulationController {
         log.info("Total Population for state " + stateCode + " in 1980: " + population1980.getPopulation());
 
         // get states where population is greater than 10 million
-        HashMap<String, String> results = fetchTargetedInfo("2000", "county", ">", 1000000);
+        //HashMap<String, String> results = fetchTargetedInfo("2000", "county", ">", 1000000);
+        //for (String geoId : results.keySet()) {
+        //    log.info(geoId + ": " + results.get(geoId));
+        //}
+
+        HashMap<String, String> results = fetchTargetedInfo("2000", "tract", ">", 10000);
         for (String geoId : results.keySet()) {
             log.info(geoId + ": " + results.get(geoId));
         }

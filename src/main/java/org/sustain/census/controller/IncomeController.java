@@ -74,7 +74,7 @@ public class IncomeController {
         HashMap<String, String> results = new HashMap<>();
         while (resultSet.next()) {
             results.put(
-                    Integer.toString(resultSet.getInt(GEO_ID)),
+                    Long.toString(resultSet.getLong(GEO_ID)),
                     resultSet.getString(resolution)
             );
         }
