@@ -1,3 +1,6 @@
+# Project SUSTAIN
+## U.S. Census Data Query Service
+
 ### How-to-Run
 
 1. Create a file `src/main/resources/config.properties` using the given sample `src/main/resources/config.properties.sample`.
@@ -5,3 +8,7 @@
 3. Do `./gradlew install` from the project root.
 4. Run `bin/census-server.sh` to start the CensusServer
 5. Use `org.sustain.census.CensusClient` and `src/main/proto/census.proto` as references for implementing clients
+
+
+### Available Data
+

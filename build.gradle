@@ -36,9 +36,9 @@ dependencies {
     compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.15'
     runtime "mysql:mysql-connector-java:8.0.15"
 
-//    testCompile "io.grpc:grpc-testing:${grpcVersion}"
-//    testCompile "junit:junit:4.12"
-//    testCompile "org.mockito:mockito-core:1.9.5"
+    testCompile "io.grpc:grpc-testing:${grpcVersion}"
+    testCompile "junit:junit:4.12"
+    testCompile "org.mockito:mockito-core:1.9.5"
 }
 
 protobuf {

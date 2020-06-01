@@ -43,6 +43,7 @@ message Predicate {
   enum Feature {
     Population = 0;
     Income = 1;
+    Race = 2;
   }
   ComparisonOperator comparisonOp = 3;
   double comparisonValue = 4;

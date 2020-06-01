@@ -14,8 +14,12 @@ import org.sustain.census.controller.PovertyController;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+
+import static org.sustain.census.ServerHelper.executeTargetedIncomeRequest;
+import static org.sustain.census.ServerHelper.executeTargetedPopulationQuery;
+import static org.sustain.census.ServerHelper.executeTargetedRaceRequest;
+
 
 public class CensusServer {
     private static final Logger log = LogManager.getLogger(CensusServer.class);
@@ -187,45 +191,16 @@ public class CensusServer {
             try {
                 switch (feature) {
                     case Population:
-                        HashMap<String, String> targetedPopulationResults =
-                                PopulationController.fetchTargetedInfo(decade,
-                                        resolution, comparisonOp, comparisonValue);
-
-                        TargetedQueryResponse.Builder populationResponseBuilder = TargetedQueryResponse.newBuilder();
-
-                        // iterator over results, create SpatialInfo objects, attach to populationResponseBuilder
-                        for (String key : targetedPopulationResults.keySet()) {
-                            TargetedQueryResponse.SpatialInfo spatialInfo =
-                                    TargetedQueryResponse.SpatialInfo.newBuilder()
-                                    .setGeoId(Integer.parseInt(key))
-                                    .setName(targetedPopulationResults.get(key))
-                                    .build();
-                            populationResponseBuilder.addSpatialInfo(spatialInfo);
-                        }
-
-                        TargetedQueryResponse populationResponse = populationResponseBuilder.build();
-                        responseObserver.onNext(populationResponse);
-                        responseObserver.onCompleted();
+                        executeTargetedPopulationQuery(responseObserver, comparisonOp, comparisonValue,
+                                resolution, decade);
                         break;
                     case Income:
-                        HashMap<String, String> targetedIncomeResults = IncomeController.fetchTargetedInfo(decade,
-                                resolution, comparisonOp, comparisonValue);
-
-                        TargetedQueryResponse.Builder incomeResponseBuilder = TargetedQueryResponse.newBuilder();
-
-                        // iterator over results, create SpatialInfo objects, attach to populationResponseBuilder
-                        for (String key : targetedIncomeResults.keySet()) {
-                            TargetedQueryResponse.SpatialInfo spatialInfo =
-                                    TargetedQueryResponse.SpatialInfo.newBuilder()
-                                    .setGeoId(Integer.parseInt(key))
-                                    .setName(targetedIncomeResults.get(key))
-                                    .build();
-                            incomeResponseBuilder.addSpatialInfo(spatialInfo);
-                        }
-
-                        TargetedQueryResponse incomeResponse = incomeResponseBuilder.build();
-                        responseObserver.onNext(incomeResponse);
-                        responseObserver.onCompleted();
+                        executeTargetedIncomeRequest(responseObserver, comparisonOp, comparisonValue,
+                                resolution, decade);
+                        break;
+                    case Race:
+                        executeTargetedRaceRequest(responseObserver, Constants.EMPTY_COMPARISON_FIELD, comparisonOp, comparisonValue,
+                                resolution, decade);
                         break;
                     case UNRECOGNIZED:
                         log.warn("Invalid Census feature found in the request");

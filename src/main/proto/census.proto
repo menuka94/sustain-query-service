@@ -18,7 +18,9 @@ service Census {
   rpc GetPoverty (PovertyRequest) returns (PovertyResponse) {}
   rpc GetRace (RaceRequest) returns (RaceResponse) {}
 
-  // targeted queries
+  // targeted queries - return geographical areas that satisfy a given value range of a census feature
+  // Example 1: Retrieve all states where (population >= 1,000,000)
+  // Example 2: Retrieve all counties where (median household income < $50,000/year)
   rpc ExecuteTargetedQuery(TargetedQueryRequest) returns (TargetedQueryResponse) {}
 }
 
@@ -27,16 +29,10 @@ message RaceRequest {
 }
 
 message RaceResponse {
-  int32 whiteAlone = 1;
-  int32 blackAlone = 2;
+  int32 white = 1;
+  int32 black = 2;
   int32 americanIndianAndAlaskaNative = 3;
-  int32 asianAlone = 4;
-  int32 nativeHawaiianAndPacificIslander = 5;
-  int32 otherAlone = 6;
-  int32 twoOrMoreRaces = 7;
-  int32 latinoAlone = 8;
-  int32 asiansAll = 9;
-  int32 otherAll = 10;
+  int32 asianAndPacificIslanderAndOther = 4;
 }
 
 message PovertyRequest {
