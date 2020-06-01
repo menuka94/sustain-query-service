@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.com/Project-Sustain/sustain-census.svg?branch=master)](https://travis-ci.com/Project-Sustain/sustain-census)
+[![Maintainability](https://api.codeclimate.com/v1/badges/643c77ef8bf644ea3492/maintainability)](https://codeclimate.com/github/Project-Sustain/sustain-census/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/643c77ef8bf644ea3492/test_coverage)](https://codeclimate.com/github/Project-Sustain/sustain-census/test_coverage)
+
 # Project SUSTAIN
 ## U.S. Census Data Query Service
 
