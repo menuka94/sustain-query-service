@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 
 public class ServerHelper {
-    static void executeTargetedPopulationQuery(StreamObserver<TargetedQueryResponse> responseObserver,
+    public static void executeTargetedPopulationQuery(StreamObserver<TargetedQueryResponse> responseObserver,
                                                String comparisonOp, double comparisonValue, String resolution,
                                                String decade) throws SQLException {
         HashMap<String, String> targetedPopulationResults =
@@ -33,7 +33,7 @@ public class ServerHelper {
         responseObserver.onCompleted();
     }
 
-    static void executeTargetedIncomeRequest(StreamObserver<TargetedQueryResponse> responseObserver,
+    public static void executeTargetedIncomeRequest(StreamObserver<TargetedQueryResponse> responseObserver,
                                              String comparisonOp, double comparisonValue, String resolution,
                                              String decade) throws SQLException {
         HashMap<String, String> targetedIncomeResults = IncomeController.fetchTargetedInfo(decade,
@@ -56,7 +56,7 @@ public class ServerHelper {
         responseObserver.onCompleted();
     }
 
-    static void executeTargetedRaceRequest(StreamObserver<TargetedQueryResponse> responseObserver,
+    public static void executeTargetedRaceRequest(StreamObserver<TargetedQueryResponse> responseObserver,
                                            String comparisonField, String comparisonOp, double comparisonValue,
                                            String resolution, String decade) throws SQLException {
         HashMap<String, String> targetedRaceResults = RaceController.fetchTargetedInfo(decade,

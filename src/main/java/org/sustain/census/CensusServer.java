@@ -32,7 +32,7 @@ public class CensusServer {
         server.blockUntilShutdown();
     }
 
-    private void start() throws IOException {
+    public void start() throws IOException {
         final int port = Constants.Server.PORT;
         server = ServerBuilder.forPort(port)
                 .addService(new CensusServerImpl())
@@ -52,15 +52,21 @@ public class CensusServer {
         });
     }
 
-    private void stop() throws InterruptedException {
+    public void stop() throws InterruptedException {
         if (server != null) {
             server.awaitTermination(2, TimeUnit.SECONDS);
         }
     }
 
-    private void blockUntilShutdown() throws InterruptedException {
+    public void blockUntilShutdown() throws InterruptedException {
         if (server != null) {
             server.awaitTermination();
+        }
+    }
+
+    public void shutdownNow() {
+        if (server != null) {
+            server.shutdownNow();
         }
     }
 

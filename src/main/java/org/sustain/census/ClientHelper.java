@@ -7,7 +7,7 @@ public class ClientHelper {
         this.censusBlockingStub = censusBlockingStub;
     }
 
-    PovertyResponse requestPovertyInfo(String resolution, double latitude, double longitude,
+    public PovertyResponse requestPovertyInfo(String resolution, double latitude, double longitude,
                                        Decade decade) {
         PovertyRequest request = PovertyRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
@@ -20,7 +20,7 @@ public class ClientHelper {
         return censusBlockingStub.getPoverty(request);
     }
 
-    TotalPopulationResponse requestTotalPopulation(String resolution, double latitude, double longitude,
+    public TotalPopulationResponse requestTotalPopulation(String resolution, double latitude, double longitude,
                                                    Decade decade) {
         TotalPopulationRequest request =
                 TotalPopulationRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
@@ -35,7 +35,7 @@ public class ClientHelper {
     }
 
 
-    PopulationByAgeResponse requestPopulationByAge(String resolution, double latitude, double longitude,
+    public PopulationByAgeResponse requestPopulationByAge(String resolution, double latitude, double longitude,
                                                    Decade decade) {
         PopulationByAgeRequest request =
                 PopulationByAgeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
@@ -49,7 +49,7 @@ public class ClientHelper {
         return censusBlockingStub.getPopulationByAge(request);
     }
 
-    MedianHouseholdIncomeResponse requestMedianHouseholdIncome(String resolution, double latitude, double longitude,
+    public MedianHouseholdIncomeResponse requestMedianHouseholdIncome(String resolution, double latitude, double longitude,
                                                                Decade decade) {
         MedianHouseholdIncomeRequest request =
                 MedianHouseholdIncomeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
@@ -63,7 +63,7 @@ public class ClientHelper {
         return censusBlockingStub.getMedianHouseholdIncome(request);
     }
 
-    MedianAgeResponse requestMedianAge(String resolution, double latitude, double longitude,
+    public MedianAgeResponse requestMedianAge(String resolution, double latitude, double longitude,
                                        Decade decade) {
         MedianAgeRequest request = MedianAgeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
@@ -76,7 +76,7 @@ public class ClientHelper {
         return censusBlockingStub.getMedianAge(request);
     }
 
-    RaceResponse requestRace(String resolution, double latitude, double longitude, Decade decade) {
+    public RaceResponse requestRace(String resolution, double latitude, double longitude, Decade decade) {
         RaceRequest request = RaceRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
                 .setLatitude(latitude)
