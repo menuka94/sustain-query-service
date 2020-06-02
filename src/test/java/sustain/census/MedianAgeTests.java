@@ -13,7 +13,7 @@ import org.sustain.census.CensusServer;
 import org.sustain.census.ClientHelper;
 import org.sustain.census.Constants;
 import org.sustain.census.Decade;
-import org.sustain.census.TotalPopulationResponse;
+import org.sustain.census.MedianAgeResponse;
 import org.sustain.census.db.Util;
 
 import static org.sustain.census.Constants.CensusResolutions.COUNTY;
@@ -21,7 +21,7 @@ import static org.sustain.census.Constants.CensusResolutions.STATE;
 import static org.sustain.census.Constants.CensusResolutions.TRACT;
 import static sustain.census.TestUtil.decades;
 
-public class PopulationTests {
+public class MedianAgeTests {
     private static final Logger log = LogManager.getLogger(PopulationTests.class);
     private static CensusGrpc.CensusBlockingStub censusBlockingStub;
     private static ManagedChannel channel;
@@ -42,27 +42,27 @@ public class PopulationTests {
     @Test
     void testStatePopulation() {
         for (Decade decade : decades) {
-            TotalPopulationResponse populationResponse = clientHelper.requestTotalPopulation(STATE, 24.5, -82, decade);
-            Assertions.assertNotNull(populationResponse);
-            Assertions.assertTrue(populationResponse.getPopulation() >= 0);
+            MedianAgeResponse response = clientHelper.requestMedianAge(STATE, 24.5, -82, decade);
+            Assertions.assertNotNull(response);
+            Assertions.assertTrue(response.getMedianAge() >= 0);
         }
     }
 
     @Test
     void testCountyPopulation() {
         for (Decade decade : decades) {
-            TotalPopulationResponse populationResponse = clientHelper.requestTotalPopulation(COUNTY, 24.5, -82, decade);
-            Assertions.assertNotNull(populationResponse);
-            Assertions.assertTrue(populationResponse.getPopulation() >= 0);
+            MedianAgeResponse response = clientHelper.requestMedianAge(COUNTY, 24.5, -82, decade);
+            Assertions.assertNotNull(response);
+            Assertions.assertTrue(response.getMedianAge() >= 0);
         }
     }
 
     @Test
     void testTractPopulation() {
         for (Decade decade : decades) {
-            TotalPopulationResponse populationResponse = clientHelper.requestTotalPopulation(TRACT, 24.5, -82, decade);
-            Assertions.assertNotNull(populationResponse);
-            Assertions.assertTrue(populationResponse.getPopulation() >= 0);
+            MedianAgeResponse response = clientHelper.requestMedianAge(TRACT, 24.5, -82, decade);
+            Assertions.assertNotNull(response);
+            Assertions.assertTrue(response.getMedianAge() >= 0);
         }
     }
 

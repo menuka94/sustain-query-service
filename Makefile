@@ -6,14 +6,16 @@
 .PHONY: build
 build:
 	chmod +x gradlew
+	./gradlew install -x test
+
+build-with-tests:
+	chmod +x gradlew
 	./gradlew install
 
-.PHONY: run-census-server
 run-census-server:
 	sh ./build/install/sustain-census-grpc/bin/census-server
 
 
-.PHONY: run-census-client
 run-census-client:
 	sh ./build/install/sustain-census-grpc/bin/census-client
 
