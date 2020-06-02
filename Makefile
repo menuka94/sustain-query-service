@@ -15,6 +15,8 @@ build-with-tests:
 run-census-server:
 	sh ./build/install/sustain-census-grpc/bin/census-server
 
+test:
+	./gradlew test
 
 run-census-client:
 	sh ./build/install/sustain-census-grpc/bin/census-client

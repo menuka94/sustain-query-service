@@ -13,7 +13,7 @@ import org.sustain.census.CensusServer;
 import org.sustain.census.ClientHelper;
 import org.sustain.census.Constants;
 import org.sustain.census.Decade;
-import org.sustain.census.MedianAgeResponse;
+import org.sustain.census.PopulationByAgeResponse;
 import org.sustain.census.db.Util;
 
 import static org.sustain.census.Constants.CensusResolutions.COUNTY;
@@ -21,8 +21,8 @@ import static org.sustain.census.Constants.CensusResolutions.STATE;
 import static org.sustain.census.Constants.CensusResolutions.TRACT;
 import static sustain.census.TestUtil.decades;
 
-public class MedianAgeTests {
-    private static final Logger log = LogManager.getLogger(MedianAgeTests.class);
+public class PopulationByAgeTests {
+    private static final Logger log = LogManager.getLogger(PopulationByAgeTests.class);
     private static CensusGrpc.CensusBlockingStub censusBlockingStub;
     private static ManagedChannel channel;
     private static CensusServer server;
@@ -39,35 +39,44 @@ public class MedianAgeTests {
         clientHelper = new ClientHelper(censusBlockingStub);
     }
 
+    @AfterAll
+    static void cleanUp() {
+        server.shutdownNow();
+    }
+
     @Test
     void testStatePopulation() {
         for (Decade decade : decades) {
-            MedianAgeResponse response = clientHelper.requestMedianAge(STATE, 24.5, -82, decade);
+            PopulationByAgeResponse response = clientHelper.requestPopulationByAge(STATE, 24.5, -82, decade);
             Assertions.assertNotNull(response);
-            Assertions.assertTrue(response.getMedianAge() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get5To9() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get10To14() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get21() >= 0);
         }
+        log.info("State Population-by-age tests passed");
     }
 
     @Test
     void testCountyPopulation() {
         for (Decade decade : decades) {
-            MedianAgeResponse response = clientHelper.requestMedianAge(COUNTY, 24.5, -82, decade);
+            PopulationByAgeResponse response = clientHelper.requestPopulationByAge(COUNTY, 24.5, -82, decade);
             Assertions.assertNotNull(response);
-            Assertions.assertTrue(response.getMedianAge() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get5To9() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get10To14() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get21() >= 0);
         }
+        log.info("County Population-by-age tests passed");
     }
 
     @Test
     void testTractPopulation() {
         for (Decade decade : decades) {
-            MedianAgeResponse response = clientHelper.requestMedianAge(TRACT, 24.5, -82, decade);
+            PopulationByAgeResponse response = clientHelper.requestPopulationByAge(TRACT, 24.5, -82, decade);
             Assertions.assertNotNull(response);
-            Assertions.assertTrue(response.getMedianAge() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get5To9() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get10To14() >= 0);
+            Assertions.assertTrue(response.getMaleAgeCategories().getAgeCategories().get21() >= 0);
         }
-    }
-
-    @AfterAll
-    static void cleanUp() {
-        server.shutdownNow();
+        log.info("Tract Population-by-age tests passed");
     }
 }
