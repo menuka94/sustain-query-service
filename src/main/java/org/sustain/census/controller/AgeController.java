@@ -31,6 +31,9 @@ public class AgeController {
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setInt(1, resolutionValue);
+
+        log.info("Query: " + statement);
+
         ResultSet resultSet = statement.executeQuery();
 
         double medianage = 0;

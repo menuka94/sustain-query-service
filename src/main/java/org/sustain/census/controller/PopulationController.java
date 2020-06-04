@@ -41,10 +41,10 @@ public class PopulationController {
         final String COLUMN = decade + "_" + POPULATION;
 
         String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " + GEO_ID + "=?";
-
-        log.info("Query: " + query);
-
         PreparedStatement statement = dbConnection.prepareStatement(query);
+
+        log.info("Query: " + statement);
+
         statement.setInt(1, resolutionValue);
         ResultSet resultSet = statement.executeQuery();
 

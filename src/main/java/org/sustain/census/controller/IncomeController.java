@@ -38,7 +38,7 @@ public class IncomeController {
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setInt(1, resolutionValue);
 
-        log.info("Query: " + query);
+        log.info("Query: " + statement);
 
         ResultSet resultSet = statement.executeQuery();
 

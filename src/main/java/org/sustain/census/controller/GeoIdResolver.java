@@ -41,11 +41,11 @@ public class GeoIdResolver {
         } else {
             query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + "=? AND " + LONGITUDE + "=?";
         }
-        log.info("Query: " + query);
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setDouble(1, lat);
         statement.setDouble(2, lng);
+        log.info("Query: " + statement);
         ResultSet resultSet = statement.executeQuery();
 
         BigInteger geoId = BigInteger.valueOf(0);
@@ -65,8 +65,8 @@ public class GeoIdResolver {
 
     public static void main(String[] args) throws SQLException {
 //        double[] coordinates = new double[]{30.2, -88};
-        double[] coordinates = new double[]{24.5, -82};
-        BigInteger geoId = GeoIdResolver.resolveGeoId(coordinates[0], coordinates[1], COUNTY);
+        double[] coordinates = new double[]{40.5, -105.0};
+        BigInteger geoId = GeoIdResolver.resolveGeoId(coordinates[0], coordinates[1], STATE);
         log.info("GeoID: " + geoId);
     }
 }
