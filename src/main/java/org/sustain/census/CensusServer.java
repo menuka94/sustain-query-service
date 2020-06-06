@@ -13,6 +13,8 @@ import org.sustain.census.controller.PovertyController;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.concurrent.TimeUnit;
 
 import static org.sustain.census.ServerHelper.executeTargetedIncomeRequest;
@@ -79,6 +81,10 @@ public class CensusServer {
             Decade _decade = request.getSpatialTemporalInfo().getDecade();
             String decade = Constants.DECADES.get(_decade);
 
+            if (!validateRequest(resolutionKey)) {
+                return;
+            }
+
             try {
                 String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
@@ -92,11 +98,25 @@ public class CensusServer {
             }
         }
 
+        private boolean validateRequest(String resolution) {
+            boolean valid = true;
+            if ("".equals(resolution)) {
+                log.warn("Resolution is empty.");
+                valid = false;
+            }
+
+            return valid;
+        }
+
         @Override
         public void getMedianAge(MedianAgeRequest request, StreamObserver<MedianAgeResponse> responseObserver) {
             String resolutionKey = request.getSpatialTemporalInfo().getResolution();
             double latitude = request.getSpatialTemporalInfo().getLatitude();
             double longitude = request.getSpatialTemporalInfo().getLongitude();
+
+            if (!validateRequest(resolutionKey)) {
+                return;
+            }
 
             try {
                 String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
@@ -119,6 +139,10 @@ public class CensusServer {
             double longitude = spatialTemporalInfo.getLongitude();
             String decade = Constants.DECADES.get(spatialTemporalInfo.getDecade());
 
+            if (!validateRequest(resolutionKey)) {
+                return;
+            }
+
             try {
                 String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
@@ -139,6 +163,10 @@ public class CensusServer {
             double latitude = request.getSpatialTemporalInfo().getLatitude();
             double longitude = request.getSpatialTemporalInfo().getLongitude();
 
+            if (!validateRequest(resolutionKey)) {
+                return;
+            }
+
             try {
                 String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
@@ -156,6 +184,10 @@ public class CensusServer {
             String resolutionKey = request.getSpatialTemporalInfo().getResolution();
             double latitude = request.getSpatialTemporalInfo().getLatitude();
             double longitude = request.getSpatialTemporalInfo().getLongitude();
+
+            if (!validateRequest(resolutionKey)) {
+                return;
+            }
 
             String resolutionValue;
             try {
@@ -185,6 +217,10 @@ public class CensusServer {
             Decade _decade = predicate.getDecade();
             String resolution = Constants.TARGET_RESOLUTIONS.get(request.getResolution());
 
+            if (!validateRequest(resolution)) {
+                return;
+            }
+
             String decade = Constants.DECADES.get(_decade);
 
             try {
@@ -203,7 +239,7 @@ public class CensusServer {
                                 resolution, decade);
                         break;
                     case UNRECOGNIZED:
-                        log.warn("Invalid Census feature found in the request");
+                        log.warn("Invalid Census feature requested");
                         break;
                 }
             } catch (SQLException e) {
