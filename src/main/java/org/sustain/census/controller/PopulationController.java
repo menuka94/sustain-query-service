@@ -29,7 +29,7 @@ public class PopulationController {
      * @param resolutionKey   : ex:- "state", or "county"
      * @param resolutionValue : ex:- stateID, or countyID
      */
-    public static TotalPopulationResponse fetchTotalPopulation(String resolutionKey, int resolutionValue,
+    public static TotalPopulationResponse fetchTotalPopulation(String resolutionKey, String resolutionValue,
                                                                String decade) throws SQLException {
         log.info("Fetching " + POPULATION + " for " + resolutionKey + ": " + resolutionValue);
 
@@ -45,7 +45,7 @@ public class PopulationController {
 
         log.info("Query: " + statement);
 
-        statement.setInt(1, resolutionValue);
+        statement.setInt(1, Integer.parseInt(resolutionValue));
         ResultSet resultSet = statement.executeQuery();
 
         int population = 0;
@@ -56,7 +56,7 @@ public class PopulationController {
         return TotalPopulationResponse.newBuilder().setPopulation(population).build();
     }
 
-    public static PopulationByAgeResponse fetchPopulationByAge(String resolutionKey, int resolutionValue) throws SQLException {
+    public static PopulationByAgeResponse fetchPopulationByAge(String resolutionKey, String resolutionValue) throws SQLException {
         log.info("Fetching " + POPULATION_BY_AGE + " for " + resolutionKey + ": " + resolutionValue);
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
@@ -67,7 +67,7 @@ public class PopulationController {
         String query = "SELECT * FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
-        statement.setInt(1, resolutionValue);
+        statement.setInt(1, Integer.parseInt(resolutionValue));
         ResultSet resultSet = statement.executeQuery();
 
         int maleTotal = 0, femaleTotal = 0;
@@ -242,7 +242,7 @@ public class PopulationController {
 
 
     public static void main(String[] args) throws SQLException {
-        int stateCode = 50;
+        String stateCode = "50";
         TotalPopulationResponse population2010 = fetchTotalPopulation("state", stateCode, "2010");
         TotalPopulationResponse population2000 = fetchTotalPopulation("state", stateCode, "2000");
         TotalPopulationResponse population1990 = fetchTotalPopulation("state", stateCode, "1990");

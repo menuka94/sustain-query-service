@@ -18,7 +18,7 @@ public class AgeController {
     private static final Logger log = LogManager.getLogger(AgeController.class);
     private static Connection dbConnection = null;
 
-    public static MedianAgeResponse fetchMedianAge(String resolutionKey, int resolutionValue) throws SQLException {
+    public static MedianAgeResponse fetchMedianAge(String resolutionKey, String resolutionValue) throws SQLException {
         log.info("Fetching " + MEDIAN_AGE + " for " + resolutionKey + ": " + resolutionValue);
 
         if (dbConnection == null) {
@@ -30,7 +30,7 @@ public class AgeController {
         String query = "SELECT " + MEDIAN_AGE + " FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
-        statement.setInt(1, resolutionValue);
+        statement.setInt(1, Integer.parseInt(resolutionValue));
 
         log.info("Query: " + statement);
 

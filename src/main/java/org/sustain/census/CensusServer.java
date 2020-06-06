@@ -12,7 +12,6 @@ import org.sustain.census.controller.PopulationController;
 import org.sustain.census.controller.PovertyController;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.sql.SQLException;
 import java.util.concurrent.TimeUnit;
 
@@ -80,13 +79,12 @@ public class CensusServer {
             Decade _decade = request.getSpatialTemporalInfo().getDecade();
             String decade = Constants.DECADES.get(_decade);
 
-            BigInteger resolutionValue;
             try {
-                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
-                responseObserver.onNext(PopulationController.fetchTotalPopulation(resolutionKey,
-                        resolutionValue.intValue(), decade));
+                responseObserver.onNext(PopulationController.fetchTotalPopulation(resolutionKey, resolutionValue,
+                        decade));
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
@@ -100,12 +98,11 @@ public class CensusServer {
             double latitude = request.getSpatialTemporalInfo().getLatitude();
             double longitude = request.getSpatialTemporalInfo().getLongitude();
 
-            BigInteger resolutionValue;
             try {
-                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
-                responseObserver.onNext(AgeController.fetchMedianAge(resolutionKey, resolutionValue.intValue()));
+                responseObserver.onNext(AgeController.fetchMedianAge(resolutionKey, resolutionValue));
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
@@ -122,13 +119,12 @@ public class CensusServer {
             double longitude = spatialTemporalInfo.getLongitude();
             String decade = Constants.DECADES.get(spatialTemporalInfo.getDecade());
 
-            BigInteger resolutionValue;
             try {
-                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
                 responseObserver.onNext(IncomeController.fetchMedianHouseholdIncome(resolutionKey,
-                        resolutionValue.intValue(), decade));
+                        resolutionValue, decade));
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
@@ -143,13 +139,11 @@ public class CensusServer {
             double latitude = request.getSpatialTemporalInfo().getLatitude();
             double longitude = request.getSpatialTemporalInfo().getLongitude();
 
-            BigInteger resolutionValue;
             try {
-                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
-                responseObserver.onNext(PopulationController.fetchPopulationByAge(resolutionKey,
-                        resolutionValue.intValue()));
+                responseObserver.onNext(PopulationController.fetchPopulationByAge(resolutionKey, resolutionValue));
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
@@ -163,13 +157,12 @@ public class CensusServer {
             double latitude = request.getSpatialTemporalInfo().getLatitude();
             double longitude = request.getSpatialTemporalInfo().getLongitude();
 
-            BigInteger resolutionValue;
+            String resolutionValue;
             try {
                 resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
                 log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
-                responseObserver.onNext(PovertyController.fetchPovertyData(resolutionKey,
-                        resolutionValue.intValue()));
+                responseObserver.onNext(PovertyController.fetchPovertyData(resolutionKey, resolutionValue));
                 responseObserver.onCompleted();
             } catch (SQLException e) {
                 log.error(e);
@@ -205,7 +198,8 @@ public class CensusServer {
                                 resolution, decade);
                         break;
                     case Race:
-                        executeTargetedRaceRequest(responseObserver, Constants.EMPTY_COMPARISON_FIELD, comparisonOp, comparisonValue,
+                        executeTargetedRaceRequest(responseObserver, Constants.EMPTY_COMPARISON_FIELD, comparisonOp,
+                                comparisonValue,
                                 resolution, decade);
                         break;
                     case UNRECOGNIZED:

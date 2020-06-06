@@ -6,6 +6,7 @@ import org.sustain.census.Constants;
 import org.sustain.census.MedianHouseholdIncomeResponse;
 import org.sustain.census.db.DBConnection;
 
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,7 +24,7 @@ public class IncomeController {
      * @param resolutionKey   : ex:- "state", "county", or "tract"
      * @param resolutionValue : ex:- state_fips, county_fips, or tract_fips
      */
-    public static MedianHouseholdIncomeResponse fetchMedianHouseholdIncome(String resolutionKey, int resolutionValue,
+    public static MedianHouseholdIncomeResponse fetchMedianHouseholdIncome(String resolutionKey, String resolutionValue,
                                                                            String decade) throws SQLException {
         log.info("Fetching " + MEDIAN_HOUSEHOLD_INCOME + " for " + resolutionKey + ": " + resolutionValue);
         if (dbConnection == null) {
@@ -36,7 +37,7 @@ public class IncomeController {
         String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
-        statement.setInt(1, resolutionValue);
+        statement.setInt(1, Integer.parseInt(resolutionValue));
 
         log.info("Query: " + statement);
 
@@ -83,7 +84,7 @@ public class IncomeController {
     }
 
     public static void main(String[] args) throws SQLException {
-        int state_fips = 10;
+        String state_fips = "10";
         MedianHouseholdIncomeResponse income2010 = fetchMedianHouseholdIncome("state", state_fips, "2010");
         MedianHouseholdIncomeResponse income2000 = fetchMedianHouseholdIncome("state", state_fips, "2000");
         MedianHouseholdIncomeResponse income1990 = fetchMedianHouseholdIncome("state", state_fips, "1990");

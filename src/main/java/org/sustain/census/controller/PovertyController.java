@@ -18,7 +18,7 @@ public class PovertyController {
     private static final Logger log = LogManager.getLogger(PovertyController.class);
     private static Connection dbConnection = null;
 
-    public static PovertyResponse fetchPovertyData(String resolutionKey, int resolutionValue) throws SQLException {
+    public static PovertyResponse fetchPovertyData(String resolutionKey, String resolutionValue) throws SQLException {
         log.info("Fetching " + POVERTY + " for " + resolutionKey + ": " + resolutionValue);
 
         if (dbConnection == null) {
@@ -30,7 +30,7 @@ public class PovertyController {
         String query = "SELECT * FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
-        statement.setInt(1, resolutionValue);
+        statement.setInt(1, Integer.parseInt(resolutionValue));
         ResultSet resultSet = statement.executeQuery();
 
         int incomeBelowPovertyLevel = 0;

@@ -4,43 +4,37 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.db.DBConnection;
 
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import static org.sustain.census.Constants.CensusResolutions.*;
+import static org.sustain.census.Constants.CensusResolutions.LATITUDE;
+import static org.sustain.census.Constants.CensusResolutions.LONGITUDE;
+import static org.sustain.census.Constants.CensusResolutions.STATE;
 import static org.sustain.census.Constants.DB.DB_NAME;
 
 public class GeoIdResolver {
     private static final Logger log = LogManager.getLogger(GeoIdResolver.class);
     private static Connection dbConnection = null;
-    private static String TABLE_NAME = "geoids";
+    private static final String TABLE_NAME = "geoids";
 
-    public static BigInteger resolveGeoId(double lat, double lng, String resolution) throws SQLException {
+    public static String resolveGeoId(double lat, double lng, String resolution) throws SQLException {
         log.info("Fetching " + resolution + " FIPS code for (" + lat + ", " + lng + ")");
 
         if (dbConnection == null) {
             dbConnection = DBConnection.getConnection(DB_NAME);
         }
 
-        boolean isTract = false;
-        if (TRACT.equals(resolution)) {
-            // tract_fips is not available in the table, but block_fips is
-            // proceed to calculate tract_fips from block_fips
-            resolution = BLOCK;
-            isTract = true;
+        if ("".equals(resolution)) {
+            log.warn("Resolution is empty. Returning ...");
+            return null;
         }
 
         resolution += "_fips";
         log.info("Resolution: " + resolution);
-        String query = "";
-        if (isTract) {
-            query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + " like ? AND " + LONGITUDE + " like ?";
-        } else {
-            query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + "=? AND " + LONGITUDE + "=?";
-        }
+        String query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + "=? AND " + LONGITUDE +
+                "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
         statement.setDouble(1, lat);
@@ -48,25 +42,20 @@ public class GeoIdResolver {
         log.info("Query: " + statement);
         ResultSet resultSet = statement.executeQuery();
 
-        BigInteger geoId = BigInteger.valueOf(0);
+        String geoId = "";
         while (resultSet.next()) {
-            geoId = new BigInteger(resultSet.getObject(resolution).toString());
+            geoId = resultSet.getString(resolution);
             log.info("Geo ID form resultSet: " + geoId);
-            if (isTract) {
-                String geoIdString = String.valueOf(geoId);
-                // block_fips = 482012231001050
-                // tract_fips = 48201223100
-                geoId = new BigInteger(geoIdString.substring(0, geoIdString.length() - 4));
-            }
         }
 
         return geoId;
     }
 
     public static void main(String[] args) throws SQLException {
-//        double[] coordinates = new double[]{30.2, -88};
-        double[] coordinates = new double[]{40.5, -105.0};
-        BigInteger geoId = GeoIdResolver.resolveGeoId(coordinates[0], coordinates[1], STATE);
+        //double[] coordinates = new double[]{30.2, -88};
+        //double[] coordinates = new double[]{40.5, -105.0};
+        double[] coordinates = new double[]{24.5, -82};
+        String geoId = GeoIdResolver.resolveGeoId(coordinates[0], coordinates[1], STATE);
         log.info("GeoID: " + geoId);
     }
 }
