@@ -23,10 +23,11 @@ public class DBConnection {
     }
 
     public static Connection getConnection(String dbName) {
-        log.info("DBName: " + dbName);
+        log.debug("DBName: " + dbName);
         initDatabaseProperties();
         String url = "jdbc:mysql://" + host + ":3306/" + dbName + "?useSSL=false&" +
                 "useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC";
+        log.debug("Connection URL: " + url);
         Connection con = null;
         try {
             Class.forName(driverName);

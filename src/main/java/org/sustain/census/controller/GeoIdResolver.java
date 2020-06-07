@@ -48,7 +48,6 @@ public class GeoIdResolver {
         String geoId = "";
         while (resultSet.next()) {
             geoId = resultSet.getString(resolution);
-            log.info("Geo ID form resultSet: " + geoId);
         }
 
         return geoId;

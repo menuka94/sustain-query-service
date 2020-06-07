@@ -13,6 +13,7 @@ build-with-tests:
 	./gradlew install
 
 run-census-server:
+	./gradlew install -x test
 	sh ./build/install/sustain-census-grpc/bin/census-server
 
 test:

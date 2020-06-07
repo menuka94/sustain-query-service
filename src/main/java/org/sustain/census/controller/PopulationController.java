@@ -43,9 +43,9 @@ public class PopulationController {
         String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " + GEO_ID + "=?";
         PreparedStatement statement = dbConnection.prepareStatement(query);
 
+        statement.setString(1, resolutionValue);
         log.info("Query: " + statement);
 
-        statement.setInt(1, Integer.parseInt(resolutionValue));
         ResultSet resultSet = statement.executeQuery();
 
         int population = 0;
@@ -67,7 +67,7 @@ public class PopulationController {
         String query = "SELECT * FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
-        statement.setInt(1, Integer.parseInt(resolutionValue));
+        statement.setString(1, resolutionValue);
         ResultSet resultSet = statement.executeQuery();
 
         int maleTotal = 0, femaleTotal = 0;

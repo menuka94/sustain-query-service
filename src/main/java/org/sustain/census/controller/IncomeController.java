@@ -37,7 +37,7 @@ public class IncomeController {
         String query = "SELECT " + COLUMN + " FROM " + tableName + " WHERE " + GEO_ID + "=?";
 
         PreparedStatement statement = dbConnection.prepareStatement(query);
-        statement.setInt(1, Integer.parseInt(resolutionValue));
+        statement.setString(1, resolutionValue);
 
         log.info("Query: " + statement);
 
