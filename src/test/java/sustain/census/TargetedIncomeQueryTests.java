@@ -22,8 +22,8 @@ import java.util.List;
 
 import static sustain.census.TestUtil.decades;
 
-public class TargetedPopulationQueryTests {
-    private static final Logger log = LogManager.getLogger(TargetedPopulationQueryTests.class);
+public class TargetedIncomeQueryTests {
+    private static final Logger log = LogManager.getLogger(TargetedIncomeQueryTests.class);
 
     private static CensusGrpc.CensusBlockingStub censusBlockingStub;
     private static ManagedChannel channel;
@@ -47,15 +47,15 @@ public class TargetedPopulationQueryTests {
     }
 
     @Test
-    public void testStatePopulationTargeted() {
+    public void testStateIncomeTargeted() {
         for (Decade decade : decades) {
             TargetedQueryResponse targetedQueryResponse = clientHelper.requestTargetedInfo(
-                    Predicate.Feature.Population,
+                    Predicate.Feature.Income,
                     CensusResolution.State,
                     decade,
-                    Predicate.ComparisonOperator.GREATER_THAN,
-                    10000000);
-            log.info("Tests: States where population is greater than 10 million in " + decade.toString());
+                    Predicate.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                    50000);
+            log.info("Tests: States where median household income is greater than $50,000 in  " + decade.toString());
             Assertions.assertNotNull(targetedQueryResponse);
 
             List<TargetedQueryResponse.SpatialInfo> spatialInfoList = targetedQueryResponse.getSpatialInfoList();
@@ -69,15 +69,15 @@ public class TargetedPopulationQueryTests {
     }
 
     @Test
-    public void testCountyPopulationTargeted() {
+    public void testCountyIncomeTargeted() {
         for (Decade decade : decades) {
             TargetedQueryResponse targetedQueryResponse = clientHelper.requestTargetedInfo(
-                    Predicate.Feature.Population,
+                    Predicate.Feature.Income,
                     CensusResolution.County,
                     decade,
-                    Predicate.ComparisonOperator.GREATER_THAN,
-                    10000000);
-            log.info("Tests: Counties where population is greater than 10 million in " + decade.toString());
+                    Predicate.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                    50000);
+            log.info("Tests: Counties where median household income is greater than $50,000 in  " + decade.toString());
             Assertions.assertNotNull(targetedQueryResponse);
 
             List<TargetedQueryResponse.SpatialInfo> spatialInfoList = targetedQueryResponse.getSpatialInfoList();
@@ -92,15 +92,15 @@ public class TargetedPopulationQueryTests {
 
 
     @Test
-    public void testTractPopulationTargeted() {
+    public void testTractIncomeTargeted() {
         for (Decade decade : decades) {
             TargetedQueryResponse targetedQueryResponse = clientHelper.requestTargetedInfo(
-                    Predicate.Feature.Population,
+                    Predicate.Feature.Income,
                     CensusResolution.Tract,
                     decade,
-                    Predicate.ComparisonOperator.GREATER_THAN,
-                    10000000);
-            log.info("Tests: Tracts where population is greater than 10 million in " + decade.toString());
+                    Predicate.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                    50000);
+            log.info("Tests: Tracts where median household income is greater than $50,000 in  " + decade.toString());
             Assertions.assertNotNull(targetedQueryResponse);
 
             List<TargetedQueryResponse.SpatialInfo> spatialInfoList = targetedQueryResponse.getSpatialInfoList();
