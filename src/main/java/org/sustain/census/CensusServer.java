@@ -13,13 +13,11 @@ import org.sustain.census.controller.PovertyController;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.concurrent.TimeUnit;
 
-import static org.sustain.census.ServerHelper.executeTargetedIncomeRequest;
+import static org.sustain.census.ServerHelper.executeTargetedIncomeQuery;
 import static org.sustain.census.ServerHelper.executeTargetedPopulationQuery;
-import static org.sustain.census.ServerHelper.executeTargetedRaceRequest;
+import static org.sustain.census.ServerHelper.executeTargetedRaceQuery;
 
 
 public class CensusServer {
@@ -230,11 +228,11 @@ public class CensusServer {
                                 resolution, decade);
                         break;
                     case Income:
-                        executeTargetedIncomeRequest(responseObserver, comparisonOp, comparisonValue,
+                        executeTargetedIncomeQuery(responseObserver, comparisonOp, comparisonValue,
                                 resolution, decade);
                         break;
                     case Race:
-                        executeTargetedRaceRequest(responseObserver, Constants.EMPTY_COMPARISON_FIELD, comparisonOp,
+                        executeTargetedRaceQuery(responseObserver, Constants.EMPTY_COMPARISON_FIELD, comparisonOp,
                                 comparisonValue,
                                 resolution, decade);
                         break;

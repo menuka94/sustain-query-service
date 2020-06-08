@@ -11,7 +11,7 @@ message TargetedQueryRequest {
 message TargetedQueryResponse {
   CensusResolution resolution = 1;
   message SpatialInfo {
-    sint32 geoId = 1;
+    string geoId = 1;
     string name = 2;
   }
   repeated SpatialInfo spatialInfo = 2;

@@ -22,7 +22,7 @@ public class ServerHelper {
         for (String key : targetedPopulationResults.keySet()) {
             TargetedQueryResponse.SpatialInfo spatialInfo =
                     TargetedQueryResponse.SpatialInfo.newBuilder()
-                            .setGeoId(Integer.parseInt(key))
+                            .setGeoId(key)
                             .setName(targetedPopulationResults.get(key))
                             .build();
             populationResponseBuilder.addSpatialInfo(spatialInfo);
@@ -33,9 +33,9 @@ public class ServerHelper {
         responseObserver.onCompleted();
     }
 
-    public static void executeTargetedIncomeRequest(StreamObserver<TargetedQueryResponse> responseObserver,
-                                             String comparisonOp, double comparisonValue, String resolution,
-                                             String decade) throws SQLException {
+    public static void executeTargetedIncomeQuery(StreamObserver<TargetedQueryResponse> responseObserver,
+                                                  String comparisonOp, double comparisonValue, String resolution,
+                                                  String decade) throws SQLException {
         HashMap<String, String> targetedIncomeResults = IncomeController.fetchTargetedInfo(decade,
                 resolution, comparisonOp, comparisonValue);
 
@@ -45,7 +45,7 @@ public class ServerHelper {
         for (String key : targetedIncomeResults.keySet()) {
             TargetedQueryResponse.SpatialInfo spatialInfo =
                     TargetedQueryResponse.SpatialInfo.newBuilder()
-                            .setGeoId(Integer.parseInt(key))
+                            .setGeoId(key)
                             .setName(targetedIncomeResults.get(key))
                             .build();
             incomeResponseBuilder.addSpatialInfo(spatialInfo);
@@ -56,9 +56,9 @@ public class ServerHelper {
         responseObserver.onCompleted();
     }
 
-    public static void executeTargetedRaceRequest(StreamObserver<TargetedQueryResponse> responseObserver,
-                                           String comparisonField, String comparisonOp, double comparisonValue,
-                                           String resolution, String decade) throws SQLException {
+    public static void executeTargetedRaceQuery(StreamObserver<TargetedQueryResponse> responseObserver,
+                                                String comparisonField, String comparisonOp, double comparisonValue,
+                                                String resolution, String decade) throws SQLException {
         HashMap<String, String> targetedRaceResults = RaceController.fetchTargetedInfo(decade,
                 resolution, comparisonField, comparisonOp, comparisonValue);
 
@@ -68,7 +68,7 @@ public class ServerHelper {
         for (String key : targetedRaceResults.keySet()) {
             TargetedQueryResponse.SpatialInfo spatialInfo =
                     TargetedQueryResponse.SpatialInfo.newBuilder()
-                            .setGeoId(Integer.parseInt(key))
+                            .setGeoId(key)
                             .setName(targetedRaceResults.get(key))
                             .build();
             raceResponseBuilder.addSpatialInfo(spatialInfo);
