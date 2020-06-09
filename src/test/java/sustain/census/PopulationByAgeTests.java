@@ -7,6 +7,7 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sustain.census.CensusGrpc;
 import org.sustain.census.CensusServer;
@@ -21,6 +22,7 @@ import static org.sustain.census.Constants.CensusResolutions.STATE;
 import static org.sustain.census.Constants.CensusResolutions.TRACT;
 import static sustain.census.TestUtil.decades;
 
+@Disabled
 public class PopulationByAgeTests {
     private static final Logger log = LogManager.getLogger(PopulationByAgeTests.class);
     private static CensusGrpc.CensusBlockingStub censusBlockingStub;
