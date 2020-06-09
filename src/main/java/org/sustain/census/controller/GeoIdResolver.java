@@ -33,8 +33,8 @@ public class GeoIdResolver {
 
         resolution += "_fips";
         log.info("Resolution: " + resolution);
-        String query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + "=? AND " + LONGITUDE +
-                "=?";
+        String query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + " LIKE ? AND " + LONGITUDE +
+                " LIKE ?";
 
         lat = Double.parseDouble(formatter.format(lat));
         lng = Double.parseDouble(formatter.format(lng));
