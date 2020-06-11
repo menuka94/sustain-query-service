@@ -76,8 +76,8 @@ public class IncomeController {
             incomeCount++;
         }
 
-        log.info("incomeSum: " + incomeSum);
-        log.info("incomeCount: " + incomeCount);
+        log.debug("incomeSum: " + incomeSum);
+        log.debug("incomeCount: " + incomeCount);
         double averageIncome = (double) incomeSum / incomeCount;
 
         return MedianHouseholdIncomeResponse.newBuilder().setMedianHouseholdIncome(averageIncome).build();

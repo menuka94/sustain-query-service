@@ -33,26 +33,34 @@ public class CensusClient {
         log.info("Target: " + target);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-
+        SpatialTemporalInfo spatialTemporalInfo = SpatialTemporalInfo.newBuilder()
+                .setResolution(Constants.CensusResolutions.TRACT)
+                .setDecade(Decade._2010)
+                .setBoundingBox(BoundingBox.newBuilder()
+                        .setX1(40.5)
+                        .setY1(-105.1)
+                        .setX2(40.6)
+                        .setY2(-105.0)
+                        .build())
+                .build();
         try {
             CensusClient client = new CensusClient(channel);
 
             MedianHouseholdIncomeRequest request = MedianHouseholdIncomeRequest.newBuilder()
-                    .setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
-                            .setResolution(Constants.CensusResolutions.TRACT)
-                            .setDecade(Decade._2010)
-                            .setBoundingBox(BoundingBox.newBuilder()
-                                    .setX1(40.5)
-                                    .setY1(-105.1)
-                                    .setX2(40.6)
-                                    .setY2(-105.0)
-                                    .build())
-                            .build())
+                    .setSpatialTemporalInfo(spatialTemporalInfo)
                     .build();
 
             MedianHouseholdIncomeResponse incomeResponse =
                     client.censusBlockingStub.getMedianHouseholdIncome(request);
             log.info("Income: " + incomeResponse.getMedianHouseholdIncome());
+
+            TotalPopulationRequest request1 = TotalPopulationRequest.newBuilder()
+                    .setSpatialTemporalInfo(spatialTemporalInfo)
+                    .build();
+            TotalPopulationResponse populationResponse =
+                    client.censusBlockingStub.getTotalPopulation(request1);
+            log.info("Population: " + populationResponse.getPopulation());
+
             System.exit(0);
 
             // Total Population
