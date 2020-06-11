@@ -6,11 +6,11 @@ import org.sustain.census.Constants;
 import org.sustain.census.MedianHouseholdIncomeResponse;
 import org.sustain.census.db.DBConnection;
 
-import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.sustain.census.Constants.CensusFeatures.MEDIAN_HOUSEHOLD_INCOME;
@@ -51,6 +51,37 @@ public class IncomeController {
         return MedianHouseholdIncomeResponse.newBuilder().setMedianHouseholdIncome(income).build();
     }
 
+    public static MedianHouseholdIncomeResponse getAveragedMedianHouseholdIncome(String resolution,
+                                                                                 ArrayList<String> geoIds,
+                                                                                 String decade) throws SQLException {
+        if (dbConnection == null) {
+            dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
+        }
+
+        String tableName = "all_decades_" + resolution + "_" + MEDIAN_HOUSEHOLD_INCOME;
+        final String COLUMN = decade + "_" + MEDIAN_HOUSEHOLD_INCOME;
+
+        String joinedGeoIds = String.join(", ", geoIds);
+        String query =
+                "SELECT " + COLUMN + " FROM " + tableName + " WHERE " + GEO_ID + " IN (" + joinedGeoIds + ");";
+
+        log.info("Query: " + query);
+        PreparedStatement statement = dbConnection.prepareStatement(query);
+        ResultSet resultSet = statement.executeQuery();
+
+        int incomeSum = 0;
+        int incomeCount = 0;
+        while (resultSet.next()) {
+            incomeSum += resultSet.getInt(COLUMN);
+            incomeCount++;
+        }
+
+        log.debug("incomeSum: " + incomeSum);
+        log.debug("incomeCount: " + incomeCount);
+        double averageIncome = (double) incomeSum / incomeCount;
+
+        return MedianHouseholdIncomeResponse.newBuilder().setMedianHouseholdIncome(averageIncome).build();
+    }
 
     public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution, String comparisonOp,
                                                             double comparisonValue) throws SQLException {
@@ -83,6 +114,7 @@ public class IncomeController {
         return results;
     }
 
+
     public static void main(String[] args) throws SQLException {
         String state_fips = "10";
         MedianHouseholdIncomeResponse income2010 = fetchMedianHouseholdIncome("state", state_fips, "2010");
@@ -100,5 +132,6 @@ public class IncomeController {
         //    log.info(geoid + ": " + results.get(geoid));
         //}
     }
+
 }
 

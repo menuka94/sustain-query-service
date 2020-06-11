@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.sustain.census.Constants.CensusFeatures.POPULATION;
@@ -54,6 +55,37 @@ public class PopulationController {
         }
 
         return TotalPopulationResponse.newBuilder().setPopulation(population).build();
+    }
+
+    public static TotalPopulationResponse getAveragedPopulation(String resolution, ArrayList<String> geoIds,
+                                                                String decade) throws SQLException {
+        if (dbConnection == null) {
+            dbConnection = DBConnection.getConnection(Constants.DB.DB_NAME);
+        }
+
+        String tableName = "all_decades_" + resolution + "_" + POPULATION;
+        final String COLUMN = decade + "_" + POPULATION;
+
+        String joinedGeoIds = String.join(", ", geoIds);
+        String query =
+                "SELECT " + COLUMN + " FROM " + tableName + " WHERE " + GEO_ID + " IN (" + joinedGeoIds + ");";
+
+        log.info("Query: " + query);
+        PreparedStatement statement = dbConnection.prepareStatement(query);
+        ResultSet resultSet = statement.executeQuery();
+
+        int populationSum = 0;
+        int populationCount = 0;
+        while (resultSet.next()) {
+            populationSum += resultSet.getInt(COLUMN);
+            populationCount++;
+        }
+
+        log.debug("populationSum: " + populationSum);
+        log.debug("populationCount: " + populationCount);
+        double averageIncome = (double) populationSum / populationCount;
+
+        return TotalPopulationResponse.newBuilder().setPopulation(averageIncome).build();
     }
 
     public static PopulationByAgeResponse fetchPopulationByAge(String resolutionKey, String resolutionValue) throws SQLException {
@@ -263,4 +295,5 @@ public class PopulationController {
             log.info(geoId + ": " + results.get(geoId));
         }
     }
+
 }

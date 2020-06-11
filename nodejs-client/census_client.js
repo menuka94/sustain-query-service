@@ -1,10 +1,9 @@
 const grpc = require('grpc');
-const PROTO1_PATH = './proto/census.proto';
-const PROTO2_PATH = './proto/targeted_census.proto';
+const PROTO_DIR = '../src/main/proto'
 const proto_loader = require('@grpc/proto-loader');
 
 let packageDefinition = proto_loader.loadSync(
-    [PROTO1_PATH, PROTO2_PATH],
+    [PROTO_DIR + '/census.proto', PROTO_DIR + '/targeted_census.proto'],
     {
         keepCase: true,
         longs: String,
@@ -19,8 +18,12 @@ let stub = new census_service.Census('localhost:50051', grpc.credentials.createI
 
 let spatialTemporalInfo = {
     resolution: "tract",
-    latitude: 40.5,
-    longitude: -105.0,
+    boundingBox: {
+        x1: 40.5,
+        y1: -105.0,
+        x2: 41.5,
+        y2: -104.0
+    },
     decade: "_2010"
 };
 let request = {spatialTemporalInfo: spatialTemporalInfo};

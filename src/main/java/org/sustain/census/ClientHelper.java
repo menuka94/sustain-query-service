@@ -8,11 +8,10 @@ public class ClientHelper {
     }
 
     public PovertyResponse requestPovertyInfo(String resolution, double latitude, double longitude,
-                                       Decade decade) {
+                                              Decade decade) {
         PovertyRequest request = PovertyRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
-                .setLatitude(latitude)
-                .setLongitude(longitude)
+                .setSingleCoordinate(SingleCoordinate.newBuilder().setLatitude(latitude).setLongitude(longitude).build())
                 .setDecade(decade)
                 .build()
         ).build();
@@ -21,12 +20,11 @@ public class ClientHelper {
     }
 
     public TotalPopulationResponse requestTotalPopulation(String resolution, double latitude, double longitude,
-                                                   Decade decade) {
+                                                          Decade decade) {
         TotalPopulationRequest request =
                 TotalPopulationRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                         .setResolution(resolution)
-                        .setLatitude(latitude)
-                        .setLongitude(longitude)
+                        .setSingleCoordinate(SingleCoordinate.newBuilder().setLatitude(latitude).setLongitude(longitude).build())
                         .setDecade(decade)
                         .build()
                 ).build();
@@ -36,12 +34,11 @@ public class ClientHelper {
 
 
     public PopulationByAgeResponse requestPopulationByAge(String resolution, double latitude, double longitude,
-                                                   Decade decade) {
+                                                          Decade decade) {
         PopulationByAgeRequest request =
                 PopulationByAgeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                         .setResolution(resolution)
-                        .setLatitude(latitude)
-                        .setLongitude(longitude)
+                        .setSingleCoordinate(SingleCoordinate.newBuilder().setLatitude(latitude).setLongitude(longitude).build())
                         .setDecade(decade)
                         .build()
                 ).build();
@@ -49,13 +46,13 @@ public class ClientHelper {
         return censusBlockingStub.getPopulationByAge(request);
     }
 
-    public MedianHouseholdIncomeResponse requestMedianHouseholdIncome(String resolution, double latitude, double longitude,
-                                                               Decade decade) {
+    public MedianHouseholdIncomeResponse requestMedianHouseholdIncome(String resolution, double latitude,
+                                                                      double longitude,
+                                                                      Decade decade) {
         MedianHouseholdIncomeRequest request =
                 MedianHouseholdIncomeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                         .setResolution(resolution)
-                        .setLatitude(latitude)
-                        .setLongitude(longitude)
+                        .setSingleCoordinate(SingleCoordinate.newBuilder().setLatitude(latitude).setLongitude(longitude).build())
                         .setDecade(decade)
                         .build()
                 ).build();
@@ -64,11 +61,10 @@ public class ClientHelper {
     }
 
     public MedianAgeResponse requestMedianAge(String resolution, double latitude, double longitude,
-                                       Decade decade) {
+                                              Decade decade) {
         MedianAgeRequest request = MedianAgeRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
-                .setLatitude(latitude)
-                .setLongitude(longitude)
+                .setSingleCoordinate(SingleCoordinate.newBuilder().setLatitude(latitude).setLongitude(longitude).build())
                 .setDecade(decade)
                 .build()
         ).build();
@@ -79,8 +75,7 @@ public class ClientHelper {
     public RaceResponse requestRace(String resolution, double latitude, double longitude, Decade decade) {
         RaceRequest request = RaceRequest.newBuilder().setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
                 .setResolution(resolution)
-                .setLatitude(latitude)
-                .setLongitude(longitude)
+                .setSingleCoordinate(SingleCoordinate.newBuilder().setLatitude(latitude).setLongitude(longitude).build())
                 .setDecade(decade)
                 .build()
         ).build();
@@ -88,9 +83,10 @@ public class ClientHelper {
         return censusBlockingStub.getRace(request);
     }
 
-    public TargetedQueryResponse requestTargetedInfo(Predicate.Feature feature, CensusResolution resolution, Decade decade,
-                                                   Predicate.ComparisonOperator comparisonOperator,
-                                                   double comparisonValue) {
+    public TargetedQueryResponse requestTargetedInfo(Predicate.Feature feature, CensusResolution resolution,
+                                                     Decade decade,
+                                                     Predicate.ComparisonOperator comparisonOperator,
+                                                     double comparisonValue) {
 
         Predicate predicate = Predicate.newBuilder()
                 .setComparisonOp(comparisonOperator)

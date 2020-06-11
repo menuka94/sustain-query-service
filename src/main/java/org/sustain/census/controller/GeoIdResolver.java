@@ -10,6 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.sustain.census.Constants.CensusResolutions.COUNTY;
 import static org.sustain.census.Constants.CensusResolutions.LATITUDE;
@@ -32,9 +35,10 @@ public class GeoIdResolver {
         }
 
         resolution += "_fips";
-        log.info("Resolution: " + resolution);
-        String query = "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + " LIKE ? AND " + LONGITUDE +
-                " LIKE ?";
+        log.debug("Resolution: " + resolution);
+        String query =
+                "SELECT " + resolution + " FROM " + TABLE_NAME + " WHERE " + LATITUDE + " LIKE ? AND " + LONGITUDE +
+                        " LIKE ?";
 
         lat = Double.parseDouble(formatter.format(lat));
         lng = Double.parseDouble(formatter.format(lng));
@@ -63,5 +67,40 @@ public class GeoIdResolver {
         log.info("StateFIPS: " + stateFips);
         log.info("CountyFIPS: " + countyFips);
         log.info("TractFIPS: " + tractFips);
+    }
+
+    /**
+     * Get all GeoIDs that fall within a given bounding box (x1, x2, y1, y2)
+     *
+     * @param resolution - census resolution
+     */
+    public static ArrayList<String> getGeoIdsInBoundingBox(double x1, double x2, double y1, double y2,
+                                                           String resolution) throws SQLException {
+        ArrayList<String> geoIds = new ArrayList<>();
+        x1 = Double.parseDouble(formatter.format(x1)) * 10;
+        x2 = Double.parseDouble(formatter.format(x2)) * 10;
+        y1 = Double.parseDouble(formatter.format(y1)) * 10;
+        y2 = Double.parseDouble(formatter.format(y2)) * 10;
+
+        int intX1 = (int) x1;
+        int intX2 = (int) x2;
+        int intY1 = (int) y1;
+        int intY2 = (int) y2;
+        for (int i = intX1; i <= intX2; i += 1) {
+            for (int j = intY1; j <= intY2; j += 1) {
+                String geoId = resolveGeoId(0.1 * i, 0.1 * j, resolution);
+                if (!"".equals(geoId)) {
+                    log.debug("Successfully resolved GeoID: " + geoId);
+                    geoIds.add(geoId);
+                }
+            }
+        }
+
+        // remove duplicates
+        Set<String> set = new HashSet<>(geoIds);
+        geoIds.clear();
+        geoIds.addAll(set);
+
+        return geoIds;
     }
 }
