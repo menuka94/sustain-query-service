@@ -11,6 +11,8 @@ import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.sustain.census.Constants.CensusResolutions.COUNTY;
 import static org.sustain.census.Constants.CensusResolutions.LATITUDE;
@@ -93,6 +95,12 @@ public class GeoIdResolver {
                 }
             }
         }
+
+        // remove duplicates
+        Set<String> set = new HashSet<>(geoIds);
+        geoIds.clear();
+        geoIds.addAll(set);
+
         return geoIds;
     }
 }

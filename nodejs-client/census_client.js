@@ -1,5 +1,5 @@
 const grpc = require('grpc');
-const PROTO_DIR='../src/main/proto'
+const PROTO_DIR = '../src/main/proto'
 const proto_loader = require('@grpc/proto-loader');
 
 let packageDefinition = proto_loader.loadSync(
@@ -18,26 +18,24 @@ let stub = new census_service.Census('localhost:50051', grpc.credentials.createI
 
 let spatialTemporalInfo = {
     resolution: "tract",
-    spatialInfo: {
-      boundingBox: {
-          x1: 40.5,
-          y1: -105.0,
-          x2: 41.5,
-          y2: -105.0
-      }
+    boundingBox: {
+        x1: 40.5,
+        y1: -105.0,
+        x2: 41.5,
+        y2: -104.0
     },
     decade: "_2010"
 };
 let request = {spatialTemporalInfo: spatialTemporalInfo};
 
-// console.log("Fetching total population");
-// stub.getTotalPopulation(request, function (err, response) {
-//     if (err) {
-//         console.log(err);
-//     } else {
-//         console.log(response);
-//     }
-// });
+console.log("Fetching total population");
+stub.getTotalPopulation(request, function (err, response) {
+    if (err) {
+        console.log(err);
+    } else {
+        console.log(response);
+    }
+});
 
 console.log("Fetching median household income");
 stub.getMedianHouseholdIncome(request, function (err, response) {
