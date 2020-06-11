@@ -21,11 +21,11 @@ public class CensusClient {
     }
 
     public static void main(String[] args) {
-        if (args.length != 1) {
-            log.warn("Enter resolution. Example: CensusClient <state/county/tract>");
-            System.exit(0);
-        }
-        String resolution = args[0];
+        //if (args.length != 1) {
+        //    log.warn("Enter resolution. Example: CensusClient <state/county/tract>");
+        //    System.exit(0);
+        //}
+        String resolution = "state";
         double latitude = 24.5;
         double longitude = -82;
 
@@ -36,6 +36,24 @@ public class CensusClient {
 
         try {
             CensusClient client = new CensusClient(channel);
+
+            MedianHouseholdIncomeRequest request = MedianHouseholdIncomeRequest.newBuilder()
+                    .setSpatialTemporalInfo(SpatialTemporalInfo.newBuilder()
+                            .setResolution(Constants.CensusResolutions.TRACT)
+                            .setDecade(Decade._2010)
+                            .setBoundingBox(BoundingBox.newBuilder()
+                                    .setX1(40.5)
+                                    .setY1(-105.1)
+                                    .setX2(40.6)
+                                    .setY2(-105.0)
+                                    .build())
+                            .build())
+                    .build();
+
+            MedianHouseholdIncomeResponse incomeResponse =
+                    client.censusBlockingStub.getMedianHouseholdIncome(request);
+            log.info("Income: " + incomeResponse.getMedianHouseholdIncome());
+            System.exit(0);
 
             // Total Population
             TotalPopulationResponse totalPopulation = client.clientHelper.requestTotalPopulation(resolution, latitude
