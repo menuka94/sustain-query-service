@@ -5,11 +5,11 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.controller.AgeController;
-import org.sustain.census.controller.GeoIdResolver;
-import org.sustain.census.controller.IncomeController;
-import org.sustain.census.controller.PopulationController;
-import org.sustain.census.controller.PovertyController;
+import org.sustain.census.controller.mysql.AgeController;
+import org.sustain.census.controller.mysql.GeoIdResolver;
+import org.sustain.census.controller.mysql.IncomeController;
+import org.sustain.census.controller.mysql.PopulationController;
+import org.sustain.census.controller.mysql.PovertyController;
 
 import java.io.IOException;
 import java.sql.SQLException;

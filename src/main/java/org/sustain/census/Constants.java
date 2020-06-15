@@ -12,6 +12,13 @@ public class Constants {
         put(Decade._1980, "1980");
     }};
 
+    public static final class MongoDBCollections {
+        public static final String GEO_IDS = "geoids";
+        public static final String TOTAL_POPULATION = "total_population";
+        public static final String POPULATION_BY_AGE = "population_by_age";
+        public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
+    }
+
     public static final HashMap<Predicate.Feature, String> TARGET_FEATURES = new HashMap<Predicate.Feature, String>() {{
         put(Predicate.Feature.Population, CensusFeatures.POPULATION);
         put(Predicate.Feature.Income, CensusFeatures.MEDIAN_HOUSEHOLD_INCOME);
