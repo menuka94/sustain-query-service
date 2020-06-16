@@ -20,9 +20,9 @@ let spatialTemporalInfo = {
     resolution: "tract",
     boundingBox: {
         x1: 40.5,
-        y1: -105.0,
-        x2: 41.5,
-        y2: -104.0
+        y1: -105.1,
+        x2: 40.6,
+        y2: -105.0
     },
     decade: "_2010"
 };
