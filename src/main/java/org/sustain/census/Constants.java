@@ -46,6 +46,12 @@ public class Constants {
         public static final int PORT = 50051;
     }
 
+    public static class GeoJsonCollections {
+        public static final String STATES_GEO = "states_geo";
+        public static final String COUNTIES_GEO = "counties_geo";
+        public static final String TRACTS_GEO = "tracts_geo";
+    }
+
     public static class DB {
         public static final String DB_NAME = "sustain_census";
         public static final String USERNAME = "DB_USERNAME";
