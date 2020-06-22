@@ -42,6 +42,10 @@ dependencies {
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
 
+    // https://mvnrepository.com/artifact/de.grundid.opendatalab/geojson-jackson
+    compile group: 'de.grundid.opendatalab', name: 'geojson-jackson', version: '1.14'
+
+
     testCompile "io.grpc:grpc-testing:${grpcVersion}"
     testCompile "org.mockito:mockito-core:1.9.5"
 

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+import "targeted_census.proto";
+
+option java_multiple_files = true;
+option java_package = "org.sustain.census";
+
+message BoundingBox {
+  double x1 = 1;
+  double y1 = 2;
+  double x2 = 3;
+  double y2 = 4;
+}
+
+// geographic information included in every CensusRequest
+message SpatialTemporalInfo {
+  string resolution = 1; // Example:- 'state', 'county', 'tract'
+  oneof SpatialInfo {
+    SingleCoordinate singleCoordinate = 2;
+    BoundingBox boundingBox = 3;
+  }
+  Decade decade = 4;
+}
+
+message SingleCoordinate {
+  double latitude = 1;
+  double longitude = 2 ;
+}
