@@ -39,6 +39,8 @@ dependencies {
     compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.15'
     runtime "mysql:mysql-connector-java:8.0.15"
 
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
 
     testCompile "io.grpc:grpc-testing:${grpcVersion}"
     testCompile "org.mockito:mockito-core:1.9.5"

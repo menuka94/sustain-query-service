@@ -51,6 +51,7 @@ public class Constants {
         public static final String USERNAME = "DB_USERNAME";
         public static final String PASSWORD = "DB_PASSWORD";
         public static final String HOST = "DB_HOST";
+        public static final String PORT = "DB_PORT";
     }
 
     public static class CensusFeatures {
