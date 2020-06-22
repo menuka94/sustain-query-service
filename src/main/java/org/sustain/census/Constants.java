@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 public class Constants {
     public static final String EMPTY_COMPARISON_FIELD = "";
+    public static final String GIS_JOIN = "GISJOIN";
 
     public static final HashMap<Decade, String> DECADES = new HashMap<Decade, String>() {{
         put(Decade._2010, "2010");
@@ -62,6 +63,7 @@ public class Constants {
 
     public static class CensusFeatures {
         public static final String POPULATION = "population";
+        public static final String TOTAL_POPULATION = "total_population";
         public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
         public static final String POPULATION_BY_AGE = "population_by_age";
         public static final String MEDIAN_AGE = "medianage";

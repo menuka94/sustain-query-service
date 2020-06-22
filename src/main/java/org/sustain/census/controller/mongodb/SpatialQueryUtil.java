@@ -134,7 +134,6 @@ public class SpatialQueryUtil {
 
         for (GeoJson json : tractGeoWithin) {
             log.info("GIS JOIN: " + json.getProperties().getGisJoin());
-            log.info("GEOID: " + json.getProperties().getGeoId());
         }
     }
 }

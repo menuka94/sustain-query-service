@@ -1,19 +1,25 @@
 package org.sustain.census;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.mongodb.client.model.geojson.Geometry;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.census.controller.mongodb.SpatialQueryUtil;
 import org.sustain.census.controller.mysql.AgeController;
 import org.sustain.census.controller.mysql.GeoIdResolver;
 import org.sustain.census.controller.mysql.IncomeController;
 import org.sustain.census.controller.mysql.PopulationController;
 import org.sustain.census.controller.mysql.PovertyController;
+import org.sustain.census.model.GeoJson;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.sustain.census.ServerHelper.executeTargetedIncomeQuery;
@@ -71,6 +77,50 @@ public class CensusServer {
     }
 
     static class CensusServerImpl extends CensusGrpc.CensusImplBase {
+        @Override
+        public void spatialQuery(SpatialRequest request, StreamObserver<SpatialResponse> responseObserver) {
+            CensusFeature censusFeature = request.getCensusFeature();
+            String requestGeoJson = request.getGeoJson();
+            System.out.println(requestGeoJson);
+            JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
+            Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
+            String resolution = Constants.TARGET_RESOLUTIONS.get(request.getCensusResolution());
+            switch (censusFeature) {
+                case TotalPopulation:
+                    ArrayList<GeoJson> geoWithin = SpatialQueryUtil.findGeoWithin(resolution + "_geo", geometry);
+                    List<SingleSpatialResponse> responseList = new ArrayList<>();
+                    for (GeoJson geoJson : geoWithin) {
+                        String populationResult =
+                                org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
+                                        geoJson.getProperties().getGisJoin());
+                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                                .setData(populationResult)
+                                .setGeoJson(geoJson.toJson())
+                                .build();
+                        responseList.add(response);
+                    }
+                    SpatialResponse populationSpatialResponse =
+                            SpatialResponse.newBuilder().addAllSingleSpatialResponse(responseList).build();
+                    responseObserver.onNext(populationSpatialResponse);
+                    responseObserver.onCompleted();
+                    break;
+                case MedianHouseholdIncome:
+                    log.warn("Not supported yet");
+                    break;
+                case PopulationByAge:
+                    log.warn("Not supported yet");
+                    break;
+                case Poverty:
+                    log.warn("Not supported yet");
+                    break;
+                case Race:
+                    log.warn("Not supported yet");
+                    break;
+                case UNRECOGNIZED:
+                    log.warn("Unknown Census Feature requested");
+            }
+        }
+
         @Override
         public void getTotalPopulation(TotalPopulationRequest request,
                                        StreamObserver<TotalPopulationResponse> responseObserver) {

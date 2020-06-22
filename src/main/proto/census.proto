@@ -2,7 +2,6 @@ syntax = "proto3";
 
 import "google/api/http.proto";
 import "targeted_census.proto";
-import "legacy_census.proto";
 
 option java_multiple_files = true;
 option java_package = "org.sustain.census";
@@ -29,11 +28,55 @@ service Census {
 }
 
 message SpatialRequest {
-
+  CensusResolution censusResolution = 1;
+  CensusFeature censusFeature = 2;
+  string geoJson = 3;   // bounding polygon
+  SpatialOp spatialOp = 4;
 }
 
 message SpatialResponse {
+  repeated SingleSpatialResponse singleSpatialResponse = 1;
+}
 
+message SingleSpatialResponse {
+  string data = 1;
+  string geoJson = 2;   // geoJson associated with 'data'
+}
+
+enum SpatialOp {
+  GeoWithin = 0;
+  GeoIntersects = 1;
+}
+
+enum CensusFeature {
+  TotalPopulation = 0;
+  MedianHouseholdIncome = 1;
+  PopulationByAge = 2;
+  MedianAge = 3;
+  Poverty = 4;
+  Race = 5;
+}
+
+message BoundingBox {
+  double x1 = 1;
+  double y1 = 2;
+  double x2 = 3;
+  double y2 = 4;
+}
+
+// geographic information included in every CensusRequest
+message SpatialTemporalInfo {
+  string resolution = 1; // Example:- 'state', 'county', 'tract'
+  oneof SpatialInfo {
+    SingleCoordinate singleCoordinate = 2;
+    BoundingBox boundingBox = 3;
+  }
+  Decade decade = 4;
+}
+
+message SingleCoordinate {
+  double latitude = 1;
+  double longitude = 2 ;
 }
 
 message RaceRequest {
