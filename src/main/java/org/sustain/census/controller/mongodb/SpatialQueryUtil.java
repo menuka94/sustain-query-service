@@ -1,5 +1,6 @@
 package org.sustain.census.controller.mongodb;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -18,12 +19,14 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.sustain.census.Constants;
 import org.sustain.census.db.mongodb.DBConnection;
+import org.sustain.census.model.GeoJson;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class SpatialQueryUtil {
     private static final Logger log = LogManager.getLogger(SpatialQueryUtil.class);
+    private static final Gson gson = new Gson();
 
     /**
      * @param geoJson of the following form;
@@ -54,8 +57,8 @@ public class SpatialQueryUtil {
         return new Polygon(new PolygonCoordinates(positions));
     }
 
-    public static ArrayList<String> findGeoWithin(String collectionName, Geometry geometry) {
-        ArrayList<String> gisJoins = new ArrayList<>();
+    public static ArrayList<GeoJson> findGeoWithin(String collectionName, Geometry geometry) {
+        ArrayList<GeoJson> geoJsons = new ArrayList<>();
         log.info("findGeoWithin()");
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(collectionName);
@@ -65,11 +68,29 @@ public class SpatialQueryUtil {
         while (cursor.hasNext()) {
             Document next = cursor.next();
             JsonObject jsonElement = JsonParser.parseString(next.toJson()).getAsJsonObject();
-            JsonElement gisJoin = jsonElement.get("properties").getAsJsonObject().get("GISJOIN");
-            gisJoins.add(gisJoin.toString());
+            GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
+            geoJsons.add(geoJson);
         }
 
-        return gisJoins;
+        return geoJsons;
+    }
+
+    public static ArrayList<GeoJson> findGeoIntersects(String collectionName, Geometry geometry) {
+        ArrayList<GeoJson> geoJsons = new ArrayList<>();
+        log.info("findGeoIntersects()");
+        MongoDatabase db = DBConnection.getConnection();
+        MongoCollection<Document> collection = db.getCollection(collectionName);
+        FindIterable<Document> iterable = collection.find(Filters.geoIntersects("geometry", geometry));
+        MongoCursor<Document> cursor = iterable.cursor();
+
+        while (cursor.hasNext()) {
+            Document next = cursor.next();
+            JsonObject jsonElement = JsonParser.parseString(next.toJson()).getAsJsonObject();
+            GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
+            geoJsons.add(geoJson);
+        }
+
+        return geoJsons;
     }
 
     public static void main(String[] args) {
@@ -108,9 +129,12 @@ public class SpatialQueryUtil {
 
         JsonObject geoJson = JsonParser.parseString(stringGeoJson).getAsJsonObject();
         Geometry geometry = constructPolygon(geoJson);
-        ArrayList<String> tractGisJoins = findGeoWithin(Constants.GeoJsonCollections.TRACTS_GEO, geometry);
-        ArrayList<String> countyGisJoins = findGeoWithin(Constants.GeoJsonCollections.COUNTIES_GEO, geometry);
-        log.info(tractGisJoins.size());
-        log.info(countyGisJoins.size());
+        ArrayList<GeoJson> tractGeoWithin = findGeoWithin(Constants.GeoJsonCollections.TRACTS_GEO, geometry);
+        ArrayList<GeoJson> countyGeoWithin = findGeoWithin(Constants.GeoJsonCollections.COUNTIES_GEO, geometry);
+
+        for (GeoJson json : tractGeoWithin) {
+            log.info("GIS JOIN: " + json.getProperties().getGisJoin());
+            log.info("GEOID: " + json.getProperties().getGeoId());
+        }
     }
 }
