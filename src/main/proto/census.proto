@@ -30,7 +30,7 @@ service Census {
 message SpatialRequest {
   CensusResolution censusResolution = 1;
   CensusFeature censusFeature = 2;
-  string geoJson = 3;   // bounding polygon
+  string requestGeoJson = 3;   // bounding polygon
   SpatialOp spatialOp = 4;
 }
 
@@ -40,7 +40,7 @@ message SpatialResponse {
 
 message SingleSpatialResponse {
   string data = 1;
-  string geoJson = 2;   // geoJson associated with 'data'
+  string responseGeoJson = 2;   // geoJson associated with 'data'
 }
 
 enum SpatialOp {

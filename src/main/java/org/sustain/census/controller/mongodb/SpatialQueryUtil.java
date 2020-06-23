@@ -46,7 +46,7 @@ public class SpatialQueryUtil {
      */
     public static Geometry constructPolygon(JsonObject geoJson) {
         JsonArray coordinatesArray =
-                geoJson.get("geoJson").getAsJsonObject().get("coordinates").getAsJsonArray().get(0).getAsJsonArray();
+                geoJson.get("geometry").getAsJsonObject().get("coordinates").getAsJsonArray().get(0).getAsJsonArray();
         log.info("No. of points: " + coordinatesArray.size());
         List<Position> positions = new ArrayList<>();
         for (JsonElement jsonElement : coordinatesArray) {
@@ -67,7 +67,6 @@ public class SpatialQueryUtil {
 
         while (cursor.hasNext()) {
             Document next = cursor.next();
-            JsonObject jsonElement = JsonParser.parseString(next.toJson()).getAsJsonObject();
             GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
             geoJsons.add(geoJson);
         }
@@ -94,11 +93,10 @@ public class SpatialQueryUtil {
     }
 
     public static void main(String[] args) {
-
-        String stringGeoJson = " {\n" +
+        final String stringGeoJson = " {\n" +
                 "      \"type\": \"Feature\",\n" +
                 "      \"properties\": {},\n" +
-                "      \"geoJson\": {\n" +
+                "      \"geometry\": {\n" +
                 "        \"type\": \"Polygon\",\n" +
                 "        \"coordinates\": [\n" +
                 "          [\n" +

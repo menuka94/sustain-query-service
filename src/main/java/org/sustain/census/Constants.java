@@ -48,9 +48,9 @@ public class Constants {
     }
 
     public static class GeoJsonCollections {
-        public static final String STATES_GEO = "states_geo";
-        public static final String COUNTIES_GEO = "counties_geo";
-        public static final String TRACTS_GEO = "tracts_geo";
+        public static final String STATES_GEO = "state_geo";
+        public static final String COUNTIES_GEO = "county_geo";
+        public static final String TRACTS_GEO = "tract_geo";
     }
 
     public static class DB {

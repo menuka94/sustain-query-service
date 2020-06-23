@@ -80,22 +80,41 @@ public class CensusServer {
         @Override
         public void spatialQuery(SpatialRequest request, StreamObserver<SpatialResponse> responseObserver) {
             CensusFeature censusFeature = request.getCensusFeature();
-            String requestGeoJson = request.getGeoJson();
-            System.out.println(requestGeoJson);
+            String requestGeoJson = request.getRequestGeoJson();
+            CensusResolution censusResolution = request.getCensusResolution();
+            SpatialOp spatialOp = request.getSpatialOp();
+            System.out.println("CensusFeature: " + censusFeature.toString());
+            System.out.println("CensusResolution: " + censusResolution.toString());
+            System.out.println("SpatialOp: " + spatialOp.toString());
+
             JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
             Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
-            String resolution = Constants.TARGET_RESOLUTIONS.get(request.getCensusResolution());
+            String resolution = Constants.TARGET_RESOLUTIONS.get(censusResolution);
             switch (censusFeature) {
                 case TotalPopulation:
-                    ArrayList<GeoJson> geoWithin = SpatialQueryUtil.findGeoWithin(resolution + "_geo", geometry);
+                    String collectionName = resolution + "_geo";
+                    log.debug("collectionName: " + collectionName);
+                    ArrayList<GeoJson> geoJsonList = null;
+                    switch (spatialOp) {
+                        case GeoWithin:
+                            geoJsonList = SpatialQueryUtil.findGeoWithin(collectionName, geometry);
+                            break;
+                        case GeoIntersects:
+                            geoJsonList = SpatialQueryUtil.findGeoIntersects(collectionName, geometry);
+                            break;
+                        case UNRECOGNIZED:
+                            log.warn("Unrecognized Spatial Operation");
+                    }
+                    log.info("geoJsonList.size(): " + geoJsonList.size());
+
                     List<SingleSpatialResponse> responseList = new ArrayList<>();
-                    for (GeoJson geoJson : geoWithin) {
+                    for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
                                         geoJson.getProperties().getGisJoin());
                         SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
                                 .setData(populationResult)
-                                .setGeoJson(geoJson.toJson())
+                                .setResponseGeoJson(geoJson.toJson())
                                 .build();
                         responseList.add(response);
                     }

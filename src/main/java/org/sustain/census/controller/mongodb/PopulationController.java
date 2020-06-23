@@ -9,13 +9,11 @@ import org.bson.Document;
 import org.sustain.census.Constants;
 import org.sustain.census.db.mongodb.DBConnection;
 
-import java.util.ArrayList;
-
 public class PopulationController {
     private static final Logger log = LogManager.getLogger(PopulationController.class);
 
     public static String getPopulationResults(String resolution, String gisJoin) {
-        ArrayList<String> results = new ArrayList<>();
+        log.info("getPopulationResults: " + "{resolution: " + resolution + ", GisJoin: " + gisJoin + "}");
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection =
                 db.getCollection(resolution + "_" + Constants.CensusFeatures.TOTAL_POPULATION);

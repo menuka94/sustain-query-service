@@ -52,11 +52,11 @@ let geoJsonStringify = JSON.stringify({
 let spatialRequest = {
     censusResolution: "tract",
     censusFeature: "medianHouseholdIncome",
-    geoJson: geoJsonStringify,
-    spatialOp: "geoWithin"
+    requestGeoJson: geoJsonStringify,
+    spatialOp: "geoIntersects"
 };
 
-let request = {spatialRequest: spatialRequest};
+let request = {SpatialRequest: spatialRequest};
 
 stub.SpatialQuery(request, function (err, response) {
     if (err) {
