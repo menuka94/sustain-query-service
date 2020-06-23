@@ -1,8 +1,9 @@
-package org.sustain.census.db;
+package org.sustain.census.db.mysql;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.Constants;
+import org.sustain.census.db.Util;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

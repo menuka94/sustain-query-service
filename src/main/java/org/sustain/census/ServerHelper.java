@@ -1,9 +1,9 @@
 package org.sustain.census;
 
 import io.grpc.stub.StreamObserver;
-import org.sustain.census.controller.IncomeController;
-import org.sustain.census.controller.PopulationController;
-import org.sustain.census.controller.RaceController;
+import org.sustain.census.controller.mysql.IncomeController;
+import org.sustain.census.controller.mysql.PopulationController;
+import org.sustain.census.controller.mysql.RaceController;
 
 import java.sql.SQLException;
 import java.util.HashMap;

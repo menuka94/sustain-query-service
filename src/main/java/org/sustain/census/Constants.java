@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 public class Constants {
     public static final String EMPTY_COMPARISON_FIELD = "";
+    public static final String GIS_JOIN = "GISJOIN";
 
     public static final HashMap<Decade, String> DECADES = new HashMap<Decade, String>() {{
         put(Decade._2010, "2010");
@@ -11,6 +12,13 @@ public class Constants {
         put(Decade._1990, "1990");
         put(Decade._1980, "1980");
     }};
+
+    public static final class MongoDBCollections {
+        public static final String GEO_IDS = "geoids";
+        public static final String TOTAL_POPULATION = "total_population";
+        public static final String POPULATION_BY_AGE = "population_by_age";
+        public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
+    }
 
     public static final HashMap<Predicate.Feature, String> TARGET_FEATURES = new HashMap<Predicate.Feature, String>() {{
         put(Predicate.Feature.Population, CensusFeatures.POPULATION);
@@ -39,15 +47,23 @@ public class Constants {
         public static final int PORT = 50051;
     }
 
+    public static class GeoJsonCollections {
+        public static final String STATES_GEO = "state_geo";
+        public static final String COUNTIES_GEO = "county_geo";
+        public static final String TRACTS_GEO = "tract_geo";
+    }
+
     public static class DB {
         public static final String DB_NAME = "sustain_census";
         public static final String USERNAME = "DB_USERNAME";
         public static final String PASSWORD = "DB_PASSWORD";
         public static final String HOST = "DB_HOST";
+        public static final String PORT = "DB_PORT";
     }
 
     public static class CensusFeatures {
         public static final String POPULATION = "population";
+        public static final String TOTAL_POPULATION = "total_population";
         public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
         public static final String POPULATION_BY_AGE = "population_by_age";
         public static final String MEDIAN_AGE = "medianage";

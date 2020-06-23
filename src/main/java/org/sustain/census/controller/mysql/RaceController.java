@@ -1,10 +1,10 @@
-package org.sustain.census.controller;
+package org.sustain.census.controller.mysql;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.Constants;
 import org.sustain.census.RaceResponse;
-import org.sustain.census.db.DBConnection;
+import org.sustain.census.db.mysql.DBConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
