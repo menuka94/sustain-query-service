@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import com.mongodb.client.model.geojson.Geometry;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -159,12 +160,22 @@ public class CensusServer {
                         double latitude = spatialTemporalInfo.getSingleCoordinate().getLatitude();
                         double longitude = spatialTemporalInfo.getSingleCoordinate().getLongitude();
 
-                        String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
-                        log.info("Resolved GeoID (FIPS): " + resolutionValue);
+                        boolean coordinatesValid = isCoordinatesValid(latitude, longitude);
+                        if (coordinatesValid) {
+                            String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                            log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
-                        responseObserver.onNext(PopulationController.fetchTotalPopulation(resolutionKey,
-                                resolutionValue, decade));
-                        responseObserver.onCompleted();
+                            responseObserver.onNext(PopulationController.fetchTotalPopulation(resolutionKey,
+                                    resolutionValue, decade));
+                            responseObserver.onCompleted();
+                        } else {
+                            Status status = Status.newBuilder()
+                                    .setCode(Code.INVALID_ARGUMENT_VALUE)
+                                    .setMessage("Invalid coordinates")
+                                    .build();
+                            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
+                        }
+
                         break;
                     case BOUNDINGBOX:
                         double x1 = spatialTemporalInfo.getBoundingBox().getX1();
@@ -172,19 +183,25 @@ public class CensusServer {
                         double x2 = spatialTemporalInfo.getBoundingBox().getX2();
                         double y2 = spatialTemporalInfo.getBoundingBox().getY2();
 
-                        boolean isValid = isBoundingBoxValid(x1, x2, y1, y2);
-                        if (!isValid) {
-                            return;
+                        boolean boundingBoxValid = isBoundingBoxValid(x1, x2, y1, y2);
+                        if (boundingBoxValid) {
+                            ArrayList<String> geoIds = GeoIdResolver.getGeoIdsInBoundingBox(x1, x2, y1, y2,
+                                    resolutionKey);
+                            if (geoIds.size() == 0) {
+                                log.warn("No GeoIDs found for the entered bounding-box coordinates");
+                                return;
+                            }
+                            responseObserver.onNext(PopulationController.getAveragedPopulation(resolutionKey, geoIds,
+                                    decade));
+                            responseObserver.onCompleted();
+                        } else {
+                            Status status = Status.newBuilder()
+                                    .setCode(Code.INVALID_ARGUMENT_VALUE)
+                                    .setMessage("Invalid coordinates")
+                                    .build();
+                            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
                         }
 
-                        ArrayList<String> geoIds = GeoIdResolver.getGeoIdsInBoundingBox(x1, x2, y1, y2, resolutionKey);
-                        if (geoIds.size() == 0) {
-                            log.warn("No GeoIDs found for the entered bounding-box coordinates");
-                            return;
-                        }
-                        responseObserver.onNext(PopulationController.getAveragedPopulation(resolutionKey, geoIds,
-                                decade));
-                        responseObserver.onCompleted();
                         break;
                     case SPATIALINFO_NOT_SET:
                         log.warn("SpatialInfo not set");
@@ -193,6 +210,15 @@ public class CensusServer {
                 log.error(e);
                 e.printStackTrace();
             }
+        }
+
+        private boolean isCoordinatesValid(double latitude, double longitude) {
+            boolean valid = true;
+            if (latitude == 0.0 || longitude == 0.0) {
+                valid = false;
+            }
+
+            return valid;
         }
 
         private boolean isRequestValid(String resolution) {
@@ -246,12 +272,22 @@ public class CensusServer {
                         double latitude = spatialTemporalInfo.getSingleCoordinate().getLatitude();
                         double longitude = spatialTemporalInfo.getSingleCoordinate().getLongitude();
 
-                        String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
-                        log.info("Resolved GeoID (FIPS): " + resolutionValue);
+                        boolean coordinatesValid = isCoordinatesValid(latitude, longitude);
+                        if (coordinatesValid) {
+                            String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
+                            log.info("Resolved GeoID (FIPS): " + resolutionValue);
 
-                        responseObserver.onNext(IncomeController.fetchMedianHouseholdIncome(resolutionKey,
-                                resolutionValue, decade));
-                        responseObserver.onCompleted();
+                            responseObserver.onNext(IncomeController.fetchMedianHouseholdIncome(resolutionKey,
+                                    resolutionValue, decade));
+                            responseObserver.onCompleted();
+                        } else {
+                            Status status = Status.newBuilder()
+                                    .setCode(Code.INVALID_ARGUMENT_VALUE)
+                                    .setMessage("Invalid coordinates")
+                                    .build();
+                            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
+                        }
+
                         break;
                     case BOUNDINGBOX:
                         double x1 = spatialTemporalInfo.getBoundingBox().getX1();
@@ -260,18 +296,24 @@ public class CensusServer {
                         double y2 = spatialTemporalInfo.getBoundingBox().getY2();
 
                         boolean isValid = isBoundingBoxValid(x1, x2, y1, y2);
-                        if (!isValid) {
-                            return;
+                        if (isValid) {
+                            ArrayList<String> geoIds = GeoIdResolver.getGeoIdsInBoundingBox(x1, x2, y1, y2,
+                                    resolutionKey);
+                            if (geoIds.size() == 0) {
+                                log.warn("No GeoIDs found for the entered bounding-box coordinates");
+                                return;
+                            }
+                            responseObserver.onNext(IncomeController.getAveragedMedianHouseholdIncome(resolutionKey,
+                                    geoIds, decade));
+                            responseObserver.onCompleted();
+                        } else {
+                            Status status = Status.newBuilder()
+                                    .setCode(Code.INVALID_ARGUMENT_VALUE)
+                                    .setMessage("Invalid coordinates")
+                                    .build();
+                            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
                         }
 
-                        ArrayList<String> geoIds = GeoIdResolver.getGeoIdsInBoundingBox(x1, x2, y1, y2, resolutionKey);
-                        if (geoIds.size() == 0) {
-                            log.warn("No GeoIDs found for the entered bounding-box coordinates");
-                            return;
-                        }
-                        responseObserver.onNext(IncomeController.getAveragedMedianHouseholdIncome(resolutionKey,
-                                geoIds, decade));
-                        responseObserver.onCompleted();
                         break;
                     case SPATIALINFO_NOT_SET:
                         log.warn("SpatialInfo not set");
@@ -284,6 +326,10 @@ public class CensusServer {
 
         private boolean isBoundingBoxValid(double x1, double x2, double y1, double y2) {
             boolean valid = true;
+            if (x1 == 0.0 || x2 == 0.0 || y1 == 0.0 || y2 == 0.0) {
+                log.warn("No coordinate can be 0.0");
+                valid = false;
+            }
             if (x1 >= x2) {
                 log.warn("x2 must be greater than x1");
                 valid = false;

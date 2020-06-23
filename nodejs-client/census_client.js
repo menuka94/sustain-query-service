@@ -16,6 +16,7 @@ let protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 let census_service = protoDescriptor.census;
 let stub = new census_service.Census('localhost:50051', grpc.credentials.createInsecure());
 
+
 let geoJsonStringify = JSON.stringify({
         "type": "Feature",
         "properties": {},
