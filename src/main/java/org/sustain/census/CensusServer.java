@@ -85,24 +85,26 @@ public class CensusServer {
             JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
             Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
             String resolution = Constants.TARGET_RESOLUTIONS.get(censusResolution);
+
+            String collectionName = resolution + "_geo";
+            log.debug("collectionName: " + collectionName);
+            ArrayList<GeoJson> geoJsonList = null;
+            switch (spatialOp) {
+                case GeoWithin:
+                    geoJsonList = SpatialQueryUtil.findGeoWithin(collectionName, geometry);
+                    break;
+                case GeoIntersects:
+                    geoJsonList = SpatialQueryUtil.findGeoIntersects(collectionName, geometry);
+                    break;
+                case UNRECOGNIZED:
+                    geoJsonList = new ArrayList<>();
+                    log.warn("Unrecognized Spatial Operation");
+            }
+            log.info("geoJsonList.size(): " + geoJsonList.size());
+
             switch (censusFeature) {
                 case TotalPopulation:
-                    String collectionName = resolution + "_geo";
-                    log.debug("collectionName: " + collectionName);
-                    ArrayList<GeoJson> geoJsonList = null;
-                    switch (spatialOp) {
-                        case GeoWithin:
-                            geoJsonList = SpatialQueryUtil.findGeoWithin(collectionName, geometry);
-                            break;
-                        case GeoIntersects:
-                            geoJsonList = SpatialQueryUtil.findGeoIntersects(collectionName, geometry);
-                            break;
-                        case UNRECOGNIZED:
-                            log.warn("Unrecognized Spatial Operation");
-                    }
-                    log.info("geoJsonList.size(): " + geoJsonList.size());
-
-                    List<SingleSpatialResponse> responseList = new ArrayList<>();
+                    List<SingleSpatialResponse> populationResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
@@ -111,15 +113,29 @@ public class CensusServer {
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
-                        responseList.add(response);
+                        populationResponseList.add(response);
                     }
                     SpatialResponse populationSpatialResponse =
-                            SpatialResponse.newBuilder().addAllSingleSpatialResponse(responseList).build();
+                            SpatialResponse.newBuilder().addAllSingleSpatialResponse(populationResponseList).build();
                     responseObserver.onNext(populationSpatialResponse);
                     responseObserver.onCompleted();
                     break;
                 case MedianHouseholdIncome:
-                    log.warn("Not supported yet");
+                    List<SingleSpatialResponse> incomeResponseList = new ArrayList<>();
+                    for (GeoJson geoJson : geoJsonList) {
+                        String populationResult =
+                                org.sustain.census.controller.mongodb.IncomeController.getMedianHouseholdIncome(resolution,
+                                        geoJson.getProperties().getGisJoin());
+                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                                .setData(populationResult)
+                                .setResponseGeoJson(geoJson.toJson())
+                                .build();
+                        incomeResponseList.add(response);
+                    }
+                    SpatialResponse incomeSpatialResponse =
+                            SpatialResponse.newBuilder().addAllSingleSpatialResponse(incomeResponseList).build();
+                    responseObserver.onNext(incomeSpatialResponse);
+                    responseObserver.onCompleted();
                     break;
                 case PopulationByAge:
                     log.warn("Not supported yet");
