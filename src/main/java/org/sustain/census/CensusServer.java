@@ -2,21 +2,13 @@ package org.sustain.census;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.rpc.Code;
-import com.google.rpc.Status;
 import com.mongodb.client.model.geojson.Geometry;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import io.grpc.protobuf.StatusProto;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.controller.mongodb.SpatialQueryUtil;
-import org.sustain.census.controller.mysql.AgeController;
-import org.sustain.census.controller.mysql.GeoIdResolver;
-import org.sustain.census.controller.mysql.IncomeController;
-import org.sustain.census.controller.mysql.PopulationController;
-import org.sustain.census.controller.mysql.PovertyController;
 import org.sustain.census.model.GeoJson;
 
 import java.io.IOException;
@@ -143,85 +135,6 @@ public class CensusServer {
             }
         }
 
-        @Override
-        public void getTotalPopulation(TotalPopulationRequest request,
-                                       StreamObserver<TotalPopulationResponse> responseObserver) {
-            SpatialTemporalInfo spatialTemporalInfo = request.getSpatialTemporalInfo();
-            String decade = Constants.DECADES.get(spatialTemporalInfo.getDecade());
-            String resolutionKey = spatialTemporalInfo.getResolution();
-
-
-            if (!isRequestValid(resolutionKey)) {
-                return;
-            }
-
-            SpatialTemporalInfo.SpatialInfoCase spatialInfoCase = spatialTemporalInfo.getSpatialInfoCase();
-            try {
-                switch (spatialInfoCase) {
-                    case SINGLECOORDINATE:
-                        double latitude = spatialTemporalInfo.getSingleCoordinate().getLatitude();
-                        double longitude = spatialTemporalInfo.getSingleCoordinate().getLongitude();
-
-                        boolean coordinatesValid = isCoordinatesValid(latitude, longitude);
-                        if (coordinatesValid) {
-                            String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
-                            log.info("Resolved GeoID (FIPS): " + resolutionValue);
-
-                            responseObserver.onNext(PopulationController.fetchTotalPopulation(resolutionKey,
-                                    resolutionValue, decade));
-                            responseObserver.onCompleted();
-                        } else {
-                            Status status = Status.newBuilder()
-                                    .setCode(Code.INVALID_ARGUMENT_VALUE)
-                                    .setMessage("Invalid coordinates")
-                                    .build();
-                            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
-                        }
-
-                        break;
-                    case BOUNDINGBOX:
-                        double x1 = spatialTemporalInfo.getBoundingBox().getX1();
-                        double y1 = spatialTemporalInfo.getBoundingBox().getY1();
-                        double x2 = spatialTemporalInfo.getBoundingBox().getX2();
-                        double y2 = spatialTemporalInfo.getBoundingBox().getY2();
-
-                        boolean boundingBoxValid = isBoundingBoxValid(x1, x2, y1, y2);
-                        if (boundingBoxValid) {
-                            ArrayList<String> geoIds = GeoIdResolver.getGeoIdsInBoundingBox(x1, x2, y1, y2,
-                                    resolutionKey);
-                            if (geoIds.size() == 0) {
-                                log.warn("No GeoIDs found for the entered bounding-box coordinates");
-                                return;
-                            }
-                            responseObserver.onNext(PopulationController.getAveragedPopulation(resolutionKey, geoIds,
-                                    decade));
-                            responseObserver.onCompleted();
-                        } else {
-                            Status status = Status.newBuilder()
-                                    .setCode(Code.INVALID_ARGUMENT_VALUE)
-                                    .setMessage("Invalid coordinates")
-                                    .build();
-                            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
-                        }
-
-                        break;
-                    case SPATIALINFO_NOT_SET:
-                        log.warn("SpatialInfo not set");
-                }
-            } catch (SQLException e) {
-                log.error(e);
-                e.printStackTrace();
-            }
-        }
-
-        private boolean isCoordinatesValid(double latitude, double longitude) {
-            boolean valid = true;
-            if (latitude == 0.0 || longitude == 0.0) {
-                valid = false;
-            }
-
-            return valid;
-        }
 
         private boolean isRequestValid(String resolution) {
             boolean valid = true;
@@ -233,161 +146,6 @@ public class CensusServer {
             return valid;
         }
 
-        @Override
-        public void getMedianAge(MedianAgeRequest request, StreamObserver<MedianAgeResponse> responseObserver) {
-            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
-            double latitude = request.getSpatialTemporalInfo().getSingleCoordinate().getLatitude();
-            double longitude = request.getSpatialTemporalInfo().getSingleCoordinate().getLongitude();
-
-            if (!isRequestValid(resolutionKey)) {
-                return;
-            }
-
-            try {
-                String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
-                log.info("Resolved GeoID (FIPS): " + resolutionValue);
-
-                responseObserver.onNext(AgeController.fetchMedianAge(resolutionKey, resolutionValue));
-                responseObserver.onCompleted();
-            } catch (SQLException e) {
-                log.error(e);
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public void getMedianHouseholdIncome(MedianHouseholdIncomeRequest request,
-                                             StreamObserver<MedianHouseholdIncomeResponse> responseObserver) {
-            SpatialTemporalInfo spatialTemporalInfo = request.getSpatialTemporalInfo();
-            String decade = Constants.DECADES.get(spatialTemporalInfo.getDecade());
-            String resolutionKey = spatialTemporalInfo.getResolution();
-
-            if (!isRequestValid(resolutionKey)) {
-                return;
-            }
-
-            // to determine the spatialInfo type (single-coordinate/bounding-box)
-            SpatialTemporalInfo.SpatialInfoCase spatialInfoCase = spatialTemporalInfo.getSpatialInfoCase();
-            try {
-                switch (spatialInfoCase) {
-                    case SINGLECOORDINATE:
-                        double latitude = spatialTemporalInfo.getSingleCoordinate().getLatitude();
-                        double longitude = spatialTemporalInfo.getSingleCoordinate().getLongitude();
-
-                        boolean coordinatesValid = isCoordinatesValid(latitude, longitude);
-                        if (coordinatesValid) {
-                            String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
-                            log.info("Resolved GeoID (FIPS): " + resolutionValue);
-
-                            responseObserver.onNext(IncomeController.fetchMedianHouseholdIncome(resolutionKey,
-                                    resolutionValue, decade));
-                            responseObserver.onCompleted();
-                        } else {
-                            Status status = Status.newBuilder()
-                                    .setCode(Code.INVALID_ARGUMENT_VALUE)
-                                    .setMessage("Invalid coordinates")
-                                    .build();
-                            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
-                        }
-
-                        break;
-                    case BOUNDINGBOX:
-                        double x1 = spatialTemporalInfo.getBoundingBox().getX1();
-                        double y1 = spatialTemporalInfo.getBoundingBox().getY1();
-                        double x2 = spatialTemporalInfo.getBoundingBox().getX2();
-                        double y2 = spatialTemporalInfo.getBoundingBox().getY2();
-
-                        boolean isValid = isBoundingBoxValid(x1, x2, y1, y2);
-                        if (isValid) {
-                            ArrayList<String> geoIds = GeoIdResolver.getGeoIdsInBoundingBox(x1, x2, y1, y2,
-                                    resolutionKey);
-                            if (geoIds.size() == 0) {
-                                log.warn("No GeoIDs found for the entered bounding-box coordinates");
-                                return;
-                            }
-                            responseObserver.onNext(IncomeController.getAveragedMedianHouseholdIncome(resolutionKey,
-                                    geoIds, decade));
-                            responseObserver.onCompleted();
-                        } else {
-                            Status status = Status.newBuilder()
-                                    .setCode(Code.INVALID_ARGUMENT_VALUE)
-                                    .setMessage("Invalid coordinates")
-                                    .build();
-                            responseObserver.onError(StatusProto.toStatusRuntimeException(status));
-                        }
-
-                        break;
-                    case SPATIALINFO_NOT_SET:
-                        log.warn("SpatialInfo not set");
-                }
-            } catch (SQLException e) {
-                log.error(e);
-                e.printStackTrace();
-            }
-        }
-
-        private boolean isBoundingBoxValid(double x1, double x2, double y1, double y2) {
-            boolean valid = true;
-            if (x1 == 0.0 || x2 == 0.0 || y1 == 0.0 || y2 == 0.0) {
-                log.warn("No coordinate can be 0.0");
-                valid = false;
-            }
-            if (x1 >= x2) {
-                log.warn("x2 must be greater than x1");
-                valid = false;
-            }
-            if (y1 >= y2) {
-                log.warn("y2 must be greater than y1");
-                valid = false;
-            }
-            return valid;
-        }
-
-        @Override
-        public void getPopulationByAge(PopulationByAgeRequest request,
-                                       StreamObserver<PopulationByAgeResponse> responseObserver) {
-            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
-            double latitude = request.getSpatialTemporalInfo().getSingleCoordinate().getLatitude();
-            double longitude = request.getSpatialTemporalInfo().getSingleCoordinate().getLongitude();
-
-            if (!isRequestValid(resolutionKey)) {
-                return;
-            }
-
-            try {
-                String resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
-                log.info("Resolved GeoID (FIPS): " + resolutionValue);
-
-                responseObserver.onNext(PopulationController.fetchPopulationByAge(resolutionKey, resolutionValue));
-                responseObserver.onCompleted();
-            } catch (SQLException e) {
-                log.error(e);
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public void getPoverty(PovertyRequest request, StreamObserver<PovertyResponse> responseObserver) {
-            String resolutionKey = request.getSpatialTemporalInfo().getResolution();
-            double latitude = request.getSpatialTemporalInfo().getSingleCoordinate().getLatitude();
-            double longitude = request.getSpatialTemporalInfo().getSingleCoordinate().getLongitude();
-
-            if (!isRequestValid(resolutionKey)) {
-                return;
-            }
-
-            String resolutionValue;
-            try {
-                resolutionValue = GeoIdResolver.resolveGeoId(latitude, longitude, resolutionKey);
-                log.info("Resolved GeoID (FIPS): " + resolutionValue);
-
-                responseObserver.onNext(PovertyController.fetchPovertyData(resolutionKey, resolutionValue));
-                responseObserver.onCompleted();
-            } catch (SQLException e) {
-                log.error(e);
-                e.printStackTrace();
-            }
-        }
 
         /**
          * Execute a TargetedQuery - return geographical areas that satisfy a given value range of a census feature

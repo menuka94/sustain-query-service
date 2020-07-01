@@ -11,13 +11,6 @@ option java_outer_classname = "SustainCensus";
 package census;
 
 service Census {
-  rpc GetTotalPopulation (TotalPopulationRequest) returns (TotalPopulationResponse) {}
-  rpc GetMedianAge (MedianAgeRequest) returns (MedianAgeResponse) {}
-  rpc GetMedianHouseholdIncome (MedianHouseholdIncomeRequest) returns (MedianHouseholdIncomeResponse) {}
-  rpc GetPopulationByAge (PopulationByAgeRequest) returns (PopulationByAgeResponse) {}
-  rpc GetPoverty (PovertyRequest) returns (PovertyResponse) {}
-  rpc GetRace (RaceRequest) returns (RaceResponse) {}
-
   // spatial query with MongoDB support
   rpc SpatialQuery(SpatialRequest) returns (SpatialResponse) {}
 

@@ -24,37 +24,41 @@ public class SpatialClient {
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         SpatialClient client = new SpatialClient(channel);
+
         final String geoJson = "{\n" +
-                "        \"type\": \"Feature\",\n" +
-                "        \"properties\": {},\n" +
-                "        \"geometry\": {\n" +
-                "            \"type\": \"Polygon\",\n" +
-                "            \"coordinates\": [\n" +
-                "                [\n" +
-                "                    [\n" +
-                "                        -74.23118591308594,\n" +
-                "                        40.56389453066509\n" +
-                "                    ],\n" +
-                "                    [\n" +
-                "                        -73.75259399414062,\n" +
-                "                        40.56389453066509\n" +
-                "                    ],\n" +
-                "                    [\n" +
-                "                        -73.75259399414062,\n" +
-                "                        40.80965166748853\n" +
-                "                    ],\n" +
-                "                    [\n" +
-                "                        -74.23118591308594,\n" +
-                "                        40.80965166748853\n" +
-                "                    ],\n" +
-                "                    [\n" +
-                "                        -74.23118591308594,\n" +
-                "                        40.56389453066509\n" +
-                "                    ]\n" +
-                "                ]\n" +
+                "   \"type\":\"Feature\",\n" +
+                "   \"properties\":{\n" +
+                "\n" +
+                "   },\n" +
+                "   \"geometry\":{\n" +
+                "      \"type\":\"polygon\",\n" +
+                "      \"coordinates\":[\n" +
+                "         [\n" +
+                "            [\n" +
+                "               -105.72280883789064,\n" +
+                "               40.390488829277956\n" +
+                "            ],\n" +
+                "            [\n" +
+                "               -105.72280883789064,\n" +
+                "               40.75661990450192\n" +
+                "            ],\n" +
+                "            [\n" +
+                "               -104.44976806640626,\n" +
+                "               40.75661990450192\n" +
+                "            ],\n" +
+                "            [\n" +
+                "               -104.44976806640626,\n" +
+                "               40.390488829277956\n" +
+                "            ],\n" +
+                "            [\n" +
+                "               -105.72280883789064,\n" +
+                "               40.390488829277956\n" +
                 "            ]\n" +
-                "        }\n" +
-                "    }";
+                "         ]\n" +
+                "      ]\n" +
+                "   }\n" +
+                "}";
+
         SpatialRequest request = SpatialRequest.newBuilder()
                 .setCensusFeature(CensusFeature.TotalPopulation)
                 .setCensusResolution(CensusResolution.Tract)
@@ -64,6 +68,7 @@ public class SpatialClient {
 
         SpatialResponse spatialResponse = client.censusBlockingStub.spatialQuery(request);
         List<SingleSpatialResponse> singleSpatialResponseList = spatialResponse.getSingleSpatialResponseList();
+        log.info("No. of records found: " + singleSpatialResponseList.size());
         for (SingleSpatialResponse response : singleSpatialResponseList) {
             String data = response.getData();
             String singleGeoJson = response.getResponseGeoJson();

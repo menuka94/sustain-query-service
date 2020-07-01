@@ -52,9 +52,9 @@ let geoJsonStringify = JSON.stringify({
 
 let spatialRequest = {
     censusResolution: "tract",
-    censusFeature: "medianHouseholdIncome",
+    censusFeature: "",
     requestGeoJson: geoJsonStringify,
-    spatialOp: "geoIntersects"
+    spatialOp: "geoWithin"
 };
 
 let request = {SpatialRequest: spatialRequest};
