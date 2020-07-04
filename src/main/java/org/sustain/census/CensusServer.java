@@ -144,13 +144,26 @@ public class CensusServer {
                     log.warn("Not supported yet");
                     break;
                 case Race:
-                    log.warn("Not supported yet");
+                    List<SingleSpatialResponse> raceResponseList = new ArrayList<>();
+                    for (GeoJson geoJson : geoJsonList) {
+                        String populationResult =
+                                org.sustain.census.controller.mongodb.RaceController.getRace(resolution,
+                                        geoJson.getProperties().getGisJoin());
+                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                                .setData(populationResult)
+                                .setResponseGeoJson(geoJson.toJson())
+                                .build();
+                        raceResponseList.add(response);
+                    }
+                    SpatialResponse raceSpatialResponse =
+                            SpatialResponse.newBuilder().addAllSingleSpatialResponse(raceResponseList).build();
+                    responseObserver.onNext(raceSpatialResponse);
+                    responseObserver.onCompleted();
                     break;
                 case UNRECOGNIZED:
                     log.warn("Unknown Census Feature requested");
             }
         }
-
 
         private boolean isRequestValid(String resolution) {
             boolean valid = true;

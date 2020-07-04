@@ -60,7 +60,7 @@ public class SpatialClient {
                 "}";
 
         SpatialRequest request = SpatialRequest.newBuilder()
-                .setCensusFeature(CensusFeature.MedianHouseholdIncome)
+                .setCensusFeature(CensusFeature.Race)
                 .setCensusResolution(CensusResolution.Tract)
                 .setSpatialOp(SpatialOp.GeoWithin)
                 .setRequestGeoJson(geoJson)
