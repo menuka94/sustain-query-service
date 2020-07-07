@@ -176,8 +176,8 @@ public class CensusServer {
 
         /**
          * Execute a TargetedQuery - return geographical areas that satisfy a given value range of a census feature
-         * Example 1: Retrieve all states where (population >= 1,000,000)
-         * Example 2: Retrieve all counties where (median household income < $50,000/year)
+         * Example 1: Retrieve all counties where (population >= 1,000,000)
+         * Example 2: Retrieve all tracts where (median household income < $50,000/year)
          */
         @Override
         public void executeTargetedQuery(TargetedQueryRequest request,
@@ -188,6 +188,9 @@ public class CensusServer {
             CensusFeature censusFeature = predicate.getCensusFeature();
             Decade _decade = predicate.getDecade();
             String resolution = Constants.TARGET_RESOLUTIONS.get(request.getResolution());
+            JsonObject requestGeoJson = JsonParser.parseString(request.getRequestGeoJson()).getAsJsonObject();
+            SpatialOp spatialOp = request.getSpatialOp();
+            Geometry geometry = SpatialQueryUtil.constructPolygon(requestGeoJson);
 
             String decade = Constants.DECADES.get(_decade);
 
@@ -196,12 +199,13 @@ public class CensusServer {
                     case TotalPopulation:
                         List<SingleSpatialResponse> populationResponseList = new ArrayList<>();
                         HashMap<String, String> populationResults = PopulationController.fetchTargetedInfo(decade,
-                                resolution, comparisonOp, comparisonValue);
+                                resolution, comparisonOp, comparisonValue, geometry, spatialOp);
                         for (String data : populationResults.keySet()) {
                             SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
                                     .setData(data)
                                     .setResponseGeoJson(populationResults.get(data))
                                     .build();
+                            populationResponseList.add(response);
                         }
                         TargetedQueryResponse populationResponse = TargetedQueryResponse.newBuilder()
                                 .addAllSingleSpatialResponse(populationResponseList).build();

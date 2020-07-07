@@ -81,9 +81,9 @@ public class SpatialClient {
                 .setResolution(CensusResolution.Tract)
                 .setPredicate(
                         Predicate.newBuilder().setCensusFeature(CensusFeature.TotalPopulation)
-                                .setComparisonOp(Predicate.ComparisonOperator.LESS_THAN)
+                                .setComparisonOp(Predicate.ComparisonOperator.GREATER_THAN)
                                 .setDecade(Decade._2010)
-                                .setComparisonValue(20000)
+                                .setComparisonValue(10)
                                 .build()
                 )
                 .setSpatialOp(SpatialOp.GeoWithin)
