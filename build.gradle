@@ -87,8 +87,16 @@ task censusClient(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
+task spatialClient(type: CreateStartScripts) {
+    mainClassName = 'org.sustain.census.SpatialClient'
+    applicationName = 'spatial-client'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = startScripts.classpath
+}
+
 applicationDistribution.into('bin') {
     from(censusServer)
     from(censusClient)
+    from(spatialClient)
     fileMode = 0755
 }
