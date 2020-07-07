@@ -9,6 +9,8 @@ import org.bson.Document;
 import org.sustain.census.Constants;
 import org.sustain.census.db.mongodb.DBConnection;
 
+import java.util.HashMap;
+
 public class PopulationController {
     private static final Logger log = LogManager.getLogger(PopulationController.class);
 
@@ -24,5 +26,10 @@ public class PopulationController {
             log.warn("getPopulationResults(): empty results");
             return "";
         }
+    }
+
+    public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution, String comparisonOp,
+                                                            double comparisonValue) {
+        return null;
     }
 }

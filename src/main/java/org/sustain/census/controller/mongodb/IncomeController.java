@@ -9,6 +9,8 @@ import org.bson.Document;
 import org.sustain.census.Constants;
 import org.sustain.census.db.mongodb.DBConnection;
 
+import java.util.HashMap;
+
 public class IncomeController {
     private static final Logger log = LogManager.getLogger(IncomeController.class);
 
@@ -24,5 +26,9 @@ public class IncomeController {
             log.warn("getMedianHouseholdIncome(): empty results");
             return "";
         }
+    }
+
+    public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution, String comparisonOp, double comparisonValue) {
+        return null;
     }
 }

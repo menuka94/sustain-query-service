@@ -1,17 +1,17 @@
 package org.sustain.census;
 
 import io.grpc.stub.StreamObserver;
-import org.sustain.census.controller.mysql.IncomeController;
-import org.sustain.census.controller.mysql.PopulationController;
-import org.sustain.census.controller.mysql.RaceController;
+import org.sustain.census.controller.mongodb.IncomeController;
+import org.sustain.census.controller.mongodb.PopulationController;
+import org.sustain.census.controller.mongodb.RaceController;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 
 public class ServerHelper {
     public static void executeTargetedPopulationQuery(StreamObserver<TargetedQueryResponse> responseObserver,
-                                               String comparisonOp, double comparisonValue, String resolution,
-                                               String decade) throws SQLException {
+                                                      String comparisonOp, double comparisonValue, String resolution,
+                                                      String decade) throws SQLException {
         HashMap<String, String> targetedPopulationResults =
                 PopulationController.fetchTargetedInfo(decade,
                         resolution, comparisonOp, comparisonValue);

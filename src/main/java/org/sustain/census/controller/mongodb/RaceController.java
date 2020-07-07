@@ -9,6 +9,8 @@ import org.bson.Document;
 import org.sustain.census.Constants;
 import org.sustain.census.db.mongodb.DBConnection;
 
+import java.util.HashMap;
+
 public class RaceController {
     private static final Logger log = LogManager.getLogger(RaceController.class);
 
@@ -24,5 +26,9 @@ public class RaceController {
             log.warn("getRace(): empty results");
             return "";
         }
+    }
+
+    public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution, String comparisonField, String comparisonOp, double comparisonValue) {
+        return null;
     }
 }

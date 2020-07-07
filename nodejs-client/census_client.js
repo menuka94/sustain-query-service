@@ -17,7 +17,7 @@ let census_service = protoDescriptor.census;
 let stub = new census_service.Census('localhost:50051', grpc.credentials.createInsecure());
 
 
-let geoJsonStringify = JSON.stringify({
+let geoJsonStringify = `{
         "type": "Feature",
         "properties": {},
         "geometry": {
@@ -47,12 +47,11 @@ let geoJsonStringify = JSON.stringify({
                 ]
             ]
         }
-    }
-);
+    }`;
 
 let spatialRequest = {
     censusResolution: "tract",
-    censusFeature: "",
+    censusFeature: "TotalPopulation",
     requestGeoJson: geoJsonStringify,
     spatialOp: "geoWithin"
 };
