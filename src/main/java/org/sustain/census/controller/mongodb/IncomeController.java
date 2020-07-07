@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.sustain.census.Constants;
+import org.sustain.census.Predicate;
 import org.sustain.census.db.mongodb.DBConnection;
 
 import java.util.HashMap;
@@ -28,7 +29,9 @@ public class IncomeController {
         }
     }
 
-    public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution, String comparisonOp, double comparisonValue) {
+    public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution,
+                                                            Predicate.ComparisonOperator comparisonOp,
+                                                            double comparisonValue) {
         return null;
     }
 }

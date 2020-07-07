@@ -17,7 +17,9 @@ import com.mongodb.client.model.geojson.Position;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.sustain.census.Constants;
+import org.sustain.census.Predicate;
 import org.sustain.census.db.mongodb.DBConnection;
 import org.sustain.census.model.GeoJson;
 
@@ -74,6 +76,18 @@ public class SpatialQueryUtil {
         return geoJsons;
     }
 
+    public static String getGeoFromGisJoin(String resolution, String gisJoin) {
+        MongoDatabase db = DBConnection.getConnection();
+        String collectionName = resolution + "_geo";
+        MongoCollection<Document> collection = db.getCollection(collectionName);
+        Document first = collection.find(Filters.eq("properties." + Constants.GIS_JOIN, gisJoin)).first();
+        if (first != null && !first.isEmpty()) {
+            return first.toJson();
+        } else {
+            return "";
+        }
+    }
+
     public static ArrayList<GeoJson> findGeoIntersects(String collectionName, Geometry geometry) {
         ArrayList<GeoJson> geoJsons = new ArrayList<>();
         log.info("findGeoIntersects()");
@@ -90,6 +104,25 @@ public class SpatialQueryUtil {
         }
 
         return geoJsons;
+    }
+
+    public static Bson getFilterOpFromComparisonOp(Predicate.ComparisonOperator comparisonOperator,
+                                                   String comparisonField, double comparisonValue) {
+        switch (comparisonOperator) {
+            case EQUAL:
+                return Filters.eq(comparisonField, comparisonValue);
+            case LESS_THAN:
+                return Filters.lt(comparisonField, comparisonValue);
+            case LESS_THAN_OR_EQUAL:
+                return Filters.lte(comparisonField, comparisonValue);
+            case GREATER_THAN_OR_EQUAL:
+                return Filters.gte(comparisonField, comparisonValue);
+            case GREATER_THAN:
+                return Filters.gt(comparisonField, comparisonValue);
+            case UNRECOGNIZED:
+                log.warn("Unrecognized comparison operator: " + comparisonOperator.toString());
+        }
+        return null;
     }
 
     public static void main(String[] args) {

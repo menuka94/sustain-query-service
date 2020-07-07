@@ -66,10 +66,34 @@ public class SpatialClient {
                 .setRequestGeoJson(geoJson)
                 .build();
 
-        SpatialResponse spatialResponse = client.censusBlockingStub.spatialQuery(request);
-        List<SingleSpatialResponse> singleSpatialResponseList = spatialResponse.getSingleSpatialResponseList();
-        log.info("No. of records found: " + singleSpatialResponseList.size());
-        for (SingleSpatialResponse response : singleSpatialResponseList) {
+        //SpatialResponse spatialResponse = client.censusBlockingStub.spatialQuery(request);
+        //List<SingleSpatialResponse> singleSpatialResponseList = spatialResponse.getSingleSpatialResponseList();
+        //log.info("No. of records found: " + singleSpatialResponseList.size());
+        //for (SingleSpatialResponse response : singleSpatialResponseList) {
+        //    String data = response.getData();
+        //    String singleGeoJson = response.getResponseGeoJson();
+        //    log.info("data: " + data);
+        //    log.info("geoJson: " + singleGeoJson);
+        //    System.out.println();
+        //}
+
+        TargetedQueryRequest request1 = TargetedQueryRequest.newBuilder()
+                .setResolution(CensusResolution.Tract)
+                .setPredicate(
+                        Predicate.newBuilder().setCensusFeature(CensusFeature.TotalPopulation)
+                                .setComparisonOp(Predicate.ComparisonOperator.LESS_THAN)
+                                .setDecade(Decade._2010)
+                                .setComparisonValue(20000)
+                                .build()
+                )
+                .setSpatialOp(SpatialOp.GeoWithin)
+                .setRequestGeoJson(geoJson)
+                .build();
+
+        TargetedQueryResponse targetedQueryResponse = client.censusBlockingStub.executeTargetedQuery(request1);
+        List<SingleSpatialResponse> targetedResponseList = targetedQueryResponse.getSingleSpatialResponseList();
+        log.info("No. of records found: " + targetedResponseList.size());
+        for (SingleSpatialResponse response : targetedResponseList) {
             String data = response.getData();
             String singleGeoJson = response.getResponseGeoJson();
             log.info("data: " + data);

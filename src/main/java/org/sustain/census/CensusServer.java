@@ -8,18 +8,16 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.census.controller.mongodb.IncomeController;
+import org.sustain.census.controller.mongodb.PopulationController;
 import org.sustain.census.controller.mongodb.SpatialQueryUtil;
 import org.sustain.census.model.GeoJson;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static org.sustain.census.ServerHelper.executeTargetedIncomeQuery;
-import static org.sustain.census.ServerHelper.executeTargetedPopulationQuery;
-import static org.sustain.census.ServerHelper.executeTargetedRaceQuery;
 
 
 public class CensusServer {
@@ -78,9 +76,9 @@ public class CensusServer {
             String requestGeoJson = request.getRequestGeoJson();
             CensusResolution censusResolution = request.getCensusResolution();
             SpatialOp spatialOp = request.getSpatialOp();
-            System.out.println("CensusFeature: " + censusFeature.toString());
-            System.out.println("CensusResolution: " + censusResolution.toString());
-            System.out.println("SpatialOp: " + spatialOp.toString());
+            log.info("CensusFeature: " + censusFeature.toString());
+            log.info("CensusResolution: " + censusResolution.toString());
+            log.info("SpatialOp: " + spatialOp.toString());
 
             JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
             Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
@@ -185,38 +183,42 @@ public class CensusServer {
         public void executeTargetedQuery(TargetedQueryRequest request,
                                          StreamObserver<TargetedQueryResponse> responseObserver) {
             Predicate predicate = request.getPredicate();
-            String comparisonOp = Constants.COMPARISON_OPS.get(predicate.getComparisonOp());
             double comparisonValue = predicate.getComparisonValue();
-            Predicate.Feature feature = predicate.getFeature();
+            Predicate.ComparisonOperator comparisonOp = predicate.getComparisonOp();
+            CensusFeature censusFeature = predicate.getCensusFeature();
             Decade _decade = predicate.getDecade();
             String resolution = Constants.TARGET_RESOLUTIONS.get(request.getResolution());
-
-            if (!isRequestValid(resolution)) {
-                return;
-            }
 
             String decade = Constants.DECADES.get(_decade);
 
             try {
-                switch (feature) {
-                    case Population:
-                        executeTargetedPopulationQuery(responseObserver, comparisonOp, comparisonValue,
-                                resolution, decade);
+                switch (censusFeature) {
+                    case TotalPopulation:
+                        List<SingleSpatialResponse> populationResponseList = new ArrayList<>();
+                        HashMap<String, String> populationResults = PopulationController.fetchTargetedInfo(decade,
+                                resolution, comparisonOp, comparisonValue);
+                        for (String data : populationResults.keySet()) {
+                            SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                                    .setData(data)
+                                    .setResponseGeoJson(populationResults.get(data))
+                                    .build();
+                        }
+                        TargetedQueryResponse populationResponse = TargetedQueryResponse.newBuilder()
+                                .addAllSingleSpatialResponse(populationResponseList).build();
+                        responseObserver.onNext(populationResponse);
+                        responseObserver.onCompleted();
                         break;
-                    case Income:
-                        executeTargetedIncomeQuery(responseObserver, comparisonOp, comparisonValue,
-                                resolution, decade);
+                    case MedianHouseholdIncome:
+                        HashMap<String, String> incomeResults = IncomeController.fetchTargetedInfo(decade,
+                                resolution, comparisonOp, comparisonValue);
                         break;
                     case Race:
-                        executeTargetedRaceQuery(responseObserver, Constants.EMPTY_COMPARISON_FIELD, comparisonOp,
-                                comparisonValue,
-                                resolution, decade);
                         break;
                     case UNRECOGNIZED:
-                        log.warn("Invalid Census feature requested");
+                        log.warn("Invalid Census censusFeature requested");
                         break;
                 }
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 log.error(e);
                 e.printStackTrace();
             }

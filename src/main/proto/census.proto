@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 import "google/api/http.proto";
-import "targeted_census.proto";
 
 option java_multiple_files = true;
 option java_package = "org.sustain.census";
@@ -15,8 +14,8 @@ service Census {
   rpc SpatialQuery(SpatialRequest) returns (SpatialResponse) {}
 
   // targeted queries - return geographical areas that satisfy a given value range of a census feature
-  // Example 1: Retrieve all states where (population >= 1,000,000)
-  // Example 2: Retrieve all counties where (median household income < $50,000/year)
+  // Example 1: Retrieve all counties where (population >= 1,000,000)
+  // Example 2: Retrieve all tracts where (median household income < $50,000/year)
   rpc ExecuteTargetedQuery(TargetedQueryRequest) returns (TargetedQueryResponse) {}
 }
 
@@ -60,9 +59,41 @@ enum Datasets {
   ElectricalSubstations = 6;
 }
 
-message GeographicInfo {
-  // TODO: include GeographicInfo in every CensusResponse
-  string geoId = 1;
-  string resolution = 2;
+message TargetedQueryRequest {
+  CensusResolution resolution = 1;
+  Predicate predicate = 2;
+  SpatialOp spatialOp = 3;
+  string requestGeoJson = 4;   // bounding polygon
+}
+
+message TargetedQueryResponse {
+  repeated SingleSpatialResponse singleSpatialResponse = 1;
+}
+
+enum CensusResolution {
+  State = 0;
+  County = 1;
+  Tract = 2;
+}
+
+enum Decade {
+  _2010 = 0;
+  _2000 = 1;
+  _1990 = 2;
+  _1980 = 3;
+}
+
+message Predicate {
+  enum ComparisonOperator {
+    EQUAL = 0;
+    GREATER_THAN = 1;
+    LESS_THAN = 2;
+    GREATER_THAN_OR_EQUAL = 3;
+    LESS_THAN_OR_EQUAL = 4;
+  }
+  CensusFeature censusFeature = 1;
+  Decade decade = 2;
+  ComparisonOperator comparisonOp = 3;
+  double comparisonValue = 4;
 }
 
