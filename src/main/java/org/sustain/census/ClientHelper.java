@@ -7,10 +7,10 @@ public class ClientHelper {
         this.censusBlockingStub = censusBlockingStub;
     }
 
-    public TargetedQueryResponse requestTargetedInfo(CensusFeature feature, CensusResolution resolution,
-                                                     Decade decade,
-                                                     Predicate.ComparisonOperator comparisonOperator,
-                                                     double comparisonValue) {
+    public TargetedCensusResponse requestTargetedInfo(CensusFeature feature, CensusResolution resolution,
+                                                      Decade decade,
+                                                      Predicate.ComparisonOperator comparisonOperator,
+                                                      double comparisonValue) {
 
         Predicate predicate = Predicate.newBuilder()
                 .setComparisonOp(comparisonOperator)
@@ -19,11 +19,11 @@ public class ClientHelper {
                 .setCensusFeature(feature)
                 .build();
 
-        TargetedQueryRequest request = TargetedQueryRequest.newBuilder()
+        TargetedCensusRequest request = TargetedCensusRequest.newBuilder()
                 .setResolution(resolution)
                 .setPredicate(predicate)
                 .build();
 
-        return censusBlockingStub.executeTargetedQuery(request);
+        return censusBlockingStub.executeTargetedCensusQuery(request);
     }
 }

@@ -106,12 +106,12 @@ public class CensusServer {
 
             switch (censusFeature) {
                 case TotalPopulation:
-                    List<SingleSpatialResponse> populationResponseList = new ArrayList<>();
+                    List<SingleCensusResponse> populationResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
@@ -123,12 +123,12 @@ public class CensusServer {
                     responseObserver.onCompleted();
                     break;
                 case MedianHouseholdIncome:
-                    List<SingleSpatialResponse> incomeResponseList = new ArrayList<>();
+                    List<SingleCensusResponse> incomeResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.IncomeController.getMedianHouseholdIncome(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
@@ -146,12 +146,12 @@ public class CensusServer {
                     log.warn("Not supported yet");
                     break;
                 case Race:
-                    List<SingleSpatialResponse> raceResponseList = new ArrayList<>();
+                    List<SingleCensusResponse> raceResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.RaceController.getRace(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
@@ -180,6 +180,7 @@ public class CensusServer {
         /**
          * Determine if a given value is valid after comparing it with the actual value using the\
          * given comparison Operator
+         *
          * @param comparisonOp    comparison operator from gRPC request
          * @param value           value returned by the census data record
          * @param comparisonValue comparisonValue from gRPC request
@@ -211,8 +212,8 @@ public class CensusServer {
          * Example 2: Retrieve all tracts where (median household income < $50,000/year)
          */
         @Override
-        public void executeTargetedQuery(TargetedQueryRequest request,
-                                         StreamObserver<TargetedQueryResponse> responseObserver) {
+        public void executeTargetedCensusQuery(TargetedCensusRequest request,
+                                               StreamObserver<TargetedCensusResponse> responseObserver) {
             Predicate predicate = request.getPredicate();
             double comparisonValue = predicate.getComparisonValue();
             Predicate.ComparisonOperator comparisonOp = predicate.getComparisonOp();
@@ -227,7 +228,7 @@ public class CensusServer {
                 switch (censusFeature) {
                     case TotalPopulation:
                         String comparisonField = decade + "_" + Constants.CensusFeatures.TOTAL_POPULATION;
-                        List<SingleSpatialResponse> populationResponseList = new ArrayList<>();
+                        List<SingleCensusResponse> populationResponseList = new ArrayList<>();
                         for (GeoJson geoJson : geoList) {
                             String populationResult =
                                     org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
@@ -237,7 +238,7 @@ public class CensusServer {
                             boolean valid = compareValueWithInputValue(comparisonOp, value, comparisonValue);
 
                             if (valid) {
-                                SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                                SingleCensusResponse response = SingleCensusResponse.newBuilder()
                                         .setData(populationResult)
                                         .setResponseGeoJson(geoJson.toJson())
                                         .build();
@@ -245,8 +246,8 @@ public class CensusServer {
                             }
                         }   // end of for loop
 
-                        TargetedQueryResponse populationSpatialResponse = TargetedQueryResponse.newBuilder()
-                                .addAllSingleSpatialResponse(populationResponseList)
+                        TargetedCensusResponse populationSpatialResponse = TargetedCensusResponse.newBuilder()
+                                .addAllSingleCensusResponse(populationResponseList)
                                 .build();
                         responseObserver.onNext(populationSpatialResponse);
                         responseObserver.onCompleted();

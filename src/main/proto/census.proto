@@ -16,7 +16,7 @@ service Census {
   // targeted queries - return geographical areas that satisfy a given value range of a census feature
   // Example 1: Retrieve all counties where (population >= 1,000,000)
   // Example 2: Retrieve all tracts where (median household income < $50,000/year)
-  rpc ExecuteTargetedQuery(TargetedQueryRequest) returns (TargetedQueryResponse) {}
+  rpc ExecuteTargetedCensusQuery(TargetedCensusRequest) returns (TargetedCensusResponse) {}
 }
 
 message SpatialRequest {
@@ -27,10 +27,10 @@ message SpatialRequest {
 }
 
 message SpatialResponse {
-  repeated SingleSpatialResponse singleSpatialResponse = 1;
+  repeated SingleCensusResponse singleSpatialResponse = 1;
 }
 
-message SingleSpatialResponse {
+message SingleCensusResponse {
   string data = 1;
   string responseGeoJson = 2;   // geoJson associated with 'data'
 }
@@ -59,15 +59,15 @@ enum Datasets {
   ElectricalSubstations = 6;
 }
 
-message TargetedQueryRequest {
+message TargetedCensusRequest {
   CensusResolution resolution = 1;
   Predicate predicate = 2;
   SpatialOp spatialOp = 3;
   string requestGeoJson = 4;   // bounding polygon
 }
 
-message TargetedQueryResponse {
-  repeated SingleSpatialResponse singleSpatialResponse = 1;
+message TargetedCensusResponse {
+  repeated SingleCensusResponse singleCensusResponse = 1;
 }
 
 enum CensusResolution {

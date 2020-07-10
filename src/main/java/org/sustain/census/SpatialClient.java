@@ -77,7 +77,7 @@ public class SpatialClient {
         //    System.out.println();
         //}
 
-        TargetedQueryRequest request1 = TargetedQueryRequest.newBuilder()
+        TargetedCensusRequest request1 = TargetedCensusRequest.newBuilder()
                 .setResolution(CensusResolution.Tract)
                 .setPredicate(
                         Predicate.newBuilder().setCensusFeature(CensusFeature.TotalPopulation)
@@ -90,10 +90,10 @@ public class SpatialClient {
                 .setRequestGeoJson(geoJson)
                 .build();
 
-        TargetedQueryResponse targetedQueryResponse = client.censusBlockingStub.executeTargetedQuery(request1);
-        List<SingleSpatialResponse> targetedResponseList = targetedQueryResponse.getSingleSpatialResponseList();
+        TargetedCensusResponse targetedQueryResponse = client.censusBlockingStub.executeTargetedCensusQuery(request1);
+        List<SingleCensusResponse> targetedResponseList = targetedQueryResponse.getSingleCensusResponseList();
         log.info("No. of records found: " + targetedResponseList.size());
-        for (SingleSpatialResponse response : targetedResponseList) {
+        for (SingleCensusResponse response : targetedResponseList) {
             String data = response.getData();
             String singleGeoJson = response.getResponseGeoJson();
             log.info("data: " + data);
