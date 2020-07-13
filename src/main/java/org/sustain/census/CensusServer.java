@@ -8,18 +8,15 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.census.controller.mongodb.IncomeController;
 import org.sustain.census.controller.mongodb.SpatialQueryUtil;
 import org.sustain.census.model.GeoJson;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static org.sustain.census.ServerHelper.executeTargetedIncomeQuery;
-import static org.sustain.census.ServerHelper.executeTargetedPopulationQuery;
-import static org.sustain.census.ServerHelper.executeTargetedRaceQuery;
 
 
 public class CensusServer {
@@ -71,6 +68,28 @@ public class CensusServer {
         }
     }
 
+    static ArrayList<GeoJson> getGeoList(String requestGeoJson, String resolution, SpatialOp spatialOp) {
+        JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
+        Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
+
+        String collectionName = resolution + "_geo";
+        log.debug("collectionName: " + collectionName);
+        ArrayList<GeoJson> geoJsonList = null;
+        switch (spatialOp) {
+            case GeoWithin:
+                geoJsonList = SpatialQueryUtil.findGeoWithin(collectionName, geometry);
+                break;
+            case GeoIntersects:
+                geoJsonList = SpatialQueryUtil.findGeoIntersects(collectionName, geometry);
+                break;
+            case UNRECOGNIZED:
+                geoJsonList = new ArrayList<>();
+                log.warn("Unrecognized Spatial Operation");
+        }
+        log.info("geoJsonList.size(): " + geoJsonList.size());
+        return geoJsonList;
+    }
+
     static class CensusServerImpl extends CensusGrpc.CensusImplBase {
         @Override
         public void spatialQuery(SpatialRequest request, StreamObserver<SpatialResponse> responseObserver) {
@@ -78,38 +97,21 @@ public class CensusServer {
             String requestGeoJson = request.getRequestGeoJson();
             CensusResolution censusResolution = request.getCensusResolution();
             SpatialOp spatialOp = request.getSpatialOp();
-            System.out.println("CensusFeature: " + censusFeature.toString());
-            System.out.println("CensusResolution: " + censusResolution.toString());
-            System.out.println("SpatialOp: " + spatialOp.toString());
-
-            JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
-            Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
+            log.info("CensusFeature: " + censusFeature.toString());
+            log.info("CensusResolution: " + censusResolution.toString());
+            log.info("SpatialOp: " + spatialOp.toString());
             String resolution = Constants.TARGET_RESOLUTIONS.get(censusResolution);
 
-            String collectionName = resolution + "_geo";
-            log.debug("collectionName: " + collectionName);
-            ArrayList<GeoJson> geoJsonList = null;
-            switch (spatialOp) {
-                case GeoWithin:
-                    geoJsonList = SpatialQueryUtil.findGeoWithin(collectionName, geometry);
-                    break;
-                case GeoIntersects:
-                    geoJsonList = SpatialQueryUtil.findGeoIntersects(collectionName, geometry);
-                    break;
-                case UNRECOGNIZED:
-                    geoJsonList = new ArrayList<>();
-                    log.warn("Unrecognized Spatial Operation");
-            }
-            log.info("geoJsonList.size(): " + geoJsonList.size());
+            ArrayList<GeoJson> geoJsonList = getGeoList(requestGeoJson, resolution, spatialOp);
 
             switch (censusFeature) {
                 case TotalPopulation:
-                    List<SingleSpatialResponse> populationResponseList = new ArrayList<>();
+                    List<SingleCensusResponse> populationResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
@@ -121,12 +123,12 @@ public class CensusServer {
                     responseObserver.onCompleted();
                     break;
                 case MedianHouseholdIncome:
-                    List<SingleSpatialResponse> incomeResponseList = new ArrayList<>();
+                    List<SingleCensusResponse> incomeResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.IncomeController.getMedianHouseholdIncome(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
@@ -144,12 +146,12 @@ public class CensusServer {
                     log.warn("Not supported yet");
                     break;
                 case Race:
-                    List<SingleSpatialResponse> raceResponseList = new ArrayList<>();
+                    List<SingleCensusResponse> raceResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.RaceController.getRace(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleSpatialResponse response = SingleSpatialResponse.newBuilder()
+                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
@@ -175,48 +177,92 @@ public class CensusServer {
             return valid;
         }
 
+        /**
+         * Determine if a given value is valid after comparing it with the actual value using the\
+         * given comparison Operator
+         *
+         * @param comparisonOp    comparison operator from gRPC request
+         * @param value           value returned by the census data record
+         * @param comparisonValue comparisonValue from gRPC request
+         * @return comparison of 'value' to 'comparisonValue'
+         */
+        boolean compareValueWithInputValue(Predicate.ComparisonOperator comparisonOp, Double value,
+                                           Double comparisonValue) {
+            switch (comparisonOp) {
+                case EQUAL:
+                    return value.equals(comparisonValue);
+                case GREATER_THAN_OR_EQUAL:
+                    return value >= comparisonValue;
+                case LESS_THAN:
+                    return value < comparisonValue;
+                case LESS_THAN_OR_EQUAL:
+                    return value <= comparisonValue;
+                case GREATER_THAN:
+                    return value > comparisonValue;
+                case UNRECOGNIZED:
+                    log.warn("Unknown comparison operator");
+                    return false;
+            }
+            return false;
+        }
 
         /**
          * Execute a TargetedQuery - return geographical areas that satisfy a given value range of a census feature
-         * Example 1: Retrieve all states where (population >= 1,000,000)
-         * Example 2: Retrieve all counties where (median household income < $50,000/year)
+         * Example 1: Retrieve all counties where (population >= 1,000,000)
+         * Example 2: Retrieve all tracts where (median household income < $50,000/year)
          */
         @Override
-        public void executeTargetedQuery(TargetedQueryRequest request,
-                                         StreamObserver<TargetedQueryResponse> responseObserver) {
+        public void executeTargetedCensusQuery(TargetedCensusRequest request,
+                                               StreamObserver<TargetedCensusResponse> responseObserver) {
             Predicate predicate = request.getPredicate();
-            String comparisonOp = Constants.COMPARISON_OPS.get(predicate.getComparisonOp());
             double comparisonValue = predicate.getComparisonValue();
-            Predicate.Feature feature = predicate.getFeature();
+            Predicate.ComparisonOperator comparisonOp = predicate.getComparisonOp();
+            CensusFeature censusFeature = predicate.getCensusFeature();
             Decade _decade = predicate.getDecade();
             String resolution = Constants.TARGET_RESOLUTIONS.get(request.getResolution());
 
-            if (!isRequestValid(resolution)) {
-                return;
-            }
-
             String decade = Constants.DECADES.get(_decade);
+            ArrayList<GeoJson> geoList = getGeoList(request.getRequestGeoJson(), resolution, request.getSpatialOp());
 
             try {
-                switch (feature) {
-                    case Population:
-                        executeTargetedPopulationQuery(responseObserver, comparisonOp, comparisonValue,
-                                resolution, decade);
+                switch (censusFeature) {
+                    case TotalPopulation:
+                        String comparisonField = decade + "_" + Constants.CensusFeatures.TOTAL_POPULATION;
+                        List<SingleCensusResponse> populationResponseList = new ArrayList<>();
+                        for (GeoJson geoJson : geoList) {
+                            String populationResult =
+                                    org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
+                                            geoJson.getProperties().getGisJoin());
+                            double value =
+                                    JsonParser.parseString(populationResult).getAsJsonObject().get(comparisonField).getAsDouble();
+                            boolean valid = compareValueWithInputValue(comparisonOp, value, comparisonValue);
+
+                            if (valid) {
+                                SingleCensusResponse response = SingleCensusResponse.newBuilder()
+                                        .setData(populationResult)
+                                        .setResponseGeoJson(geoJson.toJson())
+                                        .build();
+                                populationResponseList.add(response);
+                            }
+                        }   // end of for loop
+
+                        TargetedCensusResponse populationSpatialResponse = TargetedCensusResponse.newBuilder()
+                                .addAllSingleCensusResponse(populationResponseList)
+                                .build();
+                        responseObserver.onNext(populationSpatialResponse);
+                        responseObserver.onCompleted();
                         break;
-                    case Income:
-                        executeTargetedIncomeQuery(responseObserver, comparisonOp, comparisonValue,
-                                resolution, decade);
+                    case MedianHouseholdIncome:
+                        HashMap<String, String> incomeResults = IncomeController.fetchTargetedInfo(decade,
+                                resolution, comparisonOp, comparisonValue);
                         break;
                     case Race:
-                        executeTargetedRaceQuery(responseObserver, Constants.EMPTY_COMPARISON_FIELD, comparisonOp,
-                                comparisonValue,
-                                resolution, decade);
                         break;
                     case UNRECOGNIZED:
-                        log.warn("Invalid Census feature requested");
+                        log.warn("Invalid Census censusFeature requested");
                         break;
-                }
-            } catch (SQLException e) {
+                }   // end of census-feature switch
+            } catch (Exception e) {
                 log.error(e);
                 e.printStackTrace();
             }

@@ -20,11 +20,6 @@ public class Constants {
         public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
     }
 
-    public static final HashMap<Predicate.Feature, String> TARGET_FEATURES = new HashMap<Predicate.Feature, String>() {{
-        put(Predicate.Feature.Population, CensusFeatures.POPULATION);
-        put(Predicate.Feature.Income, CensusFeatures.MEDIAN_HOUSEHOLD_INCOME);
-    }};
-
     public static final HashMap<CensusResolution, String> TARGET_RESOLUTIONS =
             new HashMap<CensusResolution, String>() {{
                 put(CensusResolution.State, CensusResolutions.STATE);
