@@ -37,30 +37,35 @@ public class SpatialClient {
                 "      \"coordinates\":[\n" +
                 "         [\n" +
                 "            [\n" +
-                "               -105.72280883789064,\n" +
-                "               40.390488829277956\n" +
+                "              -112.412109375,\n" +
+                "              35.53222622770337\n" +
                 "            ],\n" +
                 "            [\n" +
-                "               -105.72280883789064,\n" +
-                "               40.75661990450192\n" +
+                "              -93.8671875,\n" +
+                "              35.53222622770337\n" +
                 "            ],\n" +
                 "            [\n" +
-                "               -104.44976806640626,\n" +
-                "               40.75661990450192\n" +
+                "              -93.8671875,\n" +
+                "              46.195042108660154\n" +
                 "            ],\n" +
                 "            [\n" +
-                "               -104.44976806640626,\n" +
-                "               40.390488829277956\n" +
+                "              -112.412109375,\n" +
+                "              46.195042108660154\n" +
                 "            ],\n" +
                 "            [\n" +
-                "               -105.72280883789064,\n" +
-                "               40.390488829277956\n" +
+                "              -112.412109375,\n" +
+                "              35.53222622770337\n" +
                 "            ]\n" +
-                "         ]\n" +
+                "          ]\n" +
                 "      ]\n" +
                 "   }\n" +
                 "}";
 
+        exampleSpatialQuery(censusBlockingStub, geoJson);
+        //exampleTargetedQuery(censusBlockingStub, geoJson);
+    }
+
+    private static void exampleSpatialQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
         SpatialRequest request = SpatialRequest.newBuilder()
                 .setCensusFeature(CensusFeature.Race)
                 .setCensusResolution(CensusResolution.Tract)
@@ -68,7 +73,19 @@ public class SpatialClient {
                 .setRequestGeoJson(geoJson)
                 .build();
 
-        TargetedCensusRequest request1 = TargetedCensusRequest.newBuilder()
+        Iterator<SpatialResponse> spatialResponseIterator = censusBlockingStub.spatialQuery(request);
+        while (spatialResponseIterator.hasNext()) {
+            SpatialResponse response = spatialResponseIterator.next();
+            String data = response.getData();
+            String responseGeoJson = response.getResponseGeoJson();
+            log.info("data: " + data);
+            log.info("geoJson: " + responseGeoJson);
+            System.out.println();
+        }
+    }
+
+    private static void exampleTargetedQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+        TargetedCensusRequest request = TargetedCensusRequest.newBuilder()
                 .setResolution(CensusResolution.Tract)
                 .setPredicate(
                         Predicate.newBuilder().setCensusFeature(CensusFeature.TotalPopulation)
@@ -82,7 +99,7 @@ public class SpatialClient {
                 .build();
 
         Iterator<TargetedCensusResponse> censusResponseIterator =
-                censusBlockingStub.executeTargetedCensusQuery(request1);
+                censusBlockingStub.executeTargetedCensusQuery(request);
         while (censusResponseIterator.hasNext()) {
             TargetedCensusResponse response = censusResponseIterator.next();
             String data = response.getSpatialResponse().getData();
