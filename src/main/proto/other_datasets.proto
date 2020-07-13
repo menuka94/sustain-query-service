@@ -1,5 +1,8 @@
 syntax = "proto3";
 
+option java_multiple_files = true;
+option java_package = "org.sustain.census";
+
 enum SecondaryDataset {
   Hospitals = 0;
   TransmissionLines = 1;
@@ -8,9 +11,5 @@ enum SecondaryDataset {
   FireStations = 4;
   Dams = 5;
   ElectricalSubstations = 6;
-}
-
-message HospitalRequest {
-
 }
 

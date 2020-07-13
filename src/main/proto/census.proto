@@ -12,7 +12,7 @@ package census;
 
 service Census {
   // spatial query with MongoDB support
-  rpc SpatialQuery(SpatialRequest) returns (SpatialResponse) {}
+  rpc SpatialQuery(SpatialRequest) returns (stream SpatialResponse) {}
 
   // targeted queries - return geographical areas that satisfy a given value range of a census feature
   // Example 1: Retrieve all counties where (population >= 1,000,000)
