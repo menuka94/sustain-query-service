@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/api/http.proto";
+import "other_datasets.proto";
 
 option java_multiple_files = true;
 option java_package = "org.sustain.census";
@@ -11,12 +12,12 @@ package census;
 
 service Census {
   // spatial query with MongoDB support
-  rpc SpatialQuery(SpatialRequest) returns (SpatialResponse) {}
+  rpc SpatialQuery(SpatialRequest) returns (stream SpatialResponse) {}
 
   // targeted queries - return geographical areas that satisfy a given value range of a census feature
   // Example 1: Retrieve all counties where (population >= 1,000,000)
   // Example 2: Retrieve all tracts where (median household income < $50,000/year)
-  rpc ExecuteTargetedCensusQuery(TargetedCensusRequest) returns (TargetedCensusResponse) {}
+  rpc ExecuteTargetedCensusQuery(TargetedCensusRequest) returns (stream TargetedCensusResponse) {}
 }
 
 message SpatialRequest {
@@ -27,10 +28,6 @@ message SpatialRequest {
 }
 
 message SpatialResponse {
-  repeated SingleCensusResponse singleSpatialResponse = 1;
-}
-
-message SingleCensusResponse {
   string data = 1;
   string responseGeoJson = 2;   // geoJson associated with 'data'
 }
@@ -49,14 +46,20 @@ enum CensusFeature {
   Race = 5;
 }
 
-enum Datasets {
-  Hospitals = 0;
-  TransmissionLines = 1;
-  NaturalGasPipelines = 2;
-  PowerPlants = 3;
-  FireStations = 4;
-  Dams = 5;
-  ElectricalSubstations = 6;
+
+message MultiDatasetQuery {
+  TargetedCensusRequest targetedCensusRequest = 1;
+  SecondaryDataset secondaryDataset = 2;
+}
+
+enum IntraDatasetOp {
+  INTERSECTION = 0;
+  UNION = 1;
+  OVERLAP = 2;
+}
+
+message DatasetEntry {
+  string entry = 1;
 }
 
 message TargetedCensusRequest {
@@ -67,7 +70,7 @@ message TargetedCensusRequest {
 }
 
 message TargetedCensusResponse {
-  repeated SingleCensusResponse singleCensusResponse = 1;
+  SpatialResponse spatialResponse = 1;
 }
 
 enum CensusResolution {
