@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+enum SecondaryDataset {
+  Hospitals = 0;
+  TransmissionLines = 1;
+  NaturalGasPipelines = 2;
+  PowerPlants = 3;
+  FireStations = 4;
+  Dams = 5;
+  ElectricalSubstations = 6;
+}
+
+message HospitalRequest {
+
+}
+
