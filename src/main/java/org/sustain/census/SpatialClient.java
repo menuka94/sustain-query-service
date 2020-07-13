@@ -1,30 +1,32 @@
 package org.sustain.census;
 
-import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.db.Util;
 
-import java.util.List;
+import java.util.Iterator;
 
 public class SpatialClient {
     private static final Logger log = LogManager.getLogger(SpatialClient.class);
 
-    private final CensusGrpc.CensusBlockingStub censusBlockingStub;
+    private CensusGrpc.CensusBlockingStub censusBlockingStub;
 
-    public SpatialClient(Channel channel) {
-        censusBlockingStub = CensusGrpc.newBlockingStub(channel);
-    }
-
-    public static void main(String[] args) {
+    public SpatialClient() {
         String target = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;
         log.info("Target: " + target);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        SpatialClient client = new SpatialClient(channel);
+        censusBlockingStub = CensusGrpc.newBlockingStub(channel);
+    }
 
+    public CensusGrpc.CensusBlockingStub getCensusBlockingStub() {
+        return censusBlockingStub;
+    }
+
+    public static void main(String[] args) {
+        CensusGrpc.CensusBlockingStub censusBlockingStub = new SpatialClient().getCensusBlockingStub();
         final String geoJson = "{\n" +
                 "   \"type\":\"Feature\",\n" +
                 "   \"properties\":{\n" +
@@ -66,17 +68,6 @@ public class SpatialClient {
                 .setRequestGeoJson(geoJson)
                 .build();
 
-        //SpatialResponse spatialResponse = client.censusBlockingStub.spatialQuery(request);
-        //List<SingleSpatialResponse> singleSpatialResponseList = spatialResponse.getSingleSpatialResponseList();
-        //log.info("No. of records found: " + singleSpatialResponseList.size());
-        //for (SingleSpatialResponse response : singleSpatialResponseList) {
-        //    String data = response.getData();
-        //    String singleGeoJson = response.getResponseGeoJson();
-        //    log.info("data: " + data);
-        //    log.info("geoJson: " + singleGeoJson);
-        //    System.out.println();
-        //}
-
         TargetedCensusRequest request1 = TargetedCensusRequest.newBuilder()
                 .setResolution(CensusResolution.Tract)
                 .setPredicate(
@@ -90,14 +81,14 @@ public class SpatialClient {
                 .setRequestGeoJson(geoJson)
                 .build();
 
-        TargetedCensusResponse targetedQueryResponse = client.censusBlockingStub.executeTargetedCensusQuery(request1);
-        List<SingleCensusResponse> targetedResponseList = targetedQueryResponse.getSingleCensusResponseList();
-        log.info("No. of records found: " + targetedResponseList.size());
-        for (SingleCensusResponse response : targetedResponseList) {
-            String data = response.getData();
-            String singleGeoJson = response.getResponseGeoJson();
+        Iterator<TargetedCensusResponse> censusResponseIterator =
+                censusBlockingStub.executeTargetedCensusQuery(request1);
+        while (censusResponseIterator.hasNext()) {
+            TargetedCensusResponse response = censusResponseIterator.next();
+            String data = response.getSpatialResponse().getData();
+            String responseGeoJson = response.getSpatialResponse().getResponseGeoJson();
             log.info("data: " + data);
-            log.info("geoJson: " + singleGeoJson);
+            log.info("geoJson: " + responseGeoJson);
             System.out.println();
         }
     }

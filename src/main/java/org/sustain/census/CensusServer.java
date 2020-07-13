@@ -15,7 +15,6 @@ import org.sustain.census.model.GeoJson;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 
@@ -106,37 +105,29 @@ public class CensusServer {
 
             switch (censusFeature) {
                 case TotalPopulation:
-                    List<SingleCensusResponse> populationResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
+                        SpatialResponse response = SpatialResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
-                        populationResponseList.add(response);
+                        responseObserver.onNext(response);
                     }
-                    SpatialResponse populationSpatialResponse =
-                            SpatialResponse.newBuilder().addAllSingleSpatialResponse(populationResponseList).build();
-                    responseObserver.onNext(populationSpatialResponse);
                     responseObserver.onCompleted();
                     break;
                 case MedianHouseholdIncome:
-                    List<SingleCensusResponse> incomeResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.IncomeController.getMedianHouseholdIncome(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
+                        SpatialResponse response = SpatialResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
-                        incomeResponseList.add(response);
+                        responseObserver.onNext(response);
                     }
-                    SpatialResponse incomeSpatialResponse =
-                            SpatialResponse.newBuilder().addAllSingleSpatialResponse(incomeResponseList).build();
-                    responseObserver.onNext(incomeSpatialResponse);
                     responseObserver.onCompleted();
                     break;
                 case PopulationByAge:
@@ -146,20 +137,16 @@ public class CensusServer {
                     log.warn("Not supported yet");
                     break;
                 case Race:
-                    List<SingleCensusResponse> raceResponseList = new ArrayList<>();
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
                                 org.sustain.census.controller.mongodb.RaceController.getRace(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SingleCensusResponse response = SingleCensusResponse.newBuilder()
+                        SpatialResponse response = SpatialResponse.newBuilder()
                                 .setData(populationResult)
                                 .setResponseGeoJson(geoJson.toJson())
                                 .build();
-                        raceResponseList.add(response);
+                        responseObserver.onNext(response);
                     }
-                    SpatialResponse raceSpatialResponse =
-                            SpatialResponse.newBuilder().addAllSingleSpatialResponse(raceResponseList).build();
-                    responseObserver.onNext(raceSpatialResponse);
                     responseObserver.onCompleted();
                     break;
                 case UNRECOGNIZED:
@@ -228,7 +215,6 @@ public class CensusServer {
                 switch (censusFeature) {
                     case TotalPopulation:
                         String comparisonField = decade + "_" + Constants.CensusFeatures.TOTAL_POPULATION;
-                        List<SingleCensusResponse> populationResponseList = new ArrayList<>();
                         for (GeoJson geoJson : geoList) {
                             String populationResult =
                                     org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
@@ -238,18 +224,15 @@ public class CensusServer {
                             boolean valid = compareValueWithInputValue(comparisonOp, value, comparisonValue);
 
                             if (valid) {
-                                SingleCensusResponse response = SingleCensusResponse.newBuilder()
+                                SpatialResponse response = SpatialResponse.newBuilder()
                                         .setData(populationResult)
                                         .setResponseGeoJson(geoJson.toJson())
                                         .build();
-                                populationResponseList.add(response);
+                                responseObserver.onNext(TargetedCensusResponse.newBuilder().setSpatialResponse(response)
+                                        .build());
                             }
                         }   // end of for loop
 
-                        TargetedCensusResponse populationSpatialResponse = TargetedCensusResponse.newBuilder()
-                                .addAllSingleCensusResponse(populationResponseList)
-                                .build();
-                        responseObserver.onNext(populationSpatialResponse);
                         responseObserver.onCompleted();
                         break;
                     case MedianHouseholdIncome:
