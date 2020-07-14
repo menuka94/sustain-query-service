@@ -3,7 +3,7 @@ const PROTO_DIR = '../src/main/proto'
 const proto_loader = require('@grpc/proto-loader');
 
 let packageDefinition = proto_loader.loadSync(
-    [PROTO_DIR + '/census.proto', PROTO_DIR + '/targeted_census.proto'],
+    [PROTO_DIR + '/census.proto', PROTO_DIR + '/other_datasets.proto'],
     {
         keepCase: true,
         longs: String,
@@ -50,19 +50,22 @@ let geoJsonStringify = `{
     }`;
 
 let spatialRequest = {
-    censusResolution: "tract",
+    censusResolution: "Tract",
     censusFeature: "TotalPopulation",
+    spatialOp: "GeoWithin",
     requestGeoJson: geoJsonStringify,
-    spatialOp: "geoWithin"
 };
 
-let request = {SpatialRequest: spatialRequest};
-
-stub.SpatialQuery(request, function (err, response) {
-    if (err) {
-        console.log(err);
-    } else {
-        console.log(response);
-    }
+let call = stub.SpatialQuery(spatialRequest);
+call.on('data', function (response) {
+    console.log(response);
 });
+
+call.on('end', function () {
+    console.log('Completed');
+});
+
+call.on('err', function (err) {
+    console.log(err);
+})
 
