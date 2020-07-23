@@ -8,11 +8,8 @@
 ### How-to-Run
 
 1. Create a file `src/main/resources/config.properties` using the given sample `src/main/resources/config.properties.sample`.
-2. Fill in the values SERVER_HOST=<where you're planning to start the org.sustain.census.CensusServer>, DB_HOST=faure, and use your CSU credentials in MySQL databases in faure for DB_USERNAME and DB_PASSWORD.
+2. Fill in the values SERVER_HOST=<where you're planning to start the org.sustain.census.CensusServer>, DB_HOST=lattice-0,DB_PORT=27017
 3. Do `./gradlew install` from the project root.
 4. Run `bin/census-server.sh` to start the CensusServer
-5. Use `org.sustain.census.CensusClient` and `src/main/proto/census.proto` as references for implementing clients
-
-
-### Available Data
+5. Use `org.sustain.census.SpatialClient` and `src/main/proto/census.proto` as references for implementing clients. An example Node.js client is available at `nodejs-client/census_client.js`
 
