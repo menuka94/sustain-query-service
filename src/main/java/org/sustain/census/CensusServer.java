@@ -9,6 +9,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.controller.mongodb.IncomeController;
+import org.sustain.census.controller.mongodb.OsmController;
 import org.sustain.census.controller.mongodb.SpatialQueryUtil;
 import org.sustain.census.model.GeoJson;
 
@@ -89,6 +90,7 @@ public class CensusServer {
         return geoJsonList;
     }
 
+    // Server implementation
     static class CensusServerImpl extends CensusGrpc.CensusImplBase {
         @Override
         public void spatialQuery(SpatialRequest request, StreamObserver<SpatialResponse> responseObserver) {
@@ -250,5 +252,16 @@ public class CensusServer {
                 e.printStackTrace();
             }
         }
-    }
+
+        @Override
+        public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
+            ArrayList<String> osmData = OsmController.getOsmData(request);
+            for (String osmDatum : osmData) {
+                responseObserver.onNext(OsmResponse.newBuilder().setResponse(osmDatum).build());
+            }
+            responseObserver.onCompleted();
+        }
+    }   // end of Server implementation
+
+
 }

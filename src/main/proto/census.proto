@@ -14,10 +14,30 @@ service Census {
   // spatial query with MongoDB support
   rpc SpatialQuery(SpatialRequest) returns (stream SpatialResponse) {}
 
+  // Query Open Street Map Data
+  rpc OsmQuery(OsmRequest) returns (stream OsmResponse) {}
+
   // targeted queries - return geographical areas that satisfy a given value range of a census feature
   // Example 1: Retrieve all counties where (population >= 1,000,000)
   // Example 2: Retrieve all tracts where (median household income < $50,000/year)
   rpc ExecuteTargetedCensusQuery(TargetedCensusRequest) returns (stream TargetedCensusResponse) {}
+}
+
+message OsmRequest {
+  enum Dataset {
+    POINTS = 0;
+    LINES = 1;
+    MULTI_LINES = 2;
+    MULTI_POLYGONS = 3;
+  }
+  Dataset dataset = 1;
+  string requestGeoJson = 2;
+  SpatialOp spatialOp = 3;
+  map<string, string> requestParams = 4;
+}
+
+message OsmResponse {
+  string response = 1;
 }
 
 message SpatialRequest {
