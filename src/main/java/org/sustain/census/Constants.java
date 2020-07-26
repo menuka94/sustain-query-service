@@ -14,7 +14,6 @@ public class Constants {
     }};
 
     public static final class MongoDBCollections {
-        public static final String GEO_IDS = "geoids";
         public static final String TOTAL_POPULATION = "total_population";
         public static final String POPULATION_BY_AGE = "population_by_age";
         public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
@@ -34,6 +33,14 @@ public class Constants {
                 put(Predicate.ComparisonOperator.GREATER_THAN_OR_EQUAL, ">=");
                 put(Predicate.ComparisonOperator.LESS_THAN, "<");
                 put(Predicate.ComparisonOperator.LESS_THAN_OR_EQUAL, "<=");
+            }};
+
+    public static final HashMap<OsmRequest.Dataset, String> OSM_DATASETS =
+            new HashMap<OsmRequest.Dataset, String>() {{
+                put(OsmRequest.Dataset.POINTS, "osm_points_geo");
+                put(OsmRequest.Dataset.LINES, "osm_lines_geo");
+                put(OsmRequest.Dataset.MULTI_LINES, "osm_multilines_geo");
+                put(OsmRequest.Dataset.MULTI_POLYGONS, "osm_multipolygons_geo");
             }};
 
 
@@ -67,12 +74,9 @@ public class Constants {
     }
 
     public static class CensusResolutions {
-        public static final String GEO_ID = "geoid";
         public static final String STATE = "state";
         public static final String COUNTY = "county";
         public static final String TRACT = "tract";
         public static final String BLOCK = "block";
-        public static final String LATITUDE = "latitude";
-        public static final String LONGITUDE = "longitude";
     }
 }

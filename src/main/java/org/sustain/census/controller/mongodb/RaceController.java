@@ -28,7 +28,8 @@ public class RaceController {
         }
     }
 
-    public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution, String comparisonField, String comparisonOp, double comparisonValue) {
+    public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution, String comparisonField,
+                                                            String comparisonOp, double comparisonValue) {
         return null;
     }
 }

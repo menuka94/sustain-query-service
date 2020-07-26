@@ -35,34 +35,53 @@ public class SpatialClient {
                 "   \"geometry\":{\n" +
                 "      \"type\":\"polygon\",\n" +
                 "      \"coordinates\":[\n" +
-                "         [\n" +
-                "            [\n" +
-                "              -112.412109375,\n" +
-                "              35.53222622770337\n" +
-                "            ],\n" +
-                "            [\n" +
-                "              -93.8671875,\n" +
-                "              35.53222622770337\n" +
-                "            ],\n" +
-                "            [\n" +
-                "              -93.8671875,\n" +
-                "              46.195042108660154\n" +
-                "            ],\n" +
-                "            [\n" +
-                "              -112.412109375,\n" +
-                "              46.195042108660154\n" +
-                "            ],\n" +
-                "            [\n" +
-                "              -112.412109375,\n" +
-                "              35.53222622770337\n" +
-                "            ]\n" +
-                "          ]\n" +
+                "  [\n" +
+                "                                        [\n" +
+                "                                        -105.72280883789064,\n" +
+                "                                        40.390488829277956\n" +
+                "                                        ],\n" +
+                "                                        [\n" +
+                "                                        -105.72280883789064,\n" +
+                "                                        40.75661990450192\n" +
+                "                                        ],\n" +
+                "                                        [\n" +
+                "                                        -104.44976806640626,\n" +
+                "                                        40.75661990450192\n" +
+                "                                        ],\n" +
+                "                                        [\n" +
+                "                                        -104.44976806640626,\n" +
+                "                                        40.390488829277956\n" +
+                "                                        ],\n" +
+                "                                        [\n" +
+                "                                        -105.72280883789064,\n" +
+                "                                        40.390488829277956\n" +
+                "                                        ]\n" +
+                "                                    ]\n" +
                 "      ]\n" +
                 "   }\n" +
                 "}";
 
-        exampleSpatialQuery(censusBlockingStub, geoJson);
+        //exampleSpatialQuery(censusBlockingStub, geoJson);
         //exampleTargetedQuery(censusBlockingStub, geoJson);
+        exampleOsmQuery(censusBlockingStub, geoJson);
+    }
+
+    private static void exampleOsmQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+        OsmRequest request = OsmRequest.newBuilder()
+                .setDataset(OsmRequest.Dataset.LINES)
+                .setSpatialOp(SpatialOp.GeoIntersects)
+                .putRequestParams("properties.highway", "primary")
+                .setRequestGeoJson(geoJson).build();
+
+        Iterator<OsmResponse> osmResponseIterator = censusBlockingStub.osmQuery(request);
+        int count = 0;
+        while (osmResponseIterator.hasNext()) {
+            OsmResponse response = osmResponseIterator.next();
+            count++;
+            log.info(response.getResponse() + "\n");
+        }
+
+        log.info("Count: " + count);
     }
 
     private static void exampleSpatialQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {

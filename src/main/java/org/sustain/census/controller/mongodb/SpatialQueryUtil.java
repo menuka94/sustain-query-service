@@ -132,10 +132,15 @@ public class SpatialQueryUtil {
                 return Filters.geoWithin("geometry", geometry);
             case GeoIntersects:
                 return Filters.geoIntersects("geometry", geometry);
-            case  UNRECOGNIZED:
+            case UNRECOGNIZED:
                 log.warn("Unrecognized Spatial Operator");
         }
         return null;
+    }
+
+    public static Geometry getGeometryFromGeoJson(String requestGeoJson) {
+        JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
+        return SpatialQueryUtil.constructPolygon(inputGeoJson);
     }
 
     public static void main(String[] args) {
