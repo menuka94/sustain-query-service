@@ -31,6 +31,9 @@ public class OsmController {
         Map<String, String> requestParamsMap = request.getRequestParamsMap();
 
         log.info("getOsmData({dataset: " + dataset + ", spatialOp: " + spatialOp + "})");
+        for (String key : requestParamsMap.keySet()) {
+            log.info("{" + key + ": " + requestParamsMap.get(key) + "}");
+        }
 
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(dataset);

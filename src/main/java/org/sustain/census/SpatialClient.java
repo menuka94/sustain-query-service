@@ -35,6 +35,7 @@ public class SpatialClient {
                 "   \"geometry\":{\n" +
                 "      \"type\":\"polygon\",\n" +
                 "      \"coordinates\":[\n" +
+                "  [\n" +
                 "                                        [\n" +
                 "                                        -105.72280883789064,\n" +
                 "                                        40.390488829277956\n" +
@@ -55,6 +56,7 @@ public class SpatialClient {
                 "                                        -105.72280883789064,\n" +
                 "                                        40.390488829277956\n" +
                 "                                        ]\n" +
+                "                                    ]\n" +
                 "      ]\n" +
                 "   }\n" +
                 "}";
@@ -76,6 +78,7 @@ public class SpatialClient {
         while (osmResponseIterator.hasNext()) {
             OsmResponse response = osmResponseIterator.next();
             count++;
+            log.info(response.getResponse() + "\n");
         }
 
         log.info("Count: " + count);
