@@ -63,7 +63,25 @@ public class SpatialClient {
 
         //exampleSpatialQuery(censusBlockingStub, geoJson);
         //exampleTargetedQuery(censusBlockingStub, geoJson);
-        exampleOsmQuery(censusBlockingStub, geoJson);
+        //exampleOsmQuery(censusBlockingStub, geoJson);
+        exampleDatasetQuery(censusBlockingStub, geoJson);
+    }
+
+    private static void exampleDatasetQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+        DatasetRequest request = DatasetRequest.newBuilder()
+                .setDataset(DatasetRequest.Dataset.HOSPITALS)
+                .setSpatialOp(SpatialOp.GeoWithin)
+                .setRequestGeoJson(geoJson)
+                .build();
+        Iterator<DatasetResponse> datasetResponseIterator = censusBlockingStub.datasetQuery(request);
+        int count = 0;
+        while (datasetResponseIterator.hasNext()) {
+            DatasetResponse response = datasetResponseIterator.next();
+            count++;
+            log.info(response.getResponse() + "\n");
+        }
+
+        log.info("Count: " + count);
     }
 
     private static void exampleOsmQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {

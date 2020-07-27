@@ -8,6 +8,7 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.census.controller.mongodb.DatasetController;
 import org.sustain.census.controller.mongodb.IncomeController;
 import org.sustain.census.controller.mongodb.OsmController;
 import org.sustain.census.controller.mongodb.SpatialQueryUtil;
@@ -258,6 +259,15 @@ public class CensusServer {
             ArrayList<String> osmData = OsmController.getOsmData(request);
             for (String osmDatum : osmData) {
                 responseObserver.onNext(OsmResponse.newBuilder().setResponse(osmDatum).build());
+            }
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void datasetQuery(DatasetRequest request, StreamObserver<DatasetResponse> responseObserver) {
+            ArrayList<String> data = DatasetController.getData(request);
+            for (String datum : data) {
+                responseObserver.onNext(DatasetResponse.newBuilder().setResponse(datum).build());
             }
             responseObserver.onCompleted();
         }

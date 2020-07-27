@@ -3,7 +3,7 @@ const PROTO_DIR = '../src/main/proto'
 const proto_loader = require('@grpc/proto-loader');
 
 let packageDefinition = proto_loader.loadSync(
-    [PROTO_DIR + '/census.proto', PROTO_DIR + '/other_datasets.proto'],
+    [PROTO_DIR + '/census.proto'],
     {
         keepCase: true,
         longs: String,

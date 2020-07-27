@@ -43,6 +43,15 @@ public class Constants {
                 put(OsmRequest.Dataset.MULTI_POLYGONS, "osm_multipolygons_geo");
             }};
 
+    public static final HashMap<DatasetRequest.Dataset, String> DATASETS =
+            new HashMap<DatasetRequest.Dataset, String>() {{
+                put(DatasetRequest.Dataset.DAMS, "dams_geo");
+                put(DatasetRequest.Dataset.HOSPITALS, "hospitals_geo");
+                put(DatasetRequest.Dataset.ELECTRICAL_SUBSTATIONS, "electrical_substations_geo");
+                put(DatasetRequest.Dataset.POWER_PLANTS, "power_plants_geo");
+                put(DatasetRequest.Dataset.NATURAL_GAS_PIPELINES, "natural_gas_pipelines_geo");
+                put(DatasetRequest.Dataset.TRANSMISSION_LINES, "transmission_lines_geo");
+            }};
 
     public static class Server {
         public static final String HOST = "SERVER_HOST";
