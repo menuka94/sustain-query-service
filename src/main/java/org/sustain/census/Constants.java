@@ -41,6 +41,7 @@ public class Constants {
                 put(OsmRequest.Dataset.LINES, "osm_lines_geo");
                 put(OsmRequest.Dataset.MULTI_LINES, "osm_multilines_geo");
                 put(OsmRequest.Dataset.MULTI_POLYGONS, "osm_multipolygons_geo");
+                put(OsmRequest.Dataset.OTHER, "osm_other_geo");
             }};
 
     public static final HashMap<DatasetRequest.Dataset, String> DATASETS =
@@ -65,7 +66,7 @@ public class Constants {
     }
 
     public static class DB {
-        public static final String DB_NAME = "sustain_census";
+        public static final String DB_NAME = "sustaindb";
         public static final String USERNAME = "DB_USERNAME";
         public static final String PASSWORD = "DB_PASSWORD";
         public static final String HOST = "DB_HOST";
