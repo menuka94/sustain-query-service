@@ -1,6 +1,6 @@
 package org.sustain.census.controller.mongodb;
 
-import com.mongodb.client.FindIterable;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -16,6 +16,7 @@ import org.sustain.census.SpatialOp;
 import org.sustain.census.db.mongodb.DBConnection;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -38,14 +39,18 @@ public class OsmController {
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(dataset);
 
-        List<Bson> filters = new ArrayList<>();
-        filters.add(SpatialQueryUtil.getSpatialOp(spatialOp, geometry));
+        List<Bson> orFilters = new ArrayList<>();
+        Bson spatialFilter = SpatialQueryUtil.getSpatialOp(spatialOp, geometry);
         for (String key : requestParamsMap.keySet()) {
-            filters.add(Filters.eq(key, requestParamsMap.get(key)));
+            orFilters.add(Filters.eq(key, requestParamsMap.get(key)));
         }
 
-        FindIterable<Document> documents = collection.find(Filters.and(filters));
-        MongoCursor<Document> cursor = documents.cursor();
+        AggregateIterable<Document> aggregate = collection.aggregate(Arrays.asList(
+                Filters.and(spatialFilter),
+                Filters.or(orFilters)
+        ));
+
+        MongoCursor<Document> cursor = aggregate.cursor();
 
         ArrayList<String> results = new ArrayList<>();
         while (cursor.hasNext()) {
