@@ -50,6 +50,7 @@ message OsmRequest {
     MULTI_LINES = 2;
     MULTI_POLYGONS = 3;
     OTHER = 4;
+    ALL = 5;
   }
   Dataset dataset = 1;
   string requestGeoJson = 2;

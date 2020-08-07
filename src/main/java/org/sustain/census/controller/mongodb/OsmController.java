@@ -23,14 +23,14 @@ import static org.sustain.census.controller.mongodb.SpatialQueryUtil.getGeometry
 public class OsmController {
     private static final Logger log = LogManager.getLogger(OsmController.class);
 
-    public static ArrayList<String> getOsmData(OsmRequest request) {
-        String dataset = Constants.OSM_DATASETS.get(request.getDataset());
+    public static ArrayList<String> getOsmData(OsmRequest request, OsmRequest.Dataset dataset) {
+        String datasetStr = Constants.OSM_DATASETS.get(dataset);
         Geometry geometry = getGeometryFromGeoJson(request.getRequestGeoJson());
         SpatialOp spatialOp = request.getSpatialOp();
         List<OsmRequest.OsmRequestParam> requestParamsList = request.getRequestParamsList();
 
         List<Bson> orFilters = new ArrayList<>();
-        log.info("getOsmData({dataset: " + dataset + ", spatialOp: " + spatialOp + "})");
+        log.info("getOsmData({dataset: " + datasetStr + ", spatialOp: " + spatialOp + "})");
 
         for (OsmRequest.OsmRequestParam osmRequestParam : requestParamsList) {
             log.info("{" + osmRequestParam.getKey() + ": " + osmRequestParam.getValue() + "}");
@@ -38,7 +38,7 @@ public class OsmController {
         }
 
         MongoDatabase db = DBConnection.getConnection();
-        MongoCollection<Document> collection = db.getCollection(dataset);
+        MongoCollection<Document> collection = db.getCollection(datasetStr);
 
 
         Bson spatialFilter = SpatialQueryUtil.getSpatialOp(spatialOp, geometry);

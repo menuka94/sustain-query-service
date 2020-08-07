@@ -256,7 +256,30 @@ public class CensusServer {
 
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
-            ArrayList<String> osmData = OsmController.getOsmData(request);
+            OsmRequest.Dataset dataset = request.getDataset();
+            switch (dataset) {
+                // query all OSM datasets
+                case ALL:
+                    ArrayList<String> allOsmData = new ArrayList<>();
+                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.LINES));
+                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.MULTI_LINES));
+                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.POINTS));
+                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.MULTI_POLYGONS));
+                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.OTHER));
+
+                    for (String osmDatum : allOsmData) {
+                        responseObserver.onNext(OsmResponse.newBuilder().setResponse(osmDatum).build());
+                    }
+                    responseObserver.onCompleted();
+
+                    return;
+                case UNRECOGNIZED:
+                    log.warn("Invalid OSM dataset");
+            }
+
+            // not ALL, query a single OSM dataset
+            ArrayList<String> osmData = OsmController.getOsmData(request, dataset);
+
             for (String osmDatum : osmData) {
                 responseObserver.onNext(OsmResponse.newBuilder().setResponse(osmDatum).build());
             }
@@ -271,6 +294,7 @@ public class CensusServer {
             }
             responseObserver.onCompleted();
         }
+
     }   // end of Server implementation
 
 

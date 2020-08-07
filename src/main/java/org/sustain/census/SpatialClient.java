@@ -91,7 +91,7 @@ public class SpatialClient {
         requestParams.put("properties.highway", "primary");
         requestParams.put("properties.highway", "residential");
         OsmRequest request = OsmRequest.newBuilder()
-                .setDataset(OsmRequest.Dataset.LINES)
+                .setDataset(OsmRequest.Dataset.ALL)
                 .setSpatialOp(SpatialOp.GeoIntersects)
                 .addRequestParams(OsmRequest.OsmRequestParam.newBuilder()
                         .setKey("properties.highway")
