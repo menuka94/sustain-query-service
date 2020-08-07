@@ -6,7 +6,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.db.Util;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 public class SpatialClient {
     private static final Logger log = LogManager.getLogger(SpatialClient.class);
@@ -63,8 +65,8 @@ public class SpatialClient {
 
         //exampleSpatialQuery(censusBlockingStub, geoJson);
         //exampleTargetedQuery(censusBlockingStub, geoJson);
-        //exampleOsmQuery(censusBlockingStub, geoJson);
-        exampleDatasetQuery(censusBlockingStub, geoJson);
+        exampleOsmQuery(censusBlockingStub, geoJson);
+        //exampleDatasetQuery(censusBlockingStub, geoJson);
     }
 
     private static void exampleDatasetQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
@@ -85,10 +87,18 @@ public class SpatialClient {
     }
 
     private static void exampleOsmQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+        Map<String, String> requestParams = new HashMap<>();
+        requestParams.put("properties.highway", "primary");
+        requestParams.put("properties.highway", "residential");
         OsmRequest request = OsmRequest.newBuilder()
                 .setDataset(OsmRequest.Dataset.LINES)
                 .setSpatialOp(SpatialOp.GeoIntersects)
-                .putRequestParams("properties.highway", "primary")
+                .addRequestParams(OsmRequest.OsmRequestParam.newBuilder()
+                        .setKey("properties.highway")
+                        .setValue("primary"))
+                .addRequestParams(OsmRequest.OsmRequestParam.newBuilder()
+                        .setKey("properties.highway")
+                        .setValue("residential"))
                 .setRequestGeoJson(geoJson).build();
 
         Iterator<OsmResponse> osmResponseIterator = censusBlockingStub.osmQuery(request);

@@ -54,8 +54,13 @@ message OsmRequest {
   Dataset dataset = 1;
   string requestGeoJson = 2;
   SpatialOp spatialOp = 3;
-  map<string, string> requestParams = 4;
+  message OsmRequestParam {
+    string key = 1;
+    string value = 2;
+  }
+  repeated OsmRequestParam requestParams = 4;
 }
+
 
 message OsmResponse {
   string response = 1;

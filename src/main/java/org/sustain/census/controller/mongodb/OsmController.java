@@ -1,6 +1,6 @@
 package org.sustain.census.controller.mongodb;
 
-import com.mongodb.client.AggregateIterable;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
@@ -16,9 +16,7 @@ import org.sustain.census.SpatialOp;
 import org.sustain.census.db.mongodb.DBConnection;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import static org.sustain.census.controller.mongodb.SpatialQueryUtil.getGeometryFromGeoJson;
 
@@ -29,28 +27,24 @@ public class OsmController {
         String dataset = Constants.OSM_DATASETS.get(request.getDataset());
         Geometry geometry = getGeometryFromGeoJson(request.getRequestGeoJson());
         SpatialOp spatialOp = request.getSpatialOp();
-        Map<String, String> requestParamsMap = request.getRequestParamsMap();
+        List<OsmRequest.OsmRequestParam> requestParamsList = request.getRequestParamsList();
 
+        List<Bson> orFilters = new ArrayList<>();
         log.info("getOsmData({dataset: " + dataset + ", spatialOp: " + spatialOp + "})");
-        for (String key : requestParamsMap.keySet()) {
-            log.info("{" + key + ": " + requestParamsMap.get(key) + "}");
+
+        for (OsmRequest.OsmRequestParam osmRequestParam : requestParamsList) {
+            log.info("{" + osmRequestParam.getKey() + ": " + osmRequestParam.getValue() + "}");
+            orFilters.add(Filters.eq(osmRequestParam.getKey(), osmRequestParam.getValue()));
         }
 
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(dataset);
 
-        List<Bson> orFilters = new ArrayList<>();
+
         Bson spatialFilter = SpatialQueryUtil.getSpatialOp(spatialOp, geometry);
-        for (String key : requestParamsMap.keySet()) {
-            orFilters.add(Filters.eq(key, requestParamsMap.get(key)));
-        }
+        FindIterable<Document> documents = collection.find(Filters.and(spatialFilter, Filters.or(orFilters)));
 
-        AggregateIterable<Document> aggregate = collection.aggregate(Arrays.asList(
-                Filters.and(spatialFilter),
-                Filters.or(orFilters)
-        ));
-
-        MongoCursor<Document> cursor = aggregate.cursor();
+        MongoCursor<Document> cursor = documents.cursor();
 
         ArrayList<String> results = new ArrayList<>();
         while (cursor.hasNext()) {
