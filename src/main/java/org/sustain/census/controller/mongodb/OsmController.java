@@ -17,13 +17,16 @@ import org.sustain.census.db.mongodb.DBConnection;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.sustain.census.controller.mongodb.SpatialQueryUtil.getGeometryFromGeoJson;
 
 public class OsmController {
     private static final Logger log = LogManager.getLogger(OsmController.class);
 
-    public static ArrayList<String> getOsmData(OsmRequest request, OsmRequest.Dataset dataset) {
+    public static void getOsmData(OsmRequest request, OsmRequest.Dataset dataset,
+                                  LinkedBlockingQueue<String> queue) {
         String datasetStr = Constants.OSM_DATASETS.get(dataset);
         Geometry geometry = getGeometryFromGeoJson(request.getRequestGeoJson());
         SpatialOp spatialOp = request.getSpatialOp();
@@ -40,18 +43,22 @@ public class OsmController {
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(datasetStr);
 
-
         Bson spatialFilter = SpatialQueryUtil.getSpatialOp(spatialOp, geometry);
-        FindIterable<Document> documents = collection.find(Filters.and(spatialFilter, Filters.or(orFilters)));
+        FindIterable<Document> documents;
+        if (requestParamsList.size() > 0) {
+            documents = collection.find(Filters.and(spatialFilter, Filters.or(orFilters)));
+        } else {
+            documents = collection.find(spatialFilter);
+        }
 
         MongoCursor<Document> cursor = documents.cursor();
 
-        ArrayList<String> results = new ArrayList<>();
+        int count = 0;
         while (cursor.hasNext()) {
+            count++;
             Document next = cursor.next();
-            results.add(next.toJson());
+            queue.add(next.toJson());
         }
-
-        return results;
+        log.info(datasetStr + " count: " + count);
     }
 }

@@ -8,6 +8,7 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.OsmQueryHandler;
 import org.sustain.census.controller.mongodb.DatasetController;
 import org.sustain.census.controller.mongodb.IncomeController;
 import org.sustain.census.controller.mongodb.OsmController;
@@ -17,6 +18,7 @@ import org.sustain.census.model.GeoJson;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 
@@ -254,36 +256,12 @@ public class CensusServer {
             }
         }
 
+
+
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
-            OsmRequest.Dataset dataset = request.getDataset();
-            switch (dataset) {
-                // query all OSM datasets
-                case ALL:
-                    ArrayList<String> allOsmData = new ArrayList<>();
-                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.LINES));
-                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.MULTI_LINES));
-                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.POINTS));
-                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.MULTI_POLYGONS));
-                    allOsmData.addAll(OsmController.getOsmData(request, OsmRequest.Dataset.OTHER));
-
-                    for (String osmDatum : allOsmData) {
-                        responseObserver.onNext(OsmResponse.newBuilder().setResponse(osmDatum).build());
-                    }
-                    responseObserver.onCompleted();
-
-                    return;
-                case UNRECOGNIZED:
-                    log.warn("Invalid OSM dataset");
-            }
-
-            // not ALL, query a single OSM dataset
-            ArrayList<String> osmData = OsmController.getOsmData(request, dataset);
-
-            for (String osmDatum : osmData) {
-                responseObserver.onNext(OsmResponse.newBuilder().setResponse(osmDatum).build());
-            }
-            responseObserver.onCompleted();
+            OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);
+            handler.handleOsmQuery();
         }
 
         @Override
