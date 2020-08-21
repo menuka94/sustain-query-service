@@ -4,7 +4,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.Constants;
+import org.sustain.util.Constants;
 import org.sustain.db.Util;
 
 public class DBConnection {

@@ -73,29 +73,29 @@ sourceSets {
 
 startScripts.enabled = false
 
-task censusServer(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.census.CensusServer'
-    applicationName = 'census-server'
+task sustainServer(type: CreateStartScripts) {
+    mainClassName = 'org.sustain.server.SustainServer'
+    applicationName = 'sustain-server'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = startScripts.classpath
 }
 
 task censusClient(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.census.CensusClient'
+    mainClassName = 'org.sustain.client.CensusClient'
     applicationName = 'census-client'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = startScripts.classpath
 }
 
 task spatialClient(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.census.SpatialClient'
+    mainClassName = 'org.sustain.client.SpatialClient'
     applicationName = 'spatial-client'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = startScripts.classpath
 }
 
 applicationDistribution.into('bin') {
-    from(censusServer)
+    from(sustainServer)
     from(censusClient)
     from(spatialClient)
     fileMode = 0755

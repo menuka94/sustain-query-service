@@ -1,14 +1,14 @@
 package sustain.census;
 
-import org.sustain.census.CensusServer;
+import org.sustain.server.SustainServer;
 
 import java.io.IOException;
 
 public class ServerRunner extends Thread {
 
-    private CensusServer server;
+    private SustainServer server;
 
-    public ServerRunner(CensusServer server) {
+    public ServerRunner(SustainServer server) {
         this.server = server;
     }
 

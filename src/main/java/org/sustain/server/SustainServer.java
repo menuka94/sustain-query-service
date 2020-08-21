@@ -1,4 +1,4 @@
-package org.sustain.census;
+package org.sustain.server;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -8,13 +8,28 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.OsmQueryHandler;
+import org.sustain.census.CensusFeature;
+import org.sustain.census.CensusGrpc;
+import org.sustain.census.CensusResolution;
+import org.sustain.census.DatasetRequest;
+import org.sustain.census.DatasetResponse;
+import org.sustain.census.Decade;
+import org.sustain.census.OsmRequest;
+import org.sustain.census.OsmResponse;
+import org.sustain.census.Predicate;
+import org.sustain.census.SpatialOp;
+import org.sustain.census.SpatialRequest;
+import org.sustain.census.SpatialResponse;
+import org.sustain.census.TargetedCensusRequest;
+import org.sustain.census.TargetedCensusResponse;
+import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.controller.DatasetController;
 import org.sustain.census.controller.PopulationController;
 import org.sustain.census.controller.RaceController;
 import org.sustain.census.controller.IncomeController;
 import org.sustain.census.controller.SpatialQueryUtil;
-import org.sustain.census.model.GeoJson;
+import org.sustain.util.model.GeoJson;
+import org.sustain.util.Constants;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,13 +37,13 @@ import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 
-public class CensusServer {
-    private static final Logger log = LogManager.getLogger(CensusServer.class);
+public class SustainServer {
+    private static final Logger log = LogManager.getLogger(SustainServer.class);
 
     private Server server;
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        final CensusServer server = new CensusServer();
+        final SustainServer server = new SustainServer();
         server.start();
         server.blockUntilShutdown();
     }
@@ -43,7 +58,7 @@ public class CensusServer {
             @Override
             public void run() {
                 try {
-                    CensusServer.this.stop();
+                    SustainServer.this.stop();
                 } catch (InterruptedException e) {
                     log.error("Error in stopping the server");
                     e.printStackTrace();

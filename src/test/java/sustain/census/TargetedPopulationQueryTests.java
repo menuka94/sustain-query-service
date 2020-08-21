@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sustain.census.CensusGrpc;
 import org.sustain.census.CensusResolution;
-import org.sustain.census.CensusServer;
+import org.sustain.server.SustainServer;
 import org.sustain.census.ClientHelper;
-import org.sustain.census.Constants;
+import org.sustain.util.Constants;
 import org.sustain.census.Decade;
 import org.sustain.census.Predicate;
 import org.sustain.census.TargetedQueryResponse;
@@ -29,12 +29,12 @@ public class TargetedPopulationQueryTests {
 
     private static CensusGrpc.CensusBlockingStub censusBlockingStub;
     private static ManagedChannel channel;
-    private static CensusServer server;
+    private static SustainServer server;
     private static ClientHelper clientHelper;
 
     @BeforeAll
     static void init() throws InterruptedException {
-        server = new CensusServer();
+        server = new SustainServer();
         new ServerRunner(server).start();
         Thread.sleep(2000);
         String target = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;

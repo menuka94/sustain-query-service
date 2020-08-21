@@ -12,15 +12,15 @@ build-with-tests:
 	chmod +x gradlew
 	./gradlew install
 
-run-census-server:
+run-sustain-server:
 	./gradlew install -x test
-	sh ./build/install/sustain-census-grpc/bin/census-server
+	sh ./build/install/sustain-census-grpc/bin/sustain-server
 
 test:
 	./gradlew test
 
-run-census-client:
-	sh ./build/install/sustain-census-grpc/bin/census-client
+run-spatial-client:
+	sh ./build/install/sustain-census-grpc/bin/spatial-client
 
 
 proto:

@@ -1,4 +1,4 @@
-package org.sustain.census;
+package org.sustain.util;
 
 public class SampleGeoJson {
     public static final String FORT_COLLINS = "{\n" +

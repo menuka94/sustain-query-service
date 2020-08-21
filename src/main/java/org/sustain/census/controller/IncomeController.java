@@ -6,7 +6,7 @@ import com.mongodb.client.model.Filters;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
-import org.sustain.census.Constants;
+import org.sustain.util.Constants;
 import org.sustain.census.Predicate;
 import org.sustain.db.mongodb.DBConnection;
 

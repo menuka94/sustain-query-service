@@ -1,4 +1,4 @@
-package org.sustain.census.model;
+package org.sustain.util.model;
 
 import com.google.gson.annotations.SerializedName;
 

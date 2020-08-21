@@ -1,4 +1,10 @@
-package org.sustain.census;
+package org.sustain.util;
+
+import org.sustain.census.CensusResolution;
+import org.sustain.census.DatasetRequest;
+import org.sustain.census.Decade;
+import org.sustain.census.OsmRequest;
+import org.sustain.census.Predicate;
 
 import java.util.HashMap;
 

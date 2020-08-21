@@ -1,4 +1,4 @@
-package org.sustain;
+package org.sustain.openStreetMaps;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;

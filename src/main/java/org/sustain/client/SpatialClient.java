@@ -1,10 +1,26 @@
-package org.sustain.census;
+package org.sustain.client;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.census.CensusFeature;
+import org.sustain.census.CensusGrpc;
+import org.sustain.census.CensusResolution;
+import org.sustain.census.DatasetRequest;
+import org.sustain.census.DatasetResponse;
+import org.sustain.census.Decade;
+import org.sustain.census.OsmRequest;
+import org.sustain.census.OsmResponse;
+import org.sustain.census.Predicate;
+import org.sustain.census.SpatialOp;
+import org.sustain.census.SpatialRequest;
+import org.sustain.census.SpatialResponse;
+import org.sustain.census.TargetedCensusRequest;
+import org.sustain.census.TargetedCensusResponse;
 import org.sustain.db.Util;
+import org.sustain.util.Constants;
+import org.sustain.util.SampleGeoJson;
 
 import java.util.Iterator;
 

@@ -18,11 +18,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.sustain.census.Constants;
+import org.sustain.util.Constants;
 import org.sustain.census.Predicate;
 import org.sustain.census.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
-import org.sustain.census.model.GeoJson;
+import org.sustain.util.model.GeoJson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,7 +68,8 @@ public class SpatialQueryUtil {
         FindIterable<Document> iterable = collection.find(Filters.geoWithin("geometry", geometry));
         MongoCursor<Document> cursor = iterable.cursor();
 
-        // sub-query with iterable  - THIS RESULTS IN A HEAP OVERFLOW EXCEPTION
+        // sub-query with iterable - the following exception is thrown
+        // org.bson.BsonMaximumSizeExceededException: Document size of 78569244 is larger than maximum of 16793600.
         /*
         MongoCollection<Document> county_total_population = db.getCollection("county_total_population");
         FindIterable<Document> gisjoin = county_total_population.find(Filters.in("GISJOIN", iterable));
@@ -78,7 +79,7 @@ public class SpatialQueryUtil {
             Document next = populationCursor.next();
             i++;
         }
-        log.info("count: " + i);
+        log.info("TEMP COUNT: " + i);
         */
 
         while (cursor.hasNext()) {
