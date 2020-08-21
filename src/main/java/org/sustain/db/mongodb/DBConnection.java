@@ -1,11 +1,11 @@
-package org.sustain.census.db.mongodb;
+package org.sustain.db.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.Constants;
-import org.sustain.census.db.Util;
+import org.sustain.db.Util;
 
 public class DBConnection {
     private static final Logger log = LogManager.getLogger(DBConnection.class);

@@ -1,4 +1,4 @@
-package org.sustain.census.controller.mongodb;
+package org.sustain.otherDatasets.controller;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -13,13 +13,14 @@ import org.bson.conversions.Bson;
 import org.sustain.census.Constants;
 import org.sustain.census.DatasetRequest;
 import org.sustain.census.SpatialOp;
-import org.sustain.census.db.mongodb.DBConnection;
+import org.sustain.census.controller.SpatialQueryUtil;
+import org.sustain.db.mongodb.DBConnection;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.sustain.census.controller.mongodb.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.census.controller.SpatialQueryUtil.getGeometryFromGeoJson;
 
 public class DatasetController {
     private static final Logger log = LogManager.getLogger(DatasetController.class);

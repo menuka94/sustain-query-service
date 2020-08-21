@@ -15,7 +15,7 @@ import org.sustain.census.ClientHelper;
 import org.sustain.census.Constants;
 import org.sustain.census.Decade;
 import org.sustain.census.PopulationByAgeResponse;
-import org.sustain.census.db.Util;
+import org.sustain.db.Util;
 
 import static org.sustain.census.Constants.CensusResolutions.COUNTY;
 import static org.sustain.census.Constants.CensusResolutions.STATE;

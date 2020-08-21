@@ -5,7 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.census.OsmRequest;
 import org.sustain.census.OsmResponse;
-import org.sustain.census.controller.mongodb.OsmController;
+import org.sustain.openStreetMaps.controller.OsmController;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -66,7 +66,7 @@ public class OsmQueryHandler {
                 }
             }
 
-            // if there if any data remaining in the queue after fetching is completed
+            // if there is any data remaining in the queue after fetching is completed
             for (String datum : data) {
                 responseObserver.onNext(OsmResponse.newBuilder().setResponse(datum).build());
             }

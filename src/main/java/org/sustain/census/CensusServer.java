@@ -9,16 +9,16 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.OsmQueryHandler;
-import org.sustain.census.controller.mongodb.DatasetController;
-import org.sustain.census.controller.mongodb.IncomeController;
-import org.sustain.census.controller.mongodb.OsmController;
-import org.sustain.census.controller.mongodb.SpatialQueryUtil;
+import org.sustain.otherDatasets.controller.DatasetController;
+import org.sustain.census.controller.PopulationController;
+import org.sustain.census.controller.RaceController;
+import org.sustain.census.controller.IncomeController;
+import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.census.model.GeoJson;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 
@@ -110,22 +110,27 @@ public class CensusServer {
 
             switch (censusFeature) {
                 case TotalPopulation:
+                    int i = 0;
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
-                                org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
+                                PopulationController.getPopulationResults(resolution,
                                         geoJson.getProperties().getGisJoin());
-                        SpatialResponse response = SpatialResponse.newBuilder()
-                                .setData(populationResult)
-                                .setResponseGeoJson(geoJson.toJson())
-                                .build();
-                        responseObserver.onNext(response);
+                        if (populationResult != null) {
+                            i++;
+                            SpatialResponse response = SpatialResponse.newBuilder()
+                                    .setData(populationResult)
+                                    .setResponseGeoJson(geoJson.toJson())
+                                    .build();
+                            responseObserver.onNext(response);
+                        }
                     }
+                    log.info("Fetching completed! No. of entries: " + i + "\n");
                     responseObserver.onCompleted();
                     break;
                 case MedianHouseholdIncome:
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
-                                org.sustain.census.controller.mongodb.IncomeController.getMedianHouseholdIncome(resolution,
+                                IncomeController.getMedianHouseholdIncome(resolution,
                                         geoJson.getProperties().getGisJoin());
                         SpatialResponse response = SpatialResponse.newBuilder()
                                 .setData(populationResult)
@@ -144,7 +149,7 @@ public class CensusServer {
                 case Race:
                     for (GeoJson geoJson : geoJsonList) {
                         String populationResult =
-                                org.sustain.census.controller.mongodb.RaceController.getRace(resolution,
+                                RaceController.getRace(resolution,
                                         geoJson.getProperties().getGisJoin());
                         SpatialResponse response = SpatialResponse.newBuilder()
                                 .setData(populationResult)
@@ -222,7 +227,7 @@ public class CensusServer {
                         String comparisonField = decade + "_" + Constants.CensusFeatures.TOTAL_POPULATION;
                         for (GeoJson geoJson : geoList) {
                             String populationResult =
-                                    org.sustain.census.controller.mongodb.PopulationController.getPopulationResults(resolution,
+                                    PopulationController.getPopulationResults(resolution,
                                             geoJson.getProperties().getGisJoin());
                             double value =
                                     JsonParser.parseString(populationResult).getAsJsonObject().get(comparisonField).getAsDouble();
@@ -236,7 +241,7 @@ public class CensusServer {
                                 responseObserver.onNext(TargetedCensusResponse.newBuilder().setSpatialResponse(response)
                                         .build());
                             }
-                        }   // end of for loop
+                        }   // end of geoJson loop
 
                         responseObserver.onCompleted();
                         break;
@@ -257,7 +262,6 @@ public class CensusServer {
         }
 
 
-
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
             OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);
@@ -274,6 +278,4 @@ public class CensusServer {
         }
 
     }   // end of Server implementation
-
-
 }

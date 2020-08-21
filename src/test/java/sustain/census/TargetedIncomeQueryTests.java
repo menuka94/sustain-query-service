@@ -17,7 +17,7 @@ import org.sustain.census.Constants;
 import org.sustain.census.Decade;
 import org.sustain.census.Predicate;
 import org.sustain.census.TargetedQueryResponse;
-import org.sustain.census.db.Util;
+import org.sustain.db.Util;
 
 import java.util.List;
 

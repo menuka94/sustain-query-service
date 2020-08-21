@@ -1,4 +1,4 @@
-package org.sustain.census.controller.mongodb;
+package org.sustain.census.controller;
 
 import com.google.gson.JsonParser;
 import com.mongodb.client.FindIterable;
@@ -14,7 +14,7 @@ import org.bson.conversions.Bson;
 import org.sustain.census.Constants;
 import org.sustain.census.Predicate;
 import org.sustain.census.SpatialOp;
-import org.sustain.census.db.mongodb.DBConnection;
+import org.sustain.db.mongodb.DBConnection;
 
 import java.util.HashMap;
 
@@ -31,7 +31,7 @@ public class PopulationController {
             return first.toJson();
         } else {
             log.warn("getPopulationResults(): empty results");
-            return "";
+            return null;
         }
     }
 

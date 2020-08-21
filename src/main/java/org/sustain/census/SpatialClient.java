@@ -4,11 +4,9 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.db.Util;
+import org.sustain.db.Util;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 public class SpatialClient {
     private static final Logger log = LogManager.getLogger(SpatialClient.class);

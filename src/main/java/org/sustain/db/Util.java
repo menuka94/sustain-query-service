@@ -1,8 +1,8 @@
-package org.sustain.census.db;
+package org.sustain.db;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.db.mysql.DBConnection;
+import org.sustain.db.mysql.DBConnection;
 
 import java.io.IOException;
 import java.io.InputStream;

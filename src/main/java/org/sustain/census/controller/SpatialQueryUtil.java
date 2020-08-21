@@ -1,4 +1,4 @@
-package org.sustain.census.controller.mongodb;
+package org.sustain.census.controller;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -21,7 +21,7 @@ import org.bson.conversions.Bson;
 import org.sustain.census.Constants;
 import org.sustain.census.Predicate;
 import org.sustain.census.SpatialOp;
-import org.sustain.census.db.mongodb.DBConnection;
+import org.sustain.db.mongodb.DBConnection;
 import org.sustain.census.model.GeoJson;
 
 import java.util.ArrayList;
@@ -67,6 +67,19 @@ public class SpatialQueryUtil {
         MongoCollection<Document> collection = db.getCollection(collectionName);
         FindIterable<Document> iterable = collection.find(Filters.geoWithin("geometry", geometry));
         MongoCursor<Document> cursor = iterable.cursor();
+
+        // sub-query with iterable  - THIS RESULTS IN A HEAP OVERFLOW EXCEPTION
+        /*
+        MongoCollection<Document> county_total_population = db.getCollection("county_total_population");
+        FindIterable<Document> gisjoin = county_total_population.find(Filters.in("GISJOIN", iterable));
+        MongoCursor<Document> populationCursor = gisjoin.cursor();
+        int i = 0;
+        while(populationCursor.hasNext()) {
+            Document next = populationCursor.next();
+            i++;
+        }
+        log.info("count: " + i);
+        */
 
         while (cursor.hasNext()) {
             Document next = cursor.next();

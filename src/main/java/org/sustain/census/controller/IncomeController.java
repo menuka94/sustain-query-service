@@ -1,4 +1,4 @@
-package org.sustain.census.controller.mongodb;
+package org.sustain.census.controller;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.sustain.census.Constants;
 import org.sustain.census.Predicate;
-import org.sustain.census.db.mongodb.DBConnection;
+import org.sustain.db.mongodb.DBConnection;
 
 import java.util.HashMap;
 
