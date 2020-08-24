@@ -46,8 +46,10 @@ public class SpatialClient {
 
         //exampleSpatialQuery(censusBlockingStub, geoJson);
         //exampleTargetedQuery(censusBlockingStub, geoJson);
-        exampleOsmQuery(censusBlockingStub, SampleGeoJson.FORT_COLLINS);
+        //exampleOsmQuery(censusBlockingStub, SampleGeoJson.FORT_COLLINS);
         //exampleDatasetQuery(censusBlockingStub, geoJson);
+        exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.County, censusBlockingStub,
+                SampleGeoJson.MULTIPLE_STATES);
     }
 
     private static void exampleDatasetQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
@@ -69,7 +71,7 @@ public class SpatialClient {
 
     private static void exampleOsmQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
         OsmRequest request = OsmRequest.newBuilder()
-            .setDataset(OsmRequest.Dataset.ALL)
+                .setDataset(OsmRequest.Dataset.ALL)
                 .setSpatialOp(SpatialOp.GeoWithin)
                 // .addRequestParams(OsmRequest.OsmRequestParam.newBuilder()
                 //         .setKey("properties.highway")
@@ -90,14 +92,16 @@ public class SpatialClient {
         log.info("Count: " + count);
     }
 
-    private static void exampleSpatialQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+    private static void exampleSpatialQuery(CensusFeature censusFeature, CensusResolution censusResolution,
+                                            CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
         SpatialRequest request = SpatialRequest.newBuilder()
-                .setCensusFeature(CensusFeature.Race)
-                .setCensusResolution(CensusResolution.Tract)
+                .setCensusFeature(censusFeature)
+                .setCensusResolution(censusResolution)
                 .setSpatialOp(SpatialOp.GeoWithin)
                 .setRequestGeoJson(geoJson)
                 .build();
 
+        int count = 0;
         Iterator<SpatialResponse> spatialResponseIterator = censusBlockingStub.spatialQuery(request);
         while (spatialResponseIterator.hasNext()) {
             SpatialResponse response = spatialResponseIterator.next();
@@ -106,7 +110,9 @@ public class SpatialClient {
             log.info("data: " + data);
             log.info("geoJson: " + responseGeoJson);
             System.out.println();
+            count++;
         }
+        log.info("Count: " + count);
     }
 
     private static void exampleTargetedQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {

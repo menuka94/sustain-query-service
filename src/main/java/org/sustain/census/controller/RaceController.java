@@ -6,8 +6,8 @@ import com.mongodb.client.model.Filters;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
-import org.sustain.util.Constants;
 import org.sustain.db.mongodb.DBConnection;
+import org.sustain.util.Constants;
 
 import java.util.HashMap;
 
@@ -24,7 +24,7 @@ public class RaceController {
             return first.toJson();
         } else {
             log.warn("getRace(): empty results");
-            return "";
+            return null;
         }
     }
 

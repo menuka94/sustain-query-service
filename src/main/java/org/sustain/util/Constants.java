@@ -80,7 +80,6 @@ public class Constants {
     }
 
     public static class CensusFeatures {
-        public static final String POPULATION = "population";
         public static final String TOTAL_POPULATION = "total_population";
         public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
         public static final String POPULATION_BY_AGE = "population_by_age";

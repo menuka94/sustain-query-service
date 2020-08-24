@@ -11,26 +11,35 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.sustain.util.Constants;
 import org.sustain.census.Predicate;
 import org.sustain.census.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
+import org.sustain.util.Constants;
 
 import java.util.HashMap;
 
 public class PopulationController {
     private static final Logger log = LogManager.getLogger(PopulationController.class);
 
-    public static String getPopulationResults(String resolution, String gisJoin) {
-        log.info("getPopulationResults: " + "{resolution: " + resolution + ", GisJoin: " + gisJoin + "}");
+    public static String getTotalPopulationResults(String resolution, String gisJoin) {
+        return getPopulationResults(resolution, gisJoin, Constants.CensusFeatures.TOTAL_POPULATION);
+    }
+
+    public static String getPopulationByAgeResults(String resolution, String gisJoin) {
+        return getPopulationResults(resolution, gisJoin, Constants.CensusFeatures.POPULATION_BY_AGE);
+    }
+
+    private static String getPopulationResults(String resolution, String gisJoin, String collectionName) {
+        log.info("getPopulationByAgeResults: " + "{resolution: " + resolution + ", GisJoin: " + gisJoin + "}");
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection =
-                db.getCollection(resolution + "_" + Constants.CensusFeatures.TOTAL_POPULATION);
+                db.getCollection(resolution + "_" + collectionName);
         Document first = collection.find(Filters.eq(Constants.GIS_JOIN, gisJoin)).first();
         if (first != null) {
+            log.info("FIRST: " + first);
             return first.toJson();
         } else {
-            log.warn("getPopulationResults(): empty results");
+            log.warn("getPopulationByResults(): empty results");
             return null;
         }
     }

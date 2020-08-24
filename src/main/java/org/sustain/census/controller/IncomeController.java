@@ -25,7 +25,7 @@ public class IncomeController {
             return first.toJson();
         } else {
             log.warn("getMedianHouseholdIncome(): empty results");
-            return "";
+            return null;
         }
     }
 
