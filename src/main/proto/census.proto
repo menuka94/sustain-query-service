@@ -32,6 +32,7 @@ message DatasetRequest {
     TRANSMISSION_LINES = 3;
     NATURAL_GAS_PIPELINES = 4;
     POWER_PLANTS = 5;
+    FIRE_STATIONS = 6;
   }
   Dataset dataset = 1;
   string requestGeoJson = 2;

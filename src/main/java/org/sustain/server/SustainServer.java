@@ -312,9 +312,12 @@ public class SustainServer {
         @Override
         public void datasetQuery(DatasetRequest request, StreamObserver<DatasetResponse> responseObserver) {
             ArrayList<String> data = DatasetController.getData(request);
+            int count = 0;
             for (String datum : data) {
                 responseObserver.onNext(DatasetResponse.newBuilder().setResponse(datum).build());
+                count++;
             }
+            log.info("Fetching completed! Count: " + count);
             responseObserver.onCompleted();
         }
 

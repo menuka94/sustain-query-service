@@ -58,6 +58,7 @@ public class Constants {
                 put(DatasetRequest.Dataset.POWER_PLANTS, "power_plants_geo");
                 put(DatasetRequest.Dataset.NATURAL_GAS_PIPELINES, "natural_gas_pipelines_geo");
                 put(DatasetRequest.Dataset.TRANSMISSION_LINES, "transmission_lines_geo");
+                put(DatasetRequest.Dataset.FIRE_STATIONS, "fire_stations_geo");
             }};
 
     public static class Server {

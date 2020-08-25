@@ -47,14 +47,15 @@ public class SpatialClient {
         //exampleSpatialQuery(censusBlockingStub, geoJson);
         //exampleTargetedQuery(censusBlockingStub, geoJson);
         //exampleOsmQuery(censusBlockingStub, SampleGeoJson.FORT_COLLINS);
-        //exampleDatasetQuery(censusBlockingStub, geoJson);
-        exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.County, censusBlockingStub,
-                SampleGeoJson.MULTIPLE_STATES);
+        exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, censusBlockingStub, SampleGeoJson.MULTIPLE_STATES);
+        //exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.County, censusBlockingStub,
+        //        SampleGeoJson.MULTIPLE_STATES);
     }
 
-    private static void exampleDatasetQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+    private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,
+                                            CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
         DatasetRequest request = DatasetRequest.newBuilder()
-                .setDataset(DatasetRequest.Dataset.HOSPITALS)
+                .setDataset(dataset)
                 .setSpatialOp(SpatialOp.GeoWithin)
                 .setRequestGeoJson(geoJson)
                 .build();
