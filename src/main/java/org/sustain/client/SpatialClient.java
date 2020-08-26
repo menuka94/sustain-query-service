@@ -43,9 +43,9 @@ public class SpatialClient {
         //exampleSpatialQuery(censusBlockingStub, geoJson);
         //exampleTargetedQuery(censusBlockingStub, geoJson);
         //exampleOsmQuery(censusBlockingStub, SampleGeoJson.FORT_COLLINS);
-        //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, censusBlockingStub, SampleGeoJson.MULTIPLE_STATES);
-        exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.Tract, censusBlockingStub,
-                SampleGeoJson.MULTIPLE_STATES);
+        exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, censusBlockingStub, SampleGeoJson.MULTIPLE_STATES);
+        //exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.Tract, censusBlockingStub,
+        //        SampleGeoJson.MULTIPLE_STATES);
     }
 
     private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,

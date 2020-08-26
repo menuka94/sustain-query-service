@@ -24,7 +24,7 @@ import org.sustain.census.controller.PopulationController;
 import org.sustain.census.controller.RaceController;
 import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.openStreetMaps.OsmQueryHandler;
-import org.sustain.otherDatasets.controller.DatasetController;
+import org.sustain.otherDatasets.DatasetQueryHandler;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
@@ -314,14 +314,8 @@ public class SustainServer {
 
         @Override
         public void datasetQuery(DatasetRequest request, StreamObserver<DatasetResponse> responseObserver) {
-            ArrayList<String> data = DatasetController.getData(request);
-            int count = 0;
-            for (String datum : data) {
-                responseObserver.onNext(DatasetResponse.newBuilder().setResponse(datum).build());
-                count++;
-            }
-            log.info("Fetching completed! Count: " + count);
-            responseObserver.onCompleted();
+            DatasetQueryHandler handler = new DatasetQueryHandler(request, responseObserver);
+            handler.handleDatasetQuery();
         }
 
     }   // end of Server implementation

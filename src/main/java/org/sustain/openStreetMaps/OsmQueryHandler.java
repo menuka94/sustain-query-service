@@ -58,19 +58,23 @@ public class OsmQueryHandler {
         @Override
         public void run() {
             log.info("Starting StreamWriter thread");
+            int count = 0;
             while (!fetchingCompleted) {
                 // log.info("Queue size: " + data.size());
                 if (data.size() > 0) {
                     String datum = data.remove();
                     responseObserver.onNext(OsmResponse.newBuilder().setResponse(datum).build());
+                    count++;
                 }
             }
 
             // if there is any data remaining in the queue after fetching is completed
             for (String datum : data) {
                 responseObserver.onNext(OsmResponse.newBuilder().setResponse(datum).build());
+                count++;
             }
 
+            log.info("Streaming completed! No. of entries: " + count);
             responseObserver.onCompleted();
         }
     }

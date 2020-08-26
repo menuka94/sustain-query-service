@@ -19,13 +19,14 @@ import org.sustain.db.mongodb.DBConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.sustain.census.controller.SpatialQueryUtil.getGeometryFromGeoJson;
 
 public class DatasetController {
     private static final Logger log = LogManager.getLogger(DatasetController.class);
 
-    public static ArrayList<String> getData(DatasetRequest request) {
+    public static void getData(DatasetRequest request, LinkedBlockingQueue<String> queue) {
         String dataset = Constants.DATASETS.get(request.getDataset());
         Geometry geometry = getGeometryFromGeoJson(request.getRequestGeoJson());
         SpatialOp spatialOp = request.getSpatialOp();
@@ -48,12 +49,9 @@ public class DatasetController {
         FindIterable<Document> documents = collection.find(Filters.and(filters));
         MongoCursor<Document> cursor = documents.cursor();
 
-        ArrayList<String> results = new ArrayList<>();
         while (cursor.hasNext()) {
             Document next = cursor.next();
-            results.add(next.toJson());
+            queue.add(next.toJson());
         }
-
-        return results;
     }
 }
