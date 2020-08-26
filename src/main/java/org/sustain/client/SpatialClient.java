@@ -45,7 +45,7 @@ public class SpatialClient {
         //exampleOsmQuery(censusBlockingStub, SampleGeoJson.FORT_COLLINS);
         //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, censusBlockingStub, SampleGeoJson.MULTIPLE_STATES);
         exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.Tract, censusBlockingStub,
-                SampleGeoJson.FORT_COLLINS);
+                SampleGeoJson.MULTIPLE_STATES);
     }
 
     private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,

@@ -22,7 +22,6 @@ import org.sustain.census.Predicate;
 import org.sustain.census.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
 import org.sustain.util.Constants;
-import org.sustain.util.model.GeoJson;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,21 +60,24 @@ public class SpatialQueryUtil {
         return new Polygon(new PolygonCoordinates(positions));
     }
 
-    public static HashMap<String, GeoJson> findGeoWithin(String collectionName, Geometry geometry) {
-        HashMap<String, GeoJson> geoJsons = new HashMap<>();
-        List<String> documents = new ArrayList<>();
+    public static HashMap<String, String> findGeoWithin(String collectionName, Geometry geometry) {
+        HashMap<String, String> geoJsons = new HashMap<>();
         log.info("findGeoWithin()");
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(collectionName);
         FindIterable<Document> iterable = collection.find(Filters.geoWithin("geometry", geometry));
         MongoCursor<Document> cursor = iterable.cursor();
 
+        int count = 0;
         while (cursor.hasNext()) {
             Document next = cursor.next();
-            GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
-            documents.add(geoJson.getProperties().getGisJoin());
-            geoJsons.put(geoJson.getProperties().getGisJoin(), geoJson);
+            count++;
+            //GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
+            String gisJoin =
+                    JsonParser.parseString(next.toJson()).getAsJsonObject().get("properties").getAsJsonObject().get(Constants.GIS_JOIN).getAsString();
+            geoJsons.put(gisJoin, next.toJson());
         }
+        log.info("GEO WITHIN COUNT: " + count);
 
         return geoJsons;
     }
@@ -92,8 +94,8 @@ public class SpatialQueryUtil {
         }
     }
 
-    public static HashMap<String, GeoJson> findGeoIntersects(String collectionName, Geometry geometry) {
-        HashMap<String, GeoJson> geoJsons = new HashMap<>();
+    public static HashMap<String, String> findGeoIntersects(String collectionName, Geometry geometry) {
+        HashMap<String, String> geoJsons = new HashMap<>();
         log.info("findGeoIntersects()");
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(collectionName);
@@ -102,9 +104,10 @@ public class SpatialQueryUtil {
 
         while (cursor.hasNext()) {
             Document next = cursor.next();
-            JsonObject jsonElement = JsonParser.parseString(next.toJson()).getAsJsonObject();
-            GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
-            geoJsons.put(geoJson.getProperties().getGisJoin(), geoJson);
+            //GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
+            String gisJoin =
+                    JsonParser.parseString(next.toJson()).getAsJsonObject().get("properties").getAsJsonObject().get(Constants.GIS_JOIN).getAsString();
+            geoJsons.put(gisJoin, next.toJson());
         }
 
         return geoJsons;

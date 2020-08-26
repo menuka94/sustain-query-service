@@ -26,7 +26,6 @@ import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.controller.DatasetController;
 import org.sustain.util.Constants;
-import org.sustain.util.model.GeoJson;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -45,14 +44,14 @@ public class SustainServer {
         server.blockUntilShutdown();
     }
 
-    static HashMap<String, GeoJson> getGeoList(String requestGeoJson, String resolution, SpatialOp spatialOp) {
+    static HashMap<String, String> getGeoList(String requestGeoJson, String resolution, SpatialOp spatialOp) {
         JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
         Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
         log.info("Geometry constructed");
 
         String collectionName = resolution + "_geo";
         log.info("collectionName: " + collectionName);
-        HashMap<String, GeoJson> geoJsonMap = null;
+        HashMap<String, String> geoJsonMap = null;
         switch (spatialOp) {
             case GeoWithin:
                 log.info("case GeoWithin");
@@ -122,7 +121,7 @@ public class SustainServer {
             log.info("SpatialOp: " + spatialOp.toString() + "\n");
             String resolution = Constants.TARGET_RESOLUTIONS.get(censusResolution);
 
-            HashMap<String, GeoJson> geoJsonMap = getGeoList(requestGeoJson, resolution, spatialOp);
+            HashMap<String, String> geoJsonMap = getGeoList(requestGeoJson, resolution, spatialOp);
 
             int recordsCount = 0;
             switch (censusFeature) {
@@ -133,8 +132,7 @@ public class SustainServer {
                     for (String populationResult : totalPopulationResults) {
                         String gisJoinInDataRecord = JsonParser.parseString(populationResult).getAsJsonObject().get(
                                 Constants.GIS_JOIN).toString().replace("\"", "");
-                        String responseGeoJson =
-                                geoJsonMap.get(gisJoinInDataRecord).toJson();
+                        String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
                         recordsCount++;
                         SpatialResponse response = SpatialResponse.newBuilder()
                                 .setData(populationResult)
@@ -152,8 +150,7 @@ public class SustainServer {
                     for (String populationResult : populationByAgeResults) {
                         String gisJoinInDataRecord = JsonParser.parseString(populationResult).getAsJsonObject().get(
                                 Constants.GIS_JOIN).toString().replace("\"", "");
-                        String responseGeoJson =
-                                geoJsonMap.get(gisJoinInDataRecord).toJson();
+                        String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
                         recordsCount++;
                         SpatialResponse response = SpatialResponse.newBuilder()
                                 .setData(populationResult)
@@ -166,15 +163,15 @@ public class SustainServer {
                     responseObserver.onCompleted();
                     break;
                 case MedianHouseholdIncome:
-                    for (GeoJson geoJson : geoJsonMap.values()) {
+                    for (String gisJoin : geoJsonMap.keySet()) {
                         String incomeResults =
                                 IncomeController.getMedianHouseholdIncome(resolution,
-                                        geoJson.getProperties().getGisJoin());
+                                        gisJoin);
                         if (incomeResults != null) {
                             recordsCount++;
                             SpatialResponse response = SpatialResponse.newBuilder()
                                     .setData(incomeResults)
-                                    .setResponseGeoJson(geoJson.toJson())
+                                    .setResponseGeoJson(geoJsonMap.get(gisJoin))
                                     .build();
                             responseObserver.onNext(response);
                         }
@@ -188,15 +185,15 @@ public class SustainServer {
                     log.warn("Not supported yet");
                     break;
                 case Race:
-                    for (GeoJson geoJson : geoJsonMap.values()) {
+                    for (String gisJoin : geoJsonMap.keySet()) {
                         String raceResult =
                                 RaceController.getRace(resolution,
-                                        geoJson.getProperties().getGisJoin());
+                                        gisJoin);
                         if (raceResult != null) {
                             recordsCount++;
                             SpatialResponse response = SpatialResponse.newBuilder()
                                     .setData(raceResult)
-                                    .setResponseGeoJson(geoJson.toJson())
+                                    .setResponseGeoJson(geoJsonMap.get(gisJoin))
                                     .build();
                             responseObserver.onNext(response);
                         }
@@ -309,7 +306,6 @@ public class SustainServer {
                 e.printStackTrace();
             }
         }*/
-
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
             OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);
