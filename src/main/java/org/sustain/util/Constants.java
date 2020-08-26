@@ -18,20 +18,12 @@ public class Constants {
         put(Decade._1990, "1990");
         put(Decade._1980, "1980");
     }};
-
-    public static final class MongoDBCollections {
-        public static final String TOTAL_POPULATION = "total_population";
-        public static final String POPULATION_BY_AGE = "population_by_age";
-        public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
-    }
-
     public static final HashMap<CensusResolution, String> TARGET_RESOLUTIONS =
             new HashMap<CensusResolution, String>() {{
                 put(CensusResolution.State, CensusResolutions.STATE);
                 put(CensusResolution.County, CensusResolutions.COUNTY);
                 put(CensusResolution.Tract, CensusResolutions.TRACT);
             }};
-
     public static final HashMap<Predicate.ComparisonOperator, String> COMPARISON_OPS =
             new HashMap<Predicate.ComparisonOperator, String>() {{
                 put(Predicate.ComparisonOperator.EQUAL, "=");
@@ -40,7 +32,6 @@ public class Constants {
                 put(Predicate.ComparisonOperator.LESS_THAN, "<");
                 put(Predicate.ComparisonOperator.LESS_THAN_OR_EQUAL, "<=");
             }};
-
     public static final HashMap<OsmRequest.Dataset, String> OSM_DATASETS =
             new HashMap<OsmRequest.Dataset, String>() {{
                 put(OsmRequest.Dataset.POINTS, "osm_points_geo");
@@ -49,7 +40,6 @@ public class Constants {
                 put(OsmRequest.Dataset.MULTI_POLYGONS, "osm_multipolygons_geo");
                 put(OsmRequest.Dataset.OTHER, "osm_other_geo");
             }};
-
     public static final HashMap<DatasetRequest.Dataset, String> DATASETS =
             new HashMap<DatasetRequest.Dataset, String>() {{
                 put(DatasetRequest.Dataset.DAMS, "dams_geo");
@@ -59,7 +49,14 @@ public class Constants {
                 put(DatasetRequest.Dataset.NATURAL_GAS_PIPELINES, "natural_gas_pipelines_geo");
                 put(DatasetRequest.Dataset.TRANSMISSION_LINES, "transmission_lines_geo");
                 put(DatasetRequest.Dataset.FIRE_STATIONS, "fire_stations_geo");
+                put(DatasetRequest.Dataset.FLOOD_ZONES, "flood_zones_geo");
             }};
+
+    public static final class MongoDBCollections {
+        public static final String TOTAL_POPULATION = "total_population";
+        public static final String POPULATION_BY_AGE = "population_by_age";
+        public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
+    }
 
     public static class Server {
         public static final String HOST = "SERVER_HOST";
