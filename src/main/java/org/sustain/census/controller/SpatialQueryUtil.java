@@ -18,13 +18,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.sustain.util.Constants;
 import org.sustain.census.Predicate;
 import org.sustain.census.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
+import org.sustain.util.Constants;
 import org.sustain.util.model.GeoJson;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class SpatialQueryUtil {
@@ -60,32 +61,20 @@ public class SpatialQueryUtil {
         return new Polygon(new PolygonCoordinates(positions));
     }
 
-    public static ArrayList<GeoJson> findGeoWithin(String collectionName, Geometry geometry) {
-        ArrayList<GeoJson> geoJsons = new ArrayList<>();
+    public static HashMap<String, GeoJson> findGeoWithin(String collectionName, Geometry geometry) {
+        HashMap<String, GeoJson> geoJsons = new HashMap<>();
+        List<String> documents = new ArrayList<>();
         log.info("findGeoWithin()");
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(collectionName);
         FindIterable<Document> iterable = collection.find(Filters.geoWithin("geometry", geometry));
         MongoCursor<Document> cursor = iterable.cursor();
 
-        // sub-query with iterable - the following exception is thrown
-        // org.bson.BsonMaximumSizeExceededException: Document size of 78569244 is larger than maximum of 16793600.
-        /*
-        MongoCollection<Document> county_total_population = db.getCollection("county_total_population");
-        FindIterable<Document> gisjoin = county_total_population.find(Filters.in("GISJOIN", iterable));
-        MongoCursor<Document> populationCursor = gisjoin.cursor();
-        int i = 0;
-        while(populationCursor.hasNext()) {
-            Document next = populationCursor.next();
-            i++;
-        }
-        log.info("TEMP COUNT: " + i);
-        */
-
         while (cursor.hasNext()) {
             Document next = cursor.next();
             GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
-            geoJsons.add(geoJson);
+            documents.add(geoJson.getProperties().getGisJoin());
+            geoJsons.put(geoJson.getProperties().getGisJoin(), geoJson);
         }
 
         return geoJsons;
@@ -103,8 +92,8 @@ public class SpatialQueryUtil {
         }
     }
 
-    public static ArrayList<GeoJson> findGeoIntersects(String collectionName, Geometry geometry) {
-        ArrayList<GeoJson> geoJsons = new ArrayList<>();
+    public static HashMap<String, GeoJson> findGeoIntersects(String collectionName, Geometry geometry) {
+        HashMap<String, GeoJson> geoJsons = new HashMap<>();
         log.info("findGeoIntersects()");
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(collectionName);
@@ -115,7 +104,7 @@ public class SpatialQueryUtil {
             Document next = cursor.next();
             JsonObject jsonElement = JsonParser.parseString(next.toJson()).getAsJsonObject();
             GeoJson geoJson = gson.fromJson(next.toJson(), GeoJson.class);
-            geoJsons.add(geoJson);
+            geoJsons.put(geoJson.getProperties().getGisJoin(), geoJson);
         }
 
         return geoJsons;
@@ -155,48 +144,5 @@ public class SpatialQueryUtil {
     public static Geometry getGeometryFromGeoJson(String requestGeoJson) {
         JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
         return SpatialQueryUtil.constructPolygon(inputGeoJson);
-    }
-
-    public static void main(String[] args) {
-        final String stringGeoJson = " {\n" +
-                "      \"type\": \"Feature\",\n" +
-                "      \"properties\": {},\n" +
-                "      \"geometry\": {\n" +
-                "        \"type\": \"Polygon\",\n" +
-                "        \"coordinates\": [\n" +
-                "          [\n" +
-                "            [\n" +
-                "              -74.23118591308594,\n" +
-                "              40.56389453066509\n" +
-                "            ],\n" +
-                "            [\n" +
-                "              -73.75259399414062,\n" +
-                "              40.56389453066509\n" +
-                "            ],\n" +
-                "            [\n" +
-                "              -73.75259399414062,\n" +
-                "              40.80965166748853\n" +
-                "            ],\n" +
-                "            [\n" +
-                "              -74.23118591308594,\n" +
-                "              40.80965166748853\n" +
-                "            ],\n" +
-                "            [\n" +
-                "              -74.23118591308594,\n" +
-                "              40.56389453066509\n" +
-                "            ]\n" +
-                "          ]\n" +
-                "        ]\n" +
-                "      }\n" +
-                "    }";
-
-        JsonObject geoJson = JsonParser.parseString(stringGeoJson).getAsJsonObject();
-        Geometry geometry = constructPolygon(geoJson);
-        ArrayList<GeoJson> tractGeoWithin = findGeoWithin(Constants.GeoJsonCollections.TRACTS_GEO, geometry);
-        ArrayList<GeoJson> countyGeoWithin = findGeoWithin(Constants.GeoJsonCollections.COUNTIES_GEO, geometry);
-
-        for (GeoJson json : tractGeoWithin) {
-            log.info("GIS JOIN: " + json.getProperties().getGisJoin());
-        }
     }
 }

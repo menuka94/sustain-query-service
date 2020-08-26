@@ -16,32 +16,35 @@ import org.sustain.census.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
 import org.sustain.util.Constants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class PopulationController {
     private static final Logger log = LogManager.getLogger(PopulationController.class);
 
-    public static String getTotalPopulationResults(String resolution, String gisJoin) {
-        return getPopulationResults(resolution, gisJoin, Constants.CensusFeatures.TOTAL_POPULATION);
+    public static ArrayList<String> getTotalPopulationResults(String resolution, ArrayList<String> geoJsonList) {
+        return getPopulationResults(resolution, geoJsonList, Constants.CensusFeatures.TOTAL_POPULATION);
     }
 
-    public static String getPopulationByAgeResults(String resolution, String gisJoin) {
-        return getPopulationResults(resolution, gisJoin, Constants.CensusFeatures.POPULATION_BY_AGE);
+    public static ArrayList<String> getPopulationByAgeResults(String resolution, ArrayList<String> geoJsonList) {
+        return getPopulationResults(resolution, geoJsonList, Constants.CensusFeatures.POPULATION_BY_AGE);
     }
 
-    private static String getPopulationResults(String resolution, String gisJoin, String collectionName) {
-        log.info("getPopulationByAgeResults: " + "{resolution: " + resolution + ", GisJoin: " + gisJoin + "}");
+    // common method used for fetching both 'total_population' and 'population_by_age'
+    private static ArrayList<String> getPopulationResults(String resolution, ArrayList<String> geoJsonList,
+                                                          String collectionName) {
+        ArrayList<String> populationResults = new ArrayList<>();
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection =
                 db.getCollection(resolution + "_" + collectionName);
-        Document first = collection.find(Filters.eq(Constants.GIS_JOIN, gisJoin)).first();
-        if (first != null) {
-            log.info("FIRST: " + first);
-            return first.toJson();
-        } else {
-            log.warn("getPopulationByResults(): empty results");
-            return null;
+        FindIterable<Document> iterable = collection.find(Filters.in("GISJOIN", geoJsonList));
+        MongoCursor<Document> cursor = iterable.cursor();
+        while(cursor.hasNext()) {
+            Document next = cursor.next();
+            populationResults.add(next.toJson());
         }
+        return populationResults;
+
     }
 
     public static HashMap<String, String> fetchTargetedInfo(String decade, String resolution,

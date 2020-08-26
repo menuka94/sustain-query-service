@@ -37,19 +37,15 @@ public class SpatialClient {
         censusBlockingStub = CensusGrpc.newBlockingStub(channel);
     }
 
-    public CensusGrpc.CensusBlockingStub getCensusBlockingStub() {
-        return censusBlockingStub;
-    }
-
     public static void main(String[] args) {
         CensusGrpc.CensusBlockingStub censusBlockingStub = new SpatialClient().getCensusBlockingStub();
 
         //exampleSpatialQuery(censusBlockingStub, geoJson);
         //exampleTargetedQuery(censusBlockingStub, geoJson);
         //exampleOsmQuery(censusBlockingStub, SampleGeoJson.FORT_COLLINS);
-        exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, censusBlockingStub, SampleGeoJson.MULTIPLE_STATES);
-        //exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.County, censusBlockingStub,
-        //        SampleGeoJson.MULTIPLE_STATES);
+        //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, censusBlockingStub, SampleGeoJson.MULTIPLE_STATES);
+        exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.Tract, censusBlockingStub,
+                SampleGeoJson.FORT_COLLINS);
     }
 
     private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,
@@ -140,5 +136,9 @@ public class SpatialClient {
             log.info("geoJson: " + responseGeoJson);
             System.out.println();
         }
+    }
+
+    public CensusGrpc.CensusBlockingStub getCensusBlockingStub() {
+        return censusBlockingStub;
     }
 }
