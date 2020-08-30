@@ -31,7 +31,7 @@ public class OsmQueryHandler {
                 OsmController.getOsmData(request, OsmRequest.Dataset.LINES, queue);
                 OsmController.getOsmData(request, OsmRequest.Dataset.MULTI_LINES, queue);
                 OsmController.getOsmData(request, OsmRequest.Dataset.POINTS, queue);
-                //OsmController.getOsmData(request, OsmRequest.Dataset.MULTI_POLYGONS, queue);
+                OsmController.getOsmData(request, OsmRequest.Dataset.MULTI_POLYGONS, queue);
                 OsmController.getOsmData(request, OsmRequest.Dataset.OTHER, queue);
 
                 fetchingCompleted = true;
