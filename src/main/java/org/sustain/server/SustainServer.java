@@ -1,35 +1,24 @@
 package org.sustain.server;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.mongodb.client.model.geojson.Geometry;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.CensusFeature;
 import org.sustain.census.CensusGrpc;
-import org.sustain.census.CensusResolution;
+import org.sustain.census.CensusQueryHandler;
 import org.sustain.census.DatasetRequest;
 import org.sustain.census.DatasetResponse;
 import org.sustain.census.OsmRequest;
 import org.sustain.census.OsmResponse;
 import org.sustain.census.Predicate;
-import org.sustain.census.SpatialOp;
 import org.sustain.census.SpatialRequest;
 import org.sustain.census.SpatialResponse;
-import org.sustain.census.controller.IncomeController;
-import org.sustain.census.controller.PopulationController;
-import org.sustain.census.controller.RaceController;
-import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.DatasetQueryHandler;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 
@@ -44,30 +33,6 @@ public class SustainServer {
         server.blockUntilShutdown();
     }
 
-    static HashMap<String, String> getGeoList(String requestGeoJson, String resolution, SpatialOp spatialOp) {
-        JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
-        Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
-        log.info("Geometry constructed");
-
-        String collectionName = resolution + "_geo";
-        log.info("collectionName: " + collectionName);
-        HashMap<String, String> geoJsonMap = null;
-        switch (spatialOp) {
-            case GeoWithin:
-                log.info("case GeoWithin");
-                geoJsonMap = SpatialQueryUtil.findGeoWithin(collectionName, geometry);
-                break;
-            case GeoIntersects:
-                log.info("case GeoIntersects");
-                geoJsonMap = SpatialQueryUtil.findGeoIntersects(collectionName, geometry);
-                break;
-            case UNRECOGNIZED:
-                geoJsonMap = new HashMap<>();
-                log.warn("Unrecognized Spatial Operation");
-        }
-        log.info("geoJsonMap.size(): " + geoJsonMap.size());
-        return geoJsonMap;
-    }
 
     public void start() throws IOException {
         final int port = Constants.Server.PORT;
@@ -111,111 +76,8 @@ public class SustainServer {
     static class CensusServerImpl extends CensusGrpc.CensusImplBase {
         @Override
         public void spatialQuery(SpatialRequest request, StreamObserver<SpatialResponse> responseObserver) {
-            CensusFeature censusFeature = request.getCensusFeature();
-            String requestGeoJson = request.getRequestGeoJson();
-            CensusResolution censusResolution = request.getCensusResolution();
-            SpatialOp spatialOp = request.getSpatialOp();
-            System.out.println();
-            log.info("CensusFeature: " + censusFeature.toString());
-            log.info("CensusResolution: " + censusResolution.toString());
-            log.info("SpatialOp: " + spatialOp.toString() + "\n");
-            String resolution = Constants.TARGET_RESOLUTIONS.get(censusResolution);
-
-            HashMap<String, String> geoJsonMap = getGeoList(requestGeoJson, resolution, spatialOp);
-
-            int recordsCount = 0;
-            switch (censusFeature) {
-                case TotalPopulation:
-                    ArrayList<String> totalPopulationResults =
-                            PopulationController.getTotalPopulationResults(resolution,
-                                    new ArrayList<>(geoJsonMap.keySet()));
-                    for (String populationResult : totalPopulationResults) {
-                        String gisJoinInDataRecord = JsonParser.parseString(populationResult).getAsJsonObject().get(
-                                Constants.GIS_JOIN).toString().replace("\"", "");
-                        String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
-                        recordsCount++;
-                        SpatialResponse response = SpatialResponse.newBuilder()
-                                .setData(populationResult)
-                                .setResponseGeoJson(responseGeoJson)
-                                .build();
-                        responseObserver.onNext(response);
-                    }
-                    log.info(Constants.CensusFeatures.TOTAL_POPULATION + ": Streaming completed! No. of entries: " + recordsCount + "\n");
-                    responseObserver.onCompleted();
-                    break;
-                case PopulationByAge:
-                    ArrayList<String> populationByAgeResults =
-                            PopulationController.getPopulationByAgeResults(resolution,
-                                    new ArrayList<>(geoJsonMap.keySet()));
-                    for (String populationResult : populationByAgeResults) {
-                        String gisJoinInDataRecord = JsonParser.parseString(populationResult).getAsJsonObject().get(
-                                Constants.GIS_JOIN).toString().replace("\"", "");
-                        String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
-                        recordsCount++;
-                        SpatialResponse response = SpatialResponse.newBuilder()
-                                .setData(populationResult)
-                                .setResponseGeoJson(responseGeoJson)
-                                .build();
-                        responseObserver.onNext(response);
-                    }
-                    log.info(Constants.CensusFeatures.POPULATION_BY_AGE + ": Streaming completed! No. of " +
-                            "entries: " + recordsCount + "\n");
-                    responseObserver.onCompleted();
-                    break;
-                case MedianHouseholdIncome:
-                    for (String gisJoin : geoJsonMap.keySet()) {
-                        String incomeResults =
-                                IncomeController.getMedianHouseholdIncome(resolution,
-                                        gisJoin);
-                        if (incomeResults != null) {
-                            recordsCount++;
-                            SpatialResponse response = SpatialResponse.newBuilder()
-                                    .setData(incomeResults)
-                                    .setResponseGeoJson(geoJsonMap.get(gisJoin))
-                                    .build();
-                            responseObserver.onNext(response);
-                        }
-                    }
-                    log.info(Constants.CensusFeatures.MEDIAN_HOUSEHOLD_INCOME + ": Streaming completed! No. of " +
-                            "entries: " + recordsCount + "\n");
-                    responseObserver.onCompleted();
-                    break;
-
-                case Poverty:
-                    log.warn("Not supported yet");
-                    break;
-                case Race:
-                    for (String gisJoin : geoJsonMap.keySet()) {
-                        String raceResult =
-                                RaceController.getRace(resolution,
-                                        gisJoin);
-                        if (raceResult != null) {
-                            recordsCount++;
-                            SpatialResponse response = SpatialResponse.newBuilder()
-                                    .setData(raceResult)
-                                    .setResponseGeoJson(geoJsonMap.get(gisJoin))
-                                    .build();
-                            responseObserver.onNext(response);
-                        }
-                    }
-                    log.info(Constants.CensusFeatures.RACE + ": Streaming completed! No. of " + "entries: " + recordsCount + "\n");
-                    responseObserver.onCompleted();
-                    break;
-                case UNRECOGNIZED:
-                    responseObserver.onError(new Exception("Invalid census feature" + censusFeature.toString()));
-                    responseObserver.onCompleted();
-                    log.warn("Invalid Census Feature requested");
-            }
-        }
-
-        private boolean isRequestValid(String resolution) {
-            boolean valid = true;
-            if ("".equals(resolution)) {
-                log.warn("Resolution is empty.");
-                valid = false;
-            }
-
-            return valid;
+            CensusQueryHandler handler = new CensusQueryHandler(request, responseObserver);
+            handler.handleCensusQuery();
         }
 
         /**

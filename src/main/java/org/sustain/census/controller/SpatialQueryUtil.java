@@ -113,6 +113,31 @@ public class SpatialQueryUtil {
         return geoJsons;
     }
 
+    public static HashMap<String, String> getGeoList(String requestGeoJson, String resolution, SpatialOp spatialOp) {
+        JsonObject inputGeoJson = JsonParser.parseString(requestGeoJson).getAsJsonObject();
+        Geometry geometry = SpatialQueryUtil.constructPolygon(inputGeoJson);
+        log.info("Geometry constructed");
+
+        String collectionName = resolution + "_geo";
+        log.info("collectionName: " + collectionName);
+        HashMap<String, String> geoJsonMap = null;
+        switch (spatialOp) {
+            case GeoWithin:
+                log.info("case GeoWithin");
+                geoJsonMap = SpatialQueryUtil.findGeoWithin(collectionName, geometry);
+                break;
+            case GeoIntersects:
+                log.info("case GeoIntersects");
+                geoJsonMap = SpatialQueryUtil.findGeoIntersects(collectionName, geometry);
+                break;
+            case UNRECOGNIZED:
+                geoJsonMap = new HashMap<>();
+                log.warn("Unrecognized Spatial Operation");
+        }
+        log.info("geoJsonMap.size(): " + geoJsonMap.size());
+        return geoJsonMap;
+    }
+
     public static Bson getFilterOpFromComparisonOp(Predicate.ComparisonOperator comparisonOperator,
                                                    String comparisonField, double comparisonValue) {
         switch (comparisonOperator) {

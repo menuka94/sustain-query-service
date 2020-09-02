@@ -22,7 +22,6 @@ public class DatasetQueryHandler {
     }
 
     public void handleDatasetQuery() {
-        DatasetRequest.Dataset dataset = request.getDataset();
         LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
         new StreamWriter(queue, responseObserver).start();
 
