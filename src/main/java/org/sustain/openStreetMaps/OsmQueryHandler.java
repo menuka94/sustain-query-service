@@ -3,8 +3,8 @@ package org.sustain.openStreetMaps;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.OsmRequest;
-import org.sustain.census.OsmResponse;
+import org.sustain.OsmRequest;
+import org.sustain.OsmResponse;
 import org.sustain.openStreetMaps.controller.OsmController;
 
 import java.util.concurrent.LinkedBlockingQueue;

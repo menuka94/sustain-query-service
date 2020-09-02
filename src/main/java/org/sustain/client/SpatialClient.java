@@ -4,20 +4,20 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.CensusFeature;
-import org.sustain.census.CensusGrpc;
-import org.sustain.census.CensusResolution;
-import org.sustain.census.DatasetRequest;
-import org.sustain.census.DatasetResponse;
-import org.sustain.census.Decade;
-import org.sustain.census.OsmRequest;
-import org.sustain.census.OsmResponse;
-import org.sustain.census.Predicate;
-import org.sustain.census.SpatialOp;
-import org.sustain.census.SpatialRequest;
-import org.sustain.census.SpatialResponse;
-import org.sustain.census.TargetedCensusRequest;
-import org.sustain.census.TargetedCensusResponse;
+import org.sustain.CensusFeature;
+import org.sustain.CensusRequest;
+import org.sustain.CensusResolution;
+import org.sustain.CensusResponse;
+import org.sustain.DatasetRequest;
+import org.sustain.DatasetResponse;
+import org.sustain.Decade;
+import org.sustain.OsmRequest;
+import org.sustain.OsmResponse;
+import org.sustain.Predicate;
+import org.sustain.SpatialOp;
+import org.sustain.SustainGrpc;
+import org.sustain.TargetedCensusRequest;
+import org.sustain.TargetedCensusResponse;
 import org.sustain.db.Util;
 import org.sustain.util.Constants;
 import org.sustain.util.SampleGeoJson;
@@ -27,29 +27,29 @@ import java.util.Iterator;
 public class SpatialClient {
     private static final Logger log = LogManager.getLogger(SpatialClient.class);
 
-    private CensusGrpc.CensusBlockingStub censusBlockingStub;
+    private SustainGrpc.SustainBlockingStub sustainBlockingStub;
 
     public SpatialClient() {
         String target = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;
         log.info("Target: " + target);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        censusBlockingStub = CensusGrpc.newBlockingStub(channel);
+        sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
     }
 
     public static void main(String[] args) {
-        CensusGrpc.CensusBlockingStub censusBlockingStub = new SpatialClient().getCensusBlockingStub();
+        SustainGrpc.SustainBlockingStub sustainBlockingStub = new SpatialClient().getSustainBlockingStub();
 
-        //exampleSpatialQuery(censusBlockingStub, geoJson);
-        //exampleTargetedQuery(censusBlockingStub, geoJson);
-        //exampleOsmQuery(censusBlockingStub, SampleGeoJson.FORT_COLLINS);
-        exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, censusBlockingStub, SampleGeoJson.MULTIPLE_STATES);
-        //exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.Tract, censusBlockingStub,
+        //exampleSpatialQuery(sustainBlockingStub, geoJson);
+        //exampleTargetedQuery(sustainBlockingStub, geoJson);
+        //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
+        exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
+        //exampleSpatialQuery(CensusFeature.TotalPopulation, CensusResolution.Tract, sustainBlockingStub,
         //        SampleGeoJson.MULTIPLE_STATES);
     }
 
     private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,
-                                            CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+                                            SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
         DatasetRequest request = DatasetRequest.newBuilder()
                 .setDataset(dataset)
                 .setSpatialOp(SpatialOp.GeoWithin)
@@ -66,7 +66,7 @@ public class SpatialClient {
         log.info("Count: " + count);
     }
 
-    private static void exampleOsmQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+    private static void exampleOsmQuery(SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
         OsmRequest request = OsmRequest.newBuilder()
                 .setDataset(OsmRequest.Dataset.ALL)
                 .setSpatialOp(SpatialOp.GeoWithin)
@@ -89,9 +89,9 @@ public class SpatialClient {
         log.info("Count: " + count);
     }
 
-    private static void exampleSpatialQuery(CensusFeature censusFeature, CensusResolution censusResolution,
-                                            CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
-        SpatialRequest request = SpatialRequest.newBuilder()
+    private static void exampleCensusQuery(CensusFeature censusFeature, CensusResolution censusResolution,
+                                           SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
+        CensusRequest request = CensusRequest.newBuilder()
                 .setCensusFeature(censusFeature)
                 .setCensusResolution(censusResolution)
                 .setSpatialOp(SpatialOp.GeoWithin)
@@ -99,9 +99,9 @@ public class SpatialClient {
                 .build();
 
         int count = 0;
-        Iterator<SpatialResponse> spatialResponseIterator = censusBlockingStub.spatialQuery(request);
-        while (spatialResponseIterator.hasNext()) {
-            SpatialResponse response = spatialResponseIterator.next();
+        Iterator<CensusResponse> CensusResponseIterator = censusBlockingStub.censusQuery(request);
+        while (CensusResponseIterator.hasNext()) {
+            CensusResponse response = CensusResponseIterator.next();
             String data = response.getData();
             String responseGeoJson = response.getResponseGeoJson();
             log.info("data: " + data);
@@ -112,7 +112,7 @@ public class SpatialClient {
         log.info("Count: " + count);
     }
 
-    private static void exampleTargetedQuery(CensusGrpc.CensusBlockingStub censusBlockingStub, String geoJson) {
+    private static void exampleTargetedQuery(SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
         TargetedCensusRequest request = TargetedCensusRequest.newBuilder()
                 .setResolution(CensusResolution.Tract)
                 .setPredicate(
@@ -130,15 +130,15 @@ public class SpatialClient {
                 censusBlockingStub.executeTargetedCensusQuery(request);
         while (censusResponseIterator.hasNext()) {
             TargetedCensusResponse response = censusResponseIterator.next();
-            String data = response.getSpatialResponse().getData();
-            String responseGeoJson = response.getSpatialResponse().getResponseGeoJson();
+            String data = response.getCensusResponse().getData();
+            String responseGeoJson = response.getCensusResponse().getResponseGeoJson();
             log.info("data: " + data);
             log.info("geoJson: " + responseGeoJson);
             System.out.println();
         }
     }
 
-    public CensusGrpc.CensusBlockingStub getCensusBlockingStub() {
-        return censusBlockingStub;
+    public SustainGrpc.SustainBlockingStub getSustainBlockingStub() {
+        return sustainBlockingStub;
     }
 }

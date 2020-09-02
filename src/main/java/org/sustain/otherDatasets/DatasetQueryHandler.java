@@ -3,8 +3,8 @@ package org.sustain.otherDatasets;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.DatasetRequest;
-import org.sustain.census.DatasetResponse;
+import org.sustain.DatasetRequest;
+import org.sustain.DatasetResponse;
 import org.sustain.otherDatasets.controller.DatasetController;
 
 import java.util.concurrent.LinkedBlockingQueue;

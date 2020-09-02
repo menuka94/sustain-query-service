@@ -4,6 +4,11 @@ import com.google.gson.JsonParser;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.CensusFeature;
+import org.sustain.CensusRequest;
+import org.sustain.CensusResolution;
+import org.sustain.CensusResponse;
+import org.sustain.SpatialOp;
 import org.sustain.census.controller.IncomeController;
 import org.sustain.census.controller.PopulationController;
 import org.sustain.census.controller.RaceController;
@@ -17,11 +22,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class CensusQueryHandler {
     private static final Logger log = LogManager.getLogger(CensusQueryHandler.class);
 
-    private final SpatialRequest request;
-    private final StreamObserver<SpatialResponse> responseObserver;
+    private final CensusRequest request;
+    private final StreamObserver<CensusResponse> responseObserver;
     private boolean fetchingCompleted = false;
 
-    public CensusQueryHandler(SpatialRequest request, StreamObserver<SpatialResponse> responseObserver) {
+    public CensusQueryHandler(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
         this.request = request;
         this.responseObserver = responseObserver;
     }
@@ -38,7 +43,7 @@ public class CensusQueryHandler {
         String resolution = Constants.TARGET_RESOLUTIONS.get(censusResolution);
 
         HashMap<String, String> geoJsonMap = SpatialQueryUtil.getGeoList(requestGeoJson, resolution, spatialOp);
-        LinkedBlockingQueue<SpatialResponse> queue = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<CensusResponse> queue = new LinkedBlockingQueue<>();
 
         int recordsCount = 0;
         switch (censusFeature) {
@@ -51,7 +56,7 @@ public class CensusQueryHandler {
                             Constants.GIS_JOIN).toString().replace("\"", "");
                     String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
                     recordsCount++;
-                    SpatialResponse response = SpatialResponse.newBuilder()
+                    CensusResponse response = CensusResponse.newBuilder()
                             .setData(populationResult)
                             .setResponseGeoJson(responseGeoJson)
                             .build();
@@ -69,7 +74,7 @@ public class CensusQueryHandler {
                             Constants.GIS_JOIN).toString().replace("\"", "");
                     String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
                     recordsCount++;
-                    SpatialResponse response = SpatialResponse.newBuilder()
+                    CensusResponse response = CensusResponse.newBuilder()
                             .setData(populationResult)
                             .setResponseGeoJson(responseGeoJson)
                             .build();
@@ -86,7 +91,7 @@ public class CensusQueryHandler {
                                     gisJoin);
                     if (incomeResults != null) {
                         recordsCount++;
-                        SpatialResponse response = SpatialResponse.newBuilder()
+                        CensusResponse response = CensusResponse.newBuilder()
                                 .setData(incomeResults)
                                 .setResponseGeoJson(geoJsonMap.get(gisJoin))
                                 .build();
@@ -108,7 +113,7 @@ public class CensusQueryHandler {
                                     gisJoin);
                     if (raceResult != null) {
                         recordsCount++;
-                        SpatialResponse response = SpatialResponse.newBuilder()
+                        CensusResponse response = CensusResponse.newBuilder()
                                 .setData(raceResult)
                                 .setResponseGeoJson(geoJsonMap.get(gisJoin))
                                 .build();
@@ -127,9 +132,9 @@ public class CensusQueryHandler {
 
     private class StreamWriter extends Thread {
         private volatile LinkedBlockingQueue<String> data;
-        private StreamObserver<SpatialResponse> responseObserver;
+        private StreamObserver<CensusResponse> responseObserver;
 
-        public StreamWriter(LinkedBlockingQueue<String> data, StreamObserver<SpatialResponse> responseObserver) {
+        public StreamWriter(LinkedBlockingQueue<String> data, StreamObserver<CensusResponse> responseObserver) {
             this.data = data;
             this.responseObserver = responseObserver;
         }
@@ -140,7 +145,7 @@ public class CensusQueryHandler {
             while (!fetchingCompleted) {
                 if (data.size() > 0) {
                     String datum = data.remove();
-                    responseObserver.onNext(SpatialResponse.newBuilder()
+                    responseObserver.onNext(CensusResponse.newBuilder()
                             .setData(datum)
                             .setResponseGeoJson("")
                             .build());

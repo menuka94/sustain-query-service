@@ -10,11 +10,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.sustain.util.Constants;
-import org.sustain.census.DatasetRequest;
-import org.sustain.census.SpatialOp;
+import org.sustain.DatasetRequest;
+import org.sustain.SpatialOp;
 import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.db.mongodb.DBConnection;
+import org.sustain.util.Constants;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -11,8 +11,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.sustain.census.Predicate;
-import org.sustain.census.SpatialOp;
+import org.sustain.Predicate;
+import org.sustain.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
 import org.sustain.util.Constants;
 

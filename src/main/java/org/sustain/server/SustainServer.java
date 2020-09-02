@@ -5,15 +5,15 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.census.CensusGrpc;
+import org.sustain.CensusRequest;
+import org.sustain.CensusResponse;
+import org.sustain.DatasetRequest;
+import org.sustain.DatasetResponse;
+import org.sustain.OsmRequest;
+import org.sustain.OsmResponse;
+import org.sustain.Predicate;
+import org.sustain.SustainGrpc;
 import org.sustain.census.CensusQueryHandler;
-import org.sustain.census.DatasetRequest;
-import org.sustain.census.DatasetResponse;
-import org.sustain.census.OsmRequest;
-import org.sustain.census.OsmResponse;
-import org.sustain.census.Predicate;
-import org.sustain.census.SpatialRequest;
-import org.sustain.census.SpatialResponse;
 import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.DatasetQueryHandler;
 import org.sustain.util.Constants;
@@ -73,9 +73,9 @@ public class SustainServer {
     }
 
     // Server implementation
-    static class CensusServerImpl extends CensusGrpc.CensusImplBase {
+    static class CensusServerImpl extends SustainGrpc.SustainImplBase {
         @Override
-        public void spatialQuery(SpatialRequest request, StreamObserver<SpatialResponse> responseObserver) {
+        public void censusQuery(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
             CensusQueryHandler handler = new CensusQueryHandler(request, responseObserver);
             handler.handleCensusQuery();
         }
