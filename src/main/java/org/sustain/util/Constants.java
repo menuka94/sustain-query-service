@@ -23,6 +23,7 @@ public class Constants {
                 put(CensusResolution.State, CensusResolutions.STATE);
                 put(CensusResolution.County, CensusResolutions.COUNTY);
                 put(CensusResolution.Tract, CensusResolutions.TRACT);
+                put(CensusResolution.Block, CensusResolutions.BLOCK);
             }};
     public static final HashMap<Predicate.ComparisonOperator, String> COMPARISON_OPS =
             new HashMap<Predicate.ComparisonOperator, String>() {{

@@ -120,6 +120,7 @@ enum CensusResolution {
   State = 0;
   County = 1;
   Tract = 2;
+  Block = 3;
 }
 
 enum Decade {
