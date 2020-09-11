@@ -5,20 +5,27 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.sustain.CensusFeature;
 import org.sustain.CensusRequest;
 import org.sustain.CensusResponse;
 import org.sustain.DatasetRequest;
 import org.sustain.DatasetResponse;
+import org.sustain.Decade;
 import org.sustain.OsmRequest;
 import org.sustain.OsmResponse;
 import org.sustain.Predicate;
 import org.sustain.SustainGrpc;
+import org.sustain.TargetedCensusRequest;
+import org.sustain.TargetedCensusResponse;
 import org.sustain.census.CensusQueryHandler;
+import org.sustain.census.controller.PopulationController;
 import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.DatasetQueryHandler;
 import org.sustain.util.Constants;
+import org.sustain.util.model.GeoJson;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 
@@ -114,7 +121,8 @@ public class SustainServer {
          * Example 1: Retrieve all counties where (population >= 1,000,000)
          * Example 2: Retrieve all tracts where (median household income < $50,000/year)
          */
-/*        @Override
+        /*
+        @Override
         public void executeTargetedCensusQuery(TargetedCensusRequest request,
                                                StreamObserver<TargetedCensusResponse> responseObserver) {
             Predicate predicate = request.getPredicate();
@@ -138,7 +146,7 @@ public class SustainServer {
                                             geoJson.getProperties().getGisJoin());
                             double value =
                                     JsonParser.parseString(populationResult).getAsJsonObject().get(comparisonField)
-                                    .getAsDouble();
+                                            .getAsDouble();
                             boolean valid = compareValueWithInputValue(comparisonOp, value, comparisonValue);
 
                             if (valid) {
@@ -167,7 +175,9 @@ public class SustainServer {
                 log.error(e);
                 e.printStackTrace();
             }
-        }*/
+        }
+        */
+
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
             OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);

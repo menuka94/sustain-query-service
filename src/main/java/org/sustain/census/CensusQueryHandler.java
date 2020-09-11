@@ -43,46 +43,17 @@ public class CensusQueryHandler {
         String resolution = Constants.TARGET_RESOLUTIONS.get(censusResolution);
 
         HashMap<String, String> geoJsonMap = SpatialQueryUtil.getGeoList(requestGeoJson, resolution, spatialOp);
-        LinkedBlockingQueue<CensusResponse> queue = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
+        new StreamWriter(queue, responseObserver, geoJsonMap).start();
 
         int recordsCount = 0;
         switch (censusFeature) {
             case TotalPopulation:
-                ArrayList<String> totalPopulationResults =
-                        PopulationController.getTotalPopulationResults(resolution,
-                                new ArrayList<>(geoJsonMap.keySet()));
-                for (String populationResult : totalPopulationResults) {
-                    String gisJoinInDataRecord = JsonParser.parseString(populationResult).getAsJsonObject().get(
-                            Constants.GIS_JOIN).toString().replace("\"", "");
-                    String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
-                    recordsCount++;
-                    CensusResponse response = CensusResponse.newBuilder()
-                            .setData(populationResult)
-                            .setResponseGeoJson(responseGeoJson)
-                            .build();
-                    responseObserver.onNext(response);
-                }
-                log.info(Constants.CensusFeatures.TOTAL_POPULATION + ": Streaming completed! No. of entries: " + recordsCount + "\n");
-                responseObserver.onCompleted();
+                PopulationController.getTotalPopulationResults(resolution, new ArrayList<>(geoJsonMap.keySet()), queue);
+                fetchingCompleted = true;
                 break;
             case PopulationByAge:
-                ArrayList<String> populationByAgeResults =
-                        PopulationController.getPopulationByAgeResults(resolution,
-                                new ArrayList<>(geoJsonMap.keySet()));
-                for (String populationResult : populationByAgeResults) {
-                    String gisJoinInDataRecord = JsonParser.parseString(populationResult).getAsJsonObject().get(
-                            Constants.GIS_JOIN).toString().replace("\"", "");
-                    String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
-                    recordsCount++;
-                    CensusResponse response = CensusResponse.newBuilder()
-                            .setData(populationResult)
-                            .setResponseGeoJson(responseGeoJson)
-                            .build();
-                    responseObserver.onNext(response);
-                }
-                log.info(Constants.CensusFeatures.POPULATION_BY_AGE + ": Streaming completed! No. of " +
-                        "entries: " + recordsCount + "\n");
-                responseObserver.onCompleted();
+                PopulationController.getPopulationByAgeResults(resolution, new ArrayList<>(geoJsonMap.keySet()), queue);
                 break;
             case MedianHouseholdIncome:
                 for (String gisJoin : geoJsonMap.keySet()) {
@@ -124,37 +95,54 @@ public class CensusQueryHandler {
                 responseObserver.onCompleted();
                 break;
             case UNRECOGNIZED:
-                responseObserver.onError(new Exception("Invalid census feature" + censusFeature.toString()));
+                responseObserver.onError(new Exception("Invalid census feature: " + censusFeature.toString()));
                 responseObserver.onCompleted();
                 log.warn("Invalid Census Feature requested");
         }
     }
 
     private class StreamWriter extends Thread {
+        private final StreamObserver<CensusResponse> responseObserver;
         private volatile LinkedBlockingQueue<String> data;
-        private StreamObserver<CensusResponse> responseObserver;
+        private HashMap<String, String> geoJsonMap;
 
-        public StreamWriter(LinkedBlockingQueue<String> data, StreamObserver<CensusResponse> responseObserver) {
+        public StreamWriter(LinkedBlockingQueue<String> data, StreamObserver<CensusResponse> responseObserver,
+                            HashMap<String, String> geoJsonMap) {
             this.data = data;
             this.responseObserver = responseObserver;
+            this.geoJsonMap = geoJsonMap;
         }
 
         @Override
         public void run() {
             log.info("Starting StreamWriter thread");
+            int count = 0;
             while (!fetchingCompleted) {
                 if (data.size() > 0) {
                     String datum = data.remove();
-                    responseObserver.onNext(CensusResponse.newBuilder()
-                            .setData(datum)
-                            .setResponseGeoJson("")
-                            .build());
+                    writeDatumToStream(datum);
+                    count++;
                 }
             }
 
+            // if there is any data remaining in the queue after fetching is completed
             for (String datum : data) {
-
+                writeDatumToStream(datum);
+                count++;
             }
+            log.info("Streaming completed! No. of entries: " + count);
+            responseObserver.onCompleted();
+        }
+
+        private void writeDatumToStream(String datum) {
+            String gisJoinInDataRecord = JsonParser.parseString(datum).getAsJsonObject().get(
+                    Constants.GIS_JOIN).toString().replace("\"", "");
+            String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
+            responseObserver.onNext(CensusResponse.newBuilder()
+                    .setData(datum)
+                    .setResponseGeoJson(responseGeoJson)
+                    .build());
+
         }
     }
 }
