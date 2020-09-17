@@ -130,8 +130,8 @@ public class SpatialClient {
                 censusBlockingStub.executeTargetedCensusQuery(request);
         while (censusResponseIterator.hasNext()) {
             TargetedCensusResponse response = censusResponseIterator.next();
-            String data = response.getCensusResponse().getData();
-            String responseGeoJson = response.getCensusResponse().getResponseGeoJson();
+            String data = response.getData();
+            String responseGeoJson = response.getResponseGeoJson();
             log.info("data: " + data);
             log.info("geoJson: " + responseGeoJson);
             System.out.println();
