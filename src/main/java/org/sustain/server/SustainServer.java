@@ -17,12 +17,19 @@ import org.sustain.Predicate;
 import org.sustain.SustainGrpc;
 import org.sustain.TargetedCensusRequest;
 import org.sustain.TargetedCensusResponse;
+import org.sustain.querier.CompoundQueryHandler;
 import org.sustain.census.CensusQueryHandler;
 import org.sustain.census.controller.PopulationController;
 import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.DatasetQueryHandler;
 import org.sustain.util.Constants;
 import org.sustain.util.model.GeoJson;
+
+import org.sustain.JoinOperator;
+import org.sustain.ComparisonOperator;
+import org.sustain.CompoundResponse;
+import org.sustain.CompoundRequest;
+import org.sustain.Query;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -188,6 +195,12 @@ public class SustainServer {
         public void datasetQuery(DatasetRequest request, StreamObserver<DatasetResponse> responseObserver) {
             DatasetQueryHandler handler = new DatasetQueryHandler(request, responseObserver);
             handler.handleDatasetQuery();
+        }
+
+        @Override
+        public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
+            CompoundQueryHandler handler = new CompoundQueryHandler(request, responseObserver);
+            handler.handleCompoundQuery();
         }
 
     }   // end of Server implementation
