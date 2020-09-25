@@ -16,6 +16,8 @@ import org.sustain.OsmResponse;
 import org.sustain.Predicate;
 import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
+import org.sustain.SviRequest;
+import org.sustain.SviResponse;
 import org.sustain.TargetedCensusRequest;
 import org.sustain.TargetedCensusResponse;
 import org.sustain.db.Util;
@@ -44,18 +46,19 @@ public class SpatialClient {
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
         //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
-        exampleCensusQuery(CensusFeature.TotalPopulation, CensusResolution.County, sustainBlockingStub,
-                SampleGeoJson.COLORADO);
+        //exampleCensusQuery(CensusFeature.TotalPopulation, CensusResolution.County, sustainBlockingStub,
+        //        SampleGeoJson.COLORADO);
+        exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoWithin, sustainBlockingStub);
     }
 
     private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,
-                                            SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
+                                            SustainGrpc.SustainBlockingStub sustainBlockingStub, String geoJson) {
         DatasetRequest request = DatasetRequest.newBuilder()
                 .setDataset(dataset)
                 .setSpatialOp(SpatialOp.GeoWithin)
                 .setRequestGeoJson(geoJson)
                 .build();
-        Iterator<DatasetResponse> datasetResponseIterator = censusBlockingStub.datasetQuery(request);
+        Iterator<DatasetResponse> datasetResponseIterator = sustainBlockingStub.datasetQuery(request);
         int count = 0;
         while (datasetResponseIterator.hasNext()) {
             DatasetResponse response = datasetResponseIterator.next();
@@ -63,6 +66,25 @@ public class SpatialClient {
             log.info(response.getResponse() + "\n");
         }
 
+        log.info("Count: " + count);
+    }
+
+    private static void exampleSviQuery(String geoJson, SpatialOp spatialOp,
+                                        SustainGrpc.SustainBlockingStub sustainBlockingStub) {
+        SviRequest request = SviRequest.newBuilder()
+                .setRequestGeoJson(geoJson)
+                .setSpatialOp(spatialOp)
+                .build();
+
+        Iterator<SviResponse> responseIterator = sustainBlockingStub.sviQuery(request);
+        int count = 0;
+        while (responseIterator.hasNext()) {
+            SviResponse response = responseIterator.next();
+            count++;
+            log.info(response.getData());
+            //log.info(response.getResponseGeoJson());
+            System.out.println();
+        }
         log.info("Count: " + count);
     }
 

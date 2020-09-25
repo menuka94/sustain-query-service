@@ -60,6 +60,11 @@ public class SpatialQueryUtil {
         return new Polygon(new PolygonCoordinates(positions));
     }
 
+    /**
+     * @param collectionName geoJson collection to query from
+     * @param geometry       Geometry object created with GeoJson
+     * @return HashMap of the form (GISJOIN value, GeoJson object)
+     */
     public static HashMap<String, String> findGeoWithin(String collectionName, Geometry geometry) {
         HashMap<String, String> geoJsons = new HashMap<>();
         log.info("findGeoWithin()");
