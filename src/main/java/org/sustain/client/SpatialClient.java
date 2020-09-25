@@ -48,7 +48,7 @@ public class SpatialClient {
         //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
         //exampleCensusQuery(CensusFeature.TotalPopulation, CensusResolution.County, sustainBlockingStub,
         //        SampleGeoJson.COLORADO);
-        exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoWithin, sustainBlockingStub);
+        exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoIntersects, sustainBlockingStub);
     }
 
     private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,

@@ -94,15 +94,27 @@ public class SustainServer {
         public void sviQuery(SviRequest request, StreamObserver<SviResponse> responseObserver) {
             Geometry geometry = getGeometryFromGeoJson(request.getRequestGeoJson());
             SpatialOp spatialOp = request.getSpatialOp();
-            HashMap<String, String> geoWithins = SpatialQueryUtil.findGeoWithin(Constants.GeoJsonCollections.TRACTS_GEO,
-                    geometry);
-            ArrayList<String> gisJoins = new ArrayList<>(geoWithins.keySet());
+            log.info("SVI Query{spatialOp: " + spatialOp + "}");
+            HashMap<String, String> geos = new HashMap<>();
+            switch (spatialOp) {
+                case GeoWithin:
+                    geos = SpatialQueryUtil.findGeoWithin(Constants.GeoJsonCollections.TRACTS_GEO,
+                            geometry);
+                    break;
+                case GeoIntersects:
+                    geos = SpatialQueryUtil.findGeoIntersects(Constants.GeoJsonCollections.TRACTS_GEO,
+                            geometry);
+                    break;
+                case UNRECOGNIZED:
+                    log.warn("Invalid spatial op: " + spatialOp);
+            }
+            ArrayList<String> gisJoins = new ArrayList<>(geos.keySet());
             for (String gisJoin : gisJoins) {
                 String svi = SviController.getSviByGisJoin(gisJoin);
                 if (svi != null) {
                     responseObserver.onNext(SviResponse.newBuilder()
                             .setData(svi)
-                            .setResponseGeoJson(geoWithins.get(gisJoin))
+                            .setResponseGeoJson(geos.get(gisJoin))
                             .build());
                 }
             }
