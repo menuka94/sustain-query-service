@@ -1,29 +1,34 @@
 package org.sustain.server;
 
+import com.mongodb.client.model.geojson.Geometry;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.CensusFeature;
 import org.sustain.CensusRequest;
 import org.sustain.CensusResponse;
 import org.sustain.DatasetRequest;
 import org.sustain.DatasetResponse;
-import org.sustain.Decade;
 import org.sustain.OsmRequest;
 import org.sustain.OsmResponse;
 import org.sustain.Predicate;
+import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
+
 import org.sustain.TargetedCensusRequest;
 import org.sustain.TargetedCensusResponse;
 import org.sustain.querier.CompoundQueryHandler;
+
+import org.sustain.SviRequest;
+import org.sustain.SviResponse;
+
 import org.sustain.census.CensusQueryHandler;
-import org.sustain.census.controller.PopulationController;
+import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.DatasetQueryHandler;
+import org.sustain.svi.SviController;
 import org.sustain.util.Constants;
-import org.sustain.util.model.GeoJson;
 
 import org.sustain.JoinOperator;
 import org.sustain.ComparisonOperator;
@@ -32,8 +37,11 @@ import org.sustain.CompoundRequest;
 import org.sustain.Query;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+
+import static org.sustain.census.controller.SpatialQueryUtil.getGeometryFromGeoJson;
 
 
 public class SustainServer {
@@ -92,6 +100,38 @@ public class SustainServer {
         public void censusQuery(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
             CensusQueryHandler handler = new CensusQueryHandler(request, responseObserver);
             handler.handleCensusQuery();
+        }
+
+        @Override
+        public void sviQuery(SviRequest request, StreamObserver<SviResponse> responseObserver) {
+            Geometry geometry = getGeometryFromGeoJson(request.getRequestGeoJson());
+            SpatialOp spatialOp = request.getSpatialOp();
+            log.info("SVI Query{spatialOp: " + spatialOp + "}");
+            HashMap<String, String> geos = new HashMap<>();
+            switch (spatialOp) {
+                case GeoWithin:
+                    geos = SpatialQueryUtil.findGeoWithin(Constants.GeoJsonCollections.TRACTS_GEO,
+                            geometry);
+                    break;
+                case GeoIntersects:
+                    geos = SpatialQueryUtil.findGeoIntersects(Constants.GeoJsonCollections.TRACTS_GEO,
+                            geometry);
+                    break;
+                case UNRECOGNIZED:
+                    log.warn("Invalid spatial op: " + spatialOp);
+            }
+            ArrayList<String> gisJoins = new ArrayList<>(geos.keySet());
+            for (String gisJoin : gisJoins) {
+                String svi = SviController.getSviByGisJoin(gisJoin);
+                if (svi != null) {
+                    responseObserver.onNext(SviResponse.newBuilder()
+                            .setData(svi)
+                            .setResponseGeoJson(geos.get(gisJoin))
+                            .build());
+                }
+            }
+
+            responseObserver.onCompleted();
         }
 
         /**
@@ -184,7 +224,6 @@ public class SustainServer {
             }
         }
         */
-
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
             OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);
