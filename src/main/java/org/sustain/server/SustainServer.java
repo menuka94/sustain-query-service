@@ -51,7 +51,7 @@ public class SustainServer {
     public void start() throws IOException {
         final int port = Constants.Server.PORT;
         server = ServerBuilder.forPort(port)
-                .addService(new CensusServerImpl())
+                .addService(new SustainService())
                 .build().start();
         log.info("Server started, listening on " + port);
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -87,7 +87,7 @@ public class SustainServer {
     }
 
     // Server implementation
-    static class CensusServerImpl extends SustainGrpc.SustainImplBase {
+    static class SustainService extends SustainGrpc.SustainImplBase {
         @Override
         public void censusQuery(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
             CensusQueryHandler handler = new CensusQueryHandler(request, responseObserver);

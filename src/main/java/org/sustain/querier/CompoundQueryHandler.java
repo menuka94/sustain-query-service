@@ -31,8 +31,8 @@ public class CompoundQueryHandler {
         //HashMap<String, String> geoJsonMap = SpatialQueryUtil.getGeoList(requestGeoJson, resolution, spatialOp);
         if(this.request.getFirstPredicateCase().getNumber() == 1){
             LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
-            Querier.executeQuery(this.request.getFirstQuery(), queue);
             new CompoundQueryHandler.StreamWriter(responseObserver, queue).start();
+            Querier.executeQuery(this.request.getFirstQuery(), queue);
         }
     }
 
@@ -71,7 +71,7 @@ public class CompoundQueryHandler {
             //String jsonDatum = JsonParser.parseString(datum).getAsJsonObject().get(
             //        Constants.GIS_JOIN).toString().replace("\"", "");
             //String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
-            responseObserver.onNext(CompoundResponse.newBuilder().setData(datum).build());
+            responseObserver.onNext(CompoundResponse.newBuilder().setData(datum).setGeoJson("").build());
         }
     }
 }
