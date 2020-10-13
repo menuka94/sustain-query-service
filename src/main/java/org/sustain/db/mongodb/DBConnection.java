@@ -31,4 +31,14 @@ public class DBConnection {
         log.debug("Connecting to MongoDB instance: {" + host + ":" + port + "}");
         return mongoClient.getDatabase(db);
     }
+
+    public static MongoDatabase getConnection(String host, String port) {
+        if (mongoClient == null) {
+            log.info("Creating new connection to MongoDB");
+            initDatabaseProperties();
+            mongoClient = new MongoClient(host, Integer.parseInt(port));
+        }
+        log.debug("Connecting to MongoDB instance: {" + host + ":" + port + "}");
+        return mongoClient.getDatabase(db);
+    }
 }

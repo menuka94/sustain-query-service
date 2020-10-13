@@ -15,14 +15,26 @@ import org.sustain.OsmResponse;
 import org.sustain.Predicate;
 import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
+
+import org.sustain.TargetedCensusRequest;
+import org.sustain.TargetedCensusResponse;
+import org.sustain.querier.CompoundQueryHandler;
+
 import org.sustain.SviRequest;
 import org.sustain.SviResponse;
+
 import org.sustain.census.CensusQueryHandler;
 import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.DatasetQueryHandler;
 import org.sustain.svi.SviController;
 import org.sustain.util.Constants;
+
+import org.sustain.JoinOperator;
+import org.sustain.ComparisonOperator;
+import org.sustain.CompoundResponse;
+import org.sustain.CompoundRequest;
+import org.sustain.Query;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -47,7 +59,7 @@ public class SustainServer {
     public void start() throws IOException {
         final int port = Constants.Server.PORT;
         server = ServerBuilder.forPort(port)
-                .addService(new CensusServerImpl())
+                .addService(new SustainService())
                 .build().start();
         log.info("Server started, listening on " + port);
         Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -83,7 +95,7 @@ public class SustainServer {
     }
 
     // Server implementation
-    static class CensusServerImpl extends SustainGrpc.SustainImplBase {
+    static class SustainService extends SustainGrpc.SustainImplBase {
         @Override
         public void censusQuery(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
             CensusQueryHandler handler = new CensusQueryHandler(request, responseObserver);
@@ -222,6 +234,12 @@ public class SustainServer {
         public void datasetQuery(DatasetRequest request, StreamObserver<DatasetResponse> responseObserver) {
             DatasetQueryHandler handler = new DatasetQueryHandler(request, responseObserver);
             handler.handleDatasetQuery();
+        }
+
+        @Override
+        public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
+            CompoundQueryHandler handler = new CompoundQueryHandler(request, responseObserver);
+            handler.handleCompoundQuery();
         }
 
     }   // end of Server implementation
