@@ -4,7 +4,7 @@ import "google/api/http.proto";
 
 option java_multiple_files = true;
 option java_package = "org.sustain";
-option java_outer_classname = "SustainService";
+option java_outer_classname = "SustainQueryService";
 
 package sustain;
 
