@@ -33,6 +33,7 @@ public class CompoundQueryHandler {
             LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
             new CompoundQueryHandler.StreamWriter(responseObserver, queue).start();
             Querier.executeQuery(this.request.getFirstQuery(), queue);
+            fetchingCompleted = true;
         }
     }
 
