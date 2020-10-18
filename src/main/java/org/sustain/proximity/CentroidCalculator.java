@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 
-public class Data {
+public class CentroidCalculator {
     public static void main(String[] args) throws IOException {
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> tracts = db.getCollection(Constants.GeoJsonCollections.TRACTS_GEO);

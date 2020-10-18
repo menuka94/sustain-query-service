@@ -96,9 +96,17 @@ task spatialClient(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
+task nearestHospitals(type: CreateStartScripts) {
+    mainClassName = 'org.sustain.proximity.NearestHospitalsQuerier'
+    applicationName = 'nearest-hospitals'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = startScripts.classpath
+}
+
 applicationDistribution.into('bin') {
     from(sustainServer)
     from(censusClient)
     from(spatialClient)
+    from(nearestHospitals)
     fileMode = 0755
 }
