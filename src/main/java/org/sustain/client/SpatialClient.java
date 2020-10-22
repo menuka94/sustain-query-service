@@ -32,7 +32,7 @@ public class SpatialClient {
     private SustainGrpc.SustainBlockingStub sustainBlockingStub;
 
     public SpatialClient() {
-        String target = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;
+        String target = Util.getProperty(Constants.Server.HOST) + ":" + 30001;
         log.info("Target: " + target);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();

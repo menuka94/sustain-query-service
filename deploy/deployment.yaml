@@ -1,0 +1,53 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqs-service
+spec:
+  type: NodePort
+  selector:
+    app: sqs-pod 
+  ports:
+  - nodePort: 30001
+    port: 80
+    targetPort: 50051
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sqs-deployment
+  labels:
+    app: sqs
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: sqs-pod
+  template:
+    metadata:
+      labels:
+        app: sqs-pod
+    spec:
+      dnsPolicy: Default
+      containers:
+      - name: mongos-router
+        image: mongo:4.2.8
+        imagePullPolicy: Always
+        command: ['sh', '-c', 'mongos --configdb cfgrs/lattice-168:27017,lattice-169:27017,lattice-170:27017 --bind_ip 0.0.0.0 --port 27017']
+        ports:
+        - containerPort: 27017
+      - name: sustain-query-server 
+        image: inf0rmatiker/sustain-query-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 50051
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: sqs-router
+                operator: In
+                values:
+                - "true"
