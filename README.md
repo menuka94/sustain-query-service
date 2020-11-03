@@ -33,7 +33,7 @@ To build and run a Docker container of this project:
 
 ### Kubernetes
 
-To build and run this project alongside a mongos router, connecting to a sharded cluster:
+To build and run this project as a Kubernetes Deployment, connecting to a sharded cluster:
 
 * `$ kubectl apply -f deploy/deployment.yaml`
 

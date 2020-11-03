@@ -1,0 +1,1 @@
+./getenvoy run standard:1.13.1 -- --config-path ./envoy.yaml
