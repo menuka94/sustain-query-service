@@ -3,13 +3,40 @@
 [![Test Coverage](https://api.codeclimate.com/v1/badges/643c77ef8bf644ea3492/test_coverage)](https://codeclimate.com/github/Project-Sustain/sustain-census/test_coverage)
 
 # Project SUSTAIN 
-## gRPC Query Service
 
-### How-to-Run
+## Sustain Query Service
 
-1. Create a file `src/main/resources/config.properties` using the given sample `src/main/resources/config.properties.sample`.
-2. Fill in the values SERVER_HOST=<where you're planning to start the org.sustain.server.SustainServer>, DB_HOST=lattice-0,DB_PORT=27017
-3. Do `./gradlew install` from the project root.
-4. Run `bin/sustain-server.sh` to start the SustainServer
-5. Use `org.sustain.client.SpatialClient` and `src/main/proto/census.proto` as references for implementing clients. An example Node.js client is available at `nodejs-client/census_client.js`
+Sustain Query Service provides a gRPC server to execute MongoDB queries received from a gRPC client. An example of a gRPC client is provided for testing.
+The gRPC server uses a `MongoClient` instance to establish a connection to a mongo instance, running either as a mongos router in the case of a sharded cluster,
+or a mongod instance in the case of an unsharded replica set. The connection configuration is derived from `src/main/java/resources/config.properties` file at compile-time.
 
+## Usage
+
+To clean the project of any build-generated files:
+
+* `$ make clean`
+
+To compile the project and generate the `build/` directory:
+
+* `$ make`
+
+Once the project is compiled and the `build/` directory has been generated, you can start the gRPC server:
+
+* `$ make run-spatial-server`
+
+### Docker
+
+To build and run a Docker container of this project:
+
+* `$ docker build -t sustain-query-service .`
+* `$ docker run -it --name=sustain-query-service -p 50051 sustain-query-service`
+
+### Kubernetes
+
+To build and run this project as a Kubernetes Deployment, connecting to a sharded cluster:
+
+* `$ kubectl apply -f deploy/deployment.yaml`
+
+## gRPC Client
+
+Use `org.sustain.client.SpatialClient` and `src/main/proto/census.proto` as references for implementing clients. An example Node.js client is available at `nodejs-client/census_client.js`.
