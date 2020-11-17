@@ -16,6 +16,7 @@ import org.bson.conversions.Bson;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import com.google.gson.Gson;
 
 import org.sustain.JoinOperator;
 import org.sustain.ComparisonOperator;
@@ -29,10 +30,23 @@ import org.sustain.db.mongodb.DBConnection;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Querier {
+public class Querier extends Thread {
 	private static final Logger log = LogManager.getLogger(Querier.class);
 
-	public static void executeQuery(Query request, LinkedBlockingQueue<String> queue) {
+    private final CompoundQueryHandler handler;
+    private final Query request;
+    private LinkedBlockingQueue<String> queue;
+    private CompoundQueryHandler.StreamWriter sw;
+
+    public Querier(CompoundQueryHandler handler, Query request, LinkedBlockingQueue<String> queue, CompoundQueryHandler.StreamWriter sw) {
+        this.handler = handler;
+        this.request = request;
+        this.queue = queue;
+        this.sw = sw;
+    }
+
+    @Override
+	public void run() {
         MongoDatabase db = DBConnection.getConnection(request.getHost(), Integer.toString(request.getPort()));
         MongoCollection<Document> collection = db.getCollection(request.getCollection());
         ArrayList<BasicDBObject> query = new ArrayList<BasicDBObject>();
@@ -45,11 +59,15 @@ public class Querier {
         MongoCursor<Document> cursor = iterable.cursor();
 
         int count = 0;
+
         while (cursor.hasNext()) {
             Document next = cursor.next();
             queue.add(next.toJson());
             count++;
         }
+
+        sw.setFetchingCompleted(true);
+
         cursor.close();
         log.info("count: " + count);
     }
