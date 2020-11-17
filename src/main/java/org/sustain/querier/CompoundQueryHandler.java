@@ -42,14 +42,18 @@ public class CompoundQueryHandler {
             dc2 = handleCompoundQuery(request.getSecondCompoundRequest(), false);
 
         // Wait for queries to complete
-        if(sw1 != null){
-            sw1.join();
-            dc1 = sw1.getDataContainer();
-            if(sw2 != null){
-                sw2.join();
-                dc2 = sw2.getDataContainer();
+        try{
+            if(sw1 != null){
+                sw1.join();
+                dc1 = sw1.getDataContainer();
+                if(sw2 != null){
+                    sw2.join();
+                    dc2 = sw2.getDataContainer();
+                }
             }
-        }
+        } catch (InterruptedException e){
+            return new DataContainer();
+		}
 
         // If we had multiple predicates, merge the results
         DataContainer dc = sw1.getDataContainer();
