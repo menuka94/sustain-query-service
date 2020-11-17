@@ -238,8 +238,8 @@ public class SustainServer {
 
         @Override
         public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
-            CompoundQueryHandler handler = new CompoundQueryHandler(request, responseObserver);
-            handler.handleCompoundQuery();
+            CompoundQueryHandler handler = new CompoundQueryHandler(responseObserver);
+            handler.handleCompoundQuery(request, true);
         }
 
     }   // end of Server implementation
