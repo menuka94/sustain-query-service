@@ -26,16 +26,16 @@ public class CompoundQueryHandler {
 
     public DataContainer handleCompoundQuery(CompoundRequest request, boolean topLevel) {
         // If the first predicate is a MongoDB query or nested compound query
-        StreamWriter sw1;
-        DataContainer dc1;
+        StreamWriter sw1 = null;
+        DataContainer dc1 = null;
         if(request.getFirstPredicateCase().getNumber() == 1)
             sw1 = startSingleQuery(request.getFirstQuery());
         else if(request.getFirstPredicateCase().getNumber() == 2)
             dc1 = handleCompoundQuery(request.getFirstCompoundRequest(), false);
 
         // If the second predicate is a MongoDB query or nested compound query
-        StreamWriter sw2;
-        DataContainer dc2;
+        StreamWriter sw2 = null;
+        DataContainer dc2 = null;
         if(request.getSecondPredicateCase().getNumber() == 4)
             sw2 = startSingleQuery(request.getSecondQuery());
         else if(request.getSecondPredicateCase().getNumber() == 5)
