@@ -61,7 +61,7 @@ public class Constants {
 
     public static class Server {
         public static final String HOST = "SERVER_HOST";
-        public static final int PORT = 50055;
+        public static final int PORT = 50051;
     }
 
     public static class GeoJsonCollections {

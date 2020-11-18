@@ -30,25 +30,26 @@ public class DataContainer {
 	}
 
 	public void addData(String datum){
-	    System.out.println(JsonParser.parseString(datum).getAsJsonObject().keySet());
 		String gisjoin = JsonParser.parseString(datum).getAsJsonObject().get("GISJOIN").toString().replace("\"", "");
 		documents.put(gisjoin, new Gson().fromJson(datum, HashMap.class));
 	}
 
 	public DataContainer innerJoin(DataContainer other){
-		documents.entrySet().forEach(entry->{
-			System.out.println(entry.getKey() + " " + entry.getValue());  
-		});
+		//documents.entrySet().forEach(entry->{
+		//	System.out.println(entry.getKey() + " " + entry.getValue());  
+		//});
 
 		HashMap<String,HashMap<String,String>> results = new HashMap<String,HashMap<String,String>>();
 
 		for (Map.Entry<String, HashMap<String,String>> entry : other.getDocuments().entrySet()) {
 			String key = entry.getKey();
+                        //System.out.println(key);
 			HashMap<String,String> value = entry.getValue();
 
 			// Inner join - we only want GISJOINS in both queries
 			if (documents.containsKey(key)){
-				documents.get(key).forEach(value::putIfAbsent);
+                                //System.out.println(key);
+				value.putAll(documents.get(key));
 				results.put(key, value);
 			}
 		}

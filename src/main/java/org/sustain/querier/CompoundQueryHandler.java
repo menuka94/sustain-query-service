@@ -56,13 +56,15 @@ public class CompoundQueryHandler {
 		}
 
         // If we had multiple predicates, merge the results
-        DataContainer dc = sw1.getDataContainer();
+        DataContainer dc = dc1;
         if(request.getSecondPredicateCase().getNumber() == 4 || request.getSecondPredicateCase().getNumber() == 5)
-            dc = dc.innerJoin(sw2.getDataContainer());  
+            dc = dc1.innerJoin(dc2);  
             
         // If this is the top of the tree (final query(s))
-        if(topLevel)
+        if(topLevel){
             dc.writeToClient(this.responseObserver);
+            responseObserver.onCompleted();
+	}
         return dc;
     }
 
@@ -106,21 +108,20 @@ public class CompoundQueryHandler {
             while (!fetchingCompleted && System.currentTimeMillis() - start < 10000) {
                 if (data.size() > 0) {
                     String datum = data.remove();
-                    writeDataToStream(datum);
-                    //dc.addData(datum);
+                    //writeDataToStream(datum);
+                    dc.addData(datum);
                     count++;
                 }
             }
 
             for (String datum : data) {
-                writeDataToStream(datum);
-                //dc.addData(datum);
+                //writeDataToStream(datum);
+                dc.addData(datum);
                 count++;
             }
             log.info("Streaming completed! No. of entries: " + count);
             log.info("Milliseconds taken: " + (System.currentTimeMillis() - this.start));
             //dc.innerJoin();
-            responseObserver.onCompleted();
         }
 
         private void writeDataToStream(String datum) {
