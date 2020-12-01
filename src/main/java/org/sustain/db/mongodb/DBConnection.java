@@ -15,11 +15,10 @@ public class DBConnection {
     private static MongoClient mongoClient;
 
     private static void initDatabaseProperties() {
-        host = Util.getProperty(Constants.DB.HOST);
-        log.info("Host: " + host);
-        port = Util.getProperty(Constants.DB.PORT);
-        log.info("Port: " + port);
-        db = Constants.DB.DB_NAME;
+        db   = Constants.DB.NAME;
+        host = Constants.DB.HOST;
+        port = Constants.DB.PORT;
+        log.info("Using Database {} on {}:{}",db,host,port);
     }
 
     public static MongoDatabase getConnection() {
