@@ -5,7 +5,6 @@ import com.mongodb.client.MongoDatabase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.util.Constants;
-import org.sustain.db.Util;
 
 public class DBConnection {
     private static final Logger log = LogManager.getLogger(DBConnection.class);

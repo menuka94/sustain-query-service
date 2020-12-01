@@ -60,7 +60,7 @@ public class Constants {
     }
 
     public static class Server {
-        public static final String HOST = "SERVER_HOST";
+        public static final String HOST = System.getenv("SERVER_HOST");
         public static final int PORT = 50051;
     }
 
