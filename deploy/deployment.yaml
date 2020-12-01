@@ -1,15 +1,3 @@
-          - endpoint:
-              address:
-                socket_address:
-                  address: "lattice-174.cs.colostate.edu"
-                  port_value: 30001
-                  ipv4_compat: true
-          - endpoint:
-              address:
-                socket_address:
-                  address: "lattice-175.cs.colostate.edu"
-                  port_value: 30001
-                  ipv4_compat: true
 ---
 apiVersion: v1
 kind: Service
