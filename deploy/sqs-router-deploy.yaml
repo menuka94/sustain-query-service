@@ -37,7 +37,7 @@ spec:
         ports:
         - containerPort: 27017
       - name: sustain-query-server 
-        image: inf0rmatiker/sustain-query-service:latest
+        image: sustain/sustain-query-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 50051
