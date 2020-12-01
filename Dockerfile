@@ -18,10 +18,8 @@ RUN apt-get update && apt-get install -y default-jdk
 
 # Establish environment variables
 ENV PROJECT="sustain-query-service" \
-    DB_NAME="sustaindb" \
-    DB_PORT=27017 \
-    DB_HOST="localhost" \
-    SERVER_HOST="lattice-165.cs.colostate.edu"
+    DB_NAME="sustain" \
+    DB_PORT=27017
 
 # Add in source code
 RUN mkdir -p /code/$PROJECT
