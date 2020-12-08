@@ -101,7 +101,7 @@ public class SpatialQueryUtil {
 
     public static HashMap<String, String> findGeoIntersects(String collectionName, Geometry geometry) {
         HashMap<String, String> geoJsons = new HashMap<>();
-        log.info("findGeoIntersects()");
+        log.debug("findGeoIntersects()");
         MongoDatabase db = DBConnection.getConnection();
         MongoCollection<Document> collection = db.getCollection(collectionName);
         FindIterable<Document> iterable = collection.find(Filters.geoIntersects("geometry", geometry));
