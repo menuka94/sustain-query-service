@@ -3,6 +3,8 @@ package org.sustain.querier;
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
 import io.grpc.stub.StreamObserver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.sustain.CompoundResponse;
 
@@ -10,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DataContainer {
+    private static final Logger log = LogManager.getLogger(DataContainer.class);
     private HashMap<String, HashMap<String, String>> documents;
 
     public DataContainer() {
@@ -26,10 +29,12 @@ public class DataContainer {
 
     public void addData(String datum) {
         if (JsonParser.parseString(datum).getAsJsonObject().has("GISJOIN")) {
+            log.info("GISJOIN found");
             String gisjoin = JsonParser.parseString(datum).getAsJsonObject().get("GISJOIN").toString().replace("\"",
                     "");
             documents.put(gisjoin, new Gson().fromJson(datum, HashMap.class));
         } else {
+            log.info("GISJOIN not found");
             documents.put("", new Gson().fromJson(datum, HashMap.class));
         }
     }
