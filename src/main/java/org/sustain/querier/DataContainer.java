@@ -28,8 +28,8 @@ public class DataContainer {
     }
 
     public void addData(String datum) {
+        log.info("DATUM: " + datum);
         if (JsonParser.parseString(datum).getAsJsonObject().has("GISJOIN")) {
-            log.info("GISJOIN found");
             String gisjoin = JsonParser.parseString(datum).getAsJsonObject().get("GISJOIN").toString().replace("\"",
                     "");
             documents.put(gisjoin, new Gson().fromJson(datum, HashMap.class));
