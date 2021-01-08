@@ -10,6 +10,7 @@ import org.sustain.CompoundResponse;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class DataContainer {
     private static final Logger log = LogManager.getLogger(DataContainer.class);
@@ -35,7 +36,8 @@ public class DataContainer {
             documents.put(gisjoin, new Gson().fromJson(datum, HashMap.class));
         } else {
             log.info("GISJOIN not found");
-            documents.put("", new Gson().fromJson(datum, HashMap.class));
+            String uniqueID = UUID.randomUUID().toString();
+            documents.put(uniqueID, new Gson().fromJson(datum, HashMap.class));
         }
     }
 
