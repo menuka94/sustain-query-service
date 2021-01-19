@@ -1,0 +1,16 @@
+[
+  {
+    "operation": "clustering",
+    "algorithm": "k-means",
+    "collections": [
+      {
+        "name": "hospitals_geo",
+        "features": []
+      },
+      {
+        "name": "tract_geo",
+        "features": []
+      }
+    ]
+  }
+]

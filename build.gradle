@@ -5,6 +5,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     // Generate IntelliJ IDEA's .idea & .iml project files
     id 'idea'
+    id 'scala'
 }
 
 group 'org.sustain.census'
@@ -34,11 +35,20 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
     compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.12.5'
-    
+
     compile 'org.json:json:20171018'
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
+
+    // https://mvnrepository.com/artifact/org.apache.spark/spark-core
+    compile group: 'org.apache.spark', name: 'spark-core_2.12', version: '2.4.3'
+
+    // https://mvnrepository.com/artifact/org.apache.spark/spark-sql
+    compile group: 'org.apache.spark', name: 'spark-sql_2.12', version: '2.4.3'
+
+    // https://mvnrepository.com/artifact/org.mongodb.spark/mongo-spark-connector
+    compile group: 'org.mongodb.spark', name: 'mongo-spark-connector_2.12', version: '2.4.1'
 
     testCompile "io.grpc:grpc-testing:${grpcVersion}"
     testCompile "org.mockito:mockito-core:1.9.5"
@@ -69,6 +79,9 @@ sourceSets {
             srcDirs 'build/generated/source/proto/main/grpc'
             srcDirs 'build/generated/source/proto/main/java'
         }
+//        scala {
+//            outputDir 'build/classes/scala/main'
+//        }
     }
 }
 
@@ -102,3 +115,6 @@ applicationDistribution.into('bin') {
     from(spatialClient)
     fileMode = 0755
 }
+
+//tasks.compileJava.dependsOn compileScala
+//tasks.compileScala.dependsOn.remove("compileJava")
