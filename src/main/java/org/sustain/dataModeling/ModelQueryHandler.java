@@ -33,7 +33,7 @@ public class ModelQueryHandler {
         while (cursor.hasNext()) {
             Document next = cursor.next();
             ModelResponse response = ModelResponse.newBuilder()
-                    .setResults(gson.toJson(next))
+                    .setResults(next.toJson())
                     .build();
             responseObserver.onNext(response);
         }
