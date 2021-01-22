@@ -11,6 +11,8 @@ import org.sustain.CensusResponse;
 import org.sustain.DatasetRequest;
 import org.sustain.DatasetResponse;
 import org.sustain.Decade;
+import org.sustain.ModelRequest;
+import org.sustain.ModelResponse;
 import org.sustain.OsmRequest;
 import org.sustain.OsmResponse;
 import org.sustain.Predicate;
@@ -21,7 +23,6 @@ import org.sustain.SviResponse;
 import org.sustain.TargetedCensusRequest;
 import org.sustain.TargetedCensusResponse;
 import org.sustain.util.Constants;
-import org.sustain.util.SampleGeoJson;
 
 import java.util.Iterator;
 
@@ -31,7 +32,7 @@ public class SpatialClient {
     private SustainGrpc.SustainBlockingStub sustainBlockingStub;
 
     public SpatialClient() {
-        String target = Constants.Server.HOST + ":" + 30001;
+        String target = "localhost" + ":" + 50051;
         log.info("Target: " + target);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
@@ -44,10 +45,17 @@ public class SpatialClient {
         //exampleSpatialQuery(sustainBlockingStub, geoJson);
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
-        exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
+        //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
         //exampleCensusQuery(CensusFeature.TotalPopulation, CensusResolution.County, sustainBlockingStub,
         //        SampleGeoJson.COLORADO);
         //exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoIntersects, sustainBlockingStub);
+        exampleModelQuery(sustainBlockingStub);
+    }
+
+    private static void exampleModelQuery(SustainGrpc.SustainBlockingStub sustainBlockingStub) {
+        ModelRequest request = ModelRequest.newBuilder().setRequest("").build();
+        ModelResponse response = sustainBlockingStub.modelQuery(request);
+        System.out.println(response);
     }
 
     private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,

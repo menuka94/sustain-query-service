@@ -99,6 +99,7 @@ public class SustainServer {
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
             ModelQueryHandler handler = new ModelQueryHandler(request, responseObserver);
+            handler.handleClusteringRequest();
         }
 
         @Override
