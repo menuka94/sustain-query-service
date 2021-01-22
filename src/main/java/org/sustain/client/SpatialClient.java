@@ -22,6 +22,7 @@ import org.sustain.SviRequest;
 import org.sustain.SviResponse;
 import org.sustain.TargetedCensusRequest;
 import org.sustain.TargetedCensusResponse;
+import org.sustain.db.Util;
 import org.sustain.util.Constants;
 
 import java.util.Iterator;
@@ -32,7 +33,7 @@ public class SpatialClient {
     private SustainGrpc.SustainBlockingStub sustainBlockingStub;
 
     public SpatialClient() {
-        String target = "localhost" + ":" + 50051;
+        String target = Util.getProperty(Constants.Server.HOST) + ":" + 30001;
         log.info("Target: " + target);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();

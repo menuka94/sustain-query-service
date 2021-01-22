@@ -16,14 +16,8 @@ RUN apt-get update && apt-get install -y default-jdk
 
 # --- Project ---
 
-# Establish environment variables
-ENV PROJECT="sustain-query-service" \
-    DB_NAME="sustain" \
-    DB_PORT=27017 \
-    DB_HOST="lattice-167" \
-    SERVER_HOST="lattice-167"
-
 # Add in source code
+ENV PROJECT="sustain-query-service"
 RUN mkdir -p /code/$PROJECT
 WORKDIR /code/$PROJECT
 
@@ -34,6 +28,7 @@ COPY bin/ ./bin
 COPY gradle/ ./gradle
 
 # Build project
+COPY ./configurations/config.properties ./src/main/resources/config.properties
 RUN ./gradlew install
 
 ENTRYPOINT ["./bin/sustain-server.sh"]
