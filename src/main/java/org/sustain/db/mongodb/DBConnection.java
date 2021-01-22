@@ -14,9 +14,9 @@ public class DBConnection {
     private static MongoClient mongoClient;
 
     private static void initDatabaseProperties() {
-        db = Constants.DB.NAME;
-        host = Constants.DB.HOST;
-        port = Constants.DB.PORT;
+        db = System.getenv("DB_NAME");
+        host = System.getenv("DB_HOST");
+        port = System.getenv("DB_PORT");
         log.info("Using Database" + db + "on " + host + ":" + port);
     }
 
