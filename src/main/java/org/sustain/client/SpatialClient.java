@@ -33,7 +33,7 @@ public class SpatialClient {
     private SustainGrpc.SustainBlockingStub sustainBlockingStub;
 
     public SpatialClient() {
-        String target = Util.getProperty(Constants.Server.HOST) + ":" + 30001;
+        String target = Util.getProperty(Constants.Server.HOST) + ":" + 50051;
         log.info("Target: " + target);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
@@ -55,8 +55,10 @@ public class SpatialClient {
 
     private static void exampleModelQuery(SustainGrpc.SustainBlockingStub sustainBlockingStub) {
         ModelRequest request = ModelRequest.newBuilder().setRequest("").build();
-        ModelResponse response = sustainBlockingStub.modelQuery(request);
-        System.out.println(response);
+        Iterator<ModelResponse> modelResponseIterator = sustainBlockingStub.modelQuery(request);
+        while (modelResponseIterator.hasNext()) {
+            System.out.println(modelResponseIterator.next());
+        }
     }
 
     private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,
