@@ -15,6 +15,7 @@ import org.sustain.census.ClientHelper;
 import org.sustain.util.Constants;
 import org.sustain.census.Decade;
 import org.sustain.census.TotalPopulationResponse;
+import org.sustain.db.Util;
 
 import static org.sustain.util.Constants.CensusResolutions.COUNTY;
 import static org.sustain.util.Constants.CensusResolutions.STATE;
@@ -34,7 +35,7 @@ public class PopulationTests {
         server = new SustainServer();
         new ServerRunner(server).start();
         Thread.sleep(2000);
-        String target = Constants.Server.HOST + ":" + Constants.Server.PORT;
+        String target = Util.getProperty(Constants.Server.HOST) + ":" + Constants.Server.PORT;
         channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         censusBlockingStub = CensusGrpc.newBlockingStub(channel);
         clientHelper = new ClientHelper(censusBlockingStub);

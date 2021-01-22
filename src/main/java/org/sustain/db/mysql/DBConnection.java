@@ -3,6 +3,7 @@ package org.sustain.db.mysql;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.util.Constants;
+import org.sustain.db.Util;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -17,9 +18,9 @@ public class DBConnection {
     private static String host;
 
     private static void initDatabaseProperties() {
-        username = Constants.DB.USERNAME;
-        password = Constants.DB.PASSWORD;
-        host     = Constants.DB.HOST;
+        username = Util.getProperty(Constants.DB.USERNAME);
+        password = Util.getProperty(Constants.DB.PASSWORD);
+        host = Util.getProperty(Constants.DB.HOST);
     }
 
     public static Connection getConnection(String dbName) {
