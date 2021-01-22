@@ -14,10 +14,10 @@ public class DBConnection {
     private static MongoClient mongoClient;
 
     private static void initDatabaseProperties() {
-        db   = Constants.DB.NAME;
+        db = Constants.DB.NAME;
         host = Constants.DB.HOST;
         port = Constants.DB.PORT;
-        log.info("Using Database {} on {}:{}",db,host,port);
+        log.info("Using Database" + db + "on " + host + ":" + port);
     }
 
     public static MongoDatabase getConnection() {
