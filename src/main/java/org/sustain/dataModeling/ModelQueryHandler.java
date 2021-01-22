@@ -1,5 +1,6 @@
 package org.sustain.dataModeling;
 
+import com.google.gson.Gson;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
@@ -28,11 +29,12 @@ public class ModelQueryHandler {
         MongoCollection<Document> collection = db.getCollection("clustered_population_income_age");
         FindIterable<Document> documents = collection.find();
         MongoCursor<Document> cursor = documents.cursor();
-        //JsonArray array = new JsonArray();
+        Gson gson = new Gson();
         while (cursor.hasNext()) {
             Document next = cursor.next();
-            //array.add(next.toJson());
-            ModelResponse response = ModelResponse.newBuilder().setResults(next.toString()).build();
+            ModelResponse response = ModelResponse.newBuilder()
+                    .setResults(gson.toJson(next))
+                    .build();
             responseObserver.onNext(response);
         }
         responseObserver.onCompleted();
