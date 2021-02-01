@@ -50,6 +50,19 @@ public class SustainServer {
 
     private Server server;
 
+    // Logs the environment variables that the server was started with.
+    public static void logEnvironment() {
+        log.info("--- Server Environment ---");
+        log.info("SERVER_HOST: " + Constants.Server.HOST);
+        log.info("SERVER_PORT: " + Constants.Server.PORT);
+        log.info("--- Database Environment ---");
+        log.info("DB_HOST: " + Constants.DB.HOST);
+        log.info("DB_PORT: " + Constants.DB.PORT);
+        log.info("DB_NAME: " + Constants.DB.NAME);
+        log.info("DB_USERNAME: " + Constants.DB.USERNAME);
+        log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
+    }
+
     public static void main(String[] args) throws IOException, InterruptedException {
         logEnvironment();
         final SustainServer server = new SustainServer();
@@ -78,9 +91,8 @@ public class SustainServer {
                 .addService(new SustainService())
                 .build().start();
         log.info("Server started, listening on " + port);
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+
                 try {
                     SustainServer.this.stop();
                 } catch (InterruptedException e) {
@@ -88,8 +100,8 @@ public class SustainServer {
                     e.printStackTrace();
                 }
                 log.warn("Server is shutting down");
-            }
-        });
+
+        }));
     }
 
     public void stop() throws InterruptedException {
