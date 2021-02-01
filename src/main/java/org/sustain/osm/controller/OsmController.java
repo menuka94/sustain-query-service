@@ -1,4 +1,4 @@
-package org.sustain.openStreetMaps.controller;
+package org.sustain.osm.controller;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;

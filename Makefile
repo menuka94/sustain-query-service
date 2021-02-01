@@ -38,4 +38,4 @@ proto:
 	./gradlew generateProto
 
 clean:
-	rm -rf build
+	rm -rf build log
