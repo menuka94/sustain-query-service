@@ -1,9 +1,6 @@
 package org.sustain.server;
 
-import com.google.protobuf.util.JsonFormat;
 import com.mongodb.client.model.geojson.Geometry;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -15,9 +12,6 @@ import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
 import org.sustain.DatasetRequest;
 import org.sustain.DatasetResponse;
-import org.sustain.JsonModelRequest;
-import org.sustain.JsonModelResponse;
-import org.sustain.JsonProxyGrpc;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.OsmRequest;
@@ -27,22 +21,21 @@ import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
 import org.sustain.SviRequest;
 import org.sustain.SviResponse;
-import org.sustain.datasets.handlers.CensusQueryHandler;
-import org.sustain.datasets.controllers.SpatialQueryUtil;
+import org.sustain.census.CensusQueryHandler;
+import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.modeling.ModelQueryHandler;
-import org.sustain.datasets.handlers.OsmQueryHandler;
-import org.sustain.datasets.handlers.DatasetQueryHandler;
+import org.sustain.osm.OsmQueryHandler;
+import org.sustain.otherDatasets.DatasetQueryHandler;
 import org.sustain.querier.CompoundQueryHandler;
-import org.sustain.datasets.controllers.SviController;
+import org.sustain.svi.SviController;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.census.controller.SpatialQueryUtil.getGeometryFromGeoJson;
 
 
 public class SustainServer {
@@ -70,24 +63,10 @@ public class SustainServer {
         server.blockUntilShutdown();
     }
 
-    // Logs the environment variables that the server was started with.
-    public static void logEnvironment() {
-        log.info("--- Server Environment ---");
-        log.info("SERVER_HOST: " + Constants.Server.HOST);
-        log.info("SERVER_PORT: " + Constants.Server.PORT);
-        log.info("--- Database Environment ---");
-        log.info("DB_HOST: " + Constants.DB.HOST);
-        log.info("DB_PORT: " + Constants.DB.PORT);
-        log.info("DB_NAME: " + Constants.DB.NAME);
-        log.info("DB_USERNAME: " + Constants.DB.USERNAME);
-        log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
-    }
-
 
     public void start() throws IOException {
         final int port = Constants.Server.PORT;
         server = ServerBuilder.forPort(port)
-                .addService(new JsonProxyService())
                 .addService(new SustainService())
                 .build().start();
         log.info("Server started, listening on " + port);
@@ -122,66 +101,6 @@ public class SustainServer {
         }
     }
 
-    // JsonProxyService implementation
-    static class JsonProxyService extends JsonProxyGrpc.JsonProxyImplBase {
-        @Override
-        public void modelQuery(JsonModelRequest request,
-                StreamObserver<JsonModelResponse> responseObserver) {
-            ManagedChannel channel = null;
-
-            try {
-                // open grpc channel
-                channel = ManagedChannelBuilder
-                    .forAddress(Constants.Server.HOST,
-                        Constants.Server.PORT)
-                    .usePlaintext()
-                    .build();
-
-                // convert json to protobuf and service request
-                JsonFormat.Parser parser = JsonFormat.parser();
-                JsonFormat.Printer printer = JsonFormat.printer()
-                    .includingDefaultValueFields()
-                    .omittingInsignificantWhitespace();
-
-                // create model request
-                ModelRequest.Builder requestBuilder =
-                    ModelRequest.newBuilder();
-                parser.merge(request.getJson(), requestBuilder);
-
-                // issue model request
-                SustainGrpc.SustainBlockingStub blockingStub =
-                    SustainGrpc.newBlockingStub(channel);
-
-                Iterator<ModelResponse> iterator =
-                    blockingStub.modelQuery(requestBuilder.build());
-
-                // iterate over results
-                while (iterator.hasNext()) {
-                    ModelResponse response = iterator.next();
-
-                    // build JsonModelRequest
-                    String json = printer.print(response);
-                    JsonModelResponse jsonResponse =
-                        JsonModelResponse.newBuilder()
-                            .setJson(json)
-                            .build();
-
-                    responseObserver.onNext(jsonResponse);
-                }
-
-                // send response
-                responseObserver.onCompleted();
-            } catch (Exception e) {
-                log.error("failed to evaluate", e);
-                responseObserver.onError(e);
-            } finally {
-                if (channel != null) {
-                    channel.shutdownNow();
-                }
-            }
-        }
-    }
-
     // Server implementation
     static class SustainService extends SustainGrpc.SustainImplBase {
         @Override
@@ -193,7 +112,6 @@ public class SustainServer {
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
             ModelQueryHandler handler = new ModelQueryHandler(request, responseObserver);
-            responseObserver.onCompleted();
         }
 
         @Override
@@ -257,6 +175,67 @@ public class SustainServer {
             return false;
         }
 
+        /**
+         * Execute a TargetedQuery - return geographical areas that satisfy a given value range of a census feature
+         * Example 1: Retrieve all counties where (population >= 1,000,000)
+         * Example 2: Retrieve all tracts where (median household income < $50,000/year)
+         */
+        /*
+        @Override
+        public void executeTargetedCensusQuery(TargetedCensusRequest request,
+                                               StreamObserver<TargetedCensusResponse> responseObserver) {
+            Predicate predicate = request.getPredicate();
+            double comparisonValue = predicate.getComparisonValue();
+            Predicate.ComparisonOperator comparisonOp = predicate.getComparisonOp();
+            CensusFeature censusFeature = predicate.getCensusFeature();
+            Decade _decade = predicate.getDecade();
+            String resolution = Constants.TARGET_RESOLUTIONS.get(request.getResolution());
+
+            String decade = Constants.DECADES.get(_decade);
+            HashMap<String, GeoJson> geoJsonMap = getGeoList(request.getRequestGeoJson(), resolution,
+                    request.getSpatialOp());
+
+            try {
+                switch (censusFeature) {
+                    case TotalPopulation:
+                        String comparisonField = decade + "_" + Constants.CensusFeatures.TOTAL_POPULATION;
+                        for (GeoJson geoJson : geoList) {
+                            String populationResult =
+                                    PopulationController.getTotalPopulationResults(resolution,
+                                            geoJson.getProperties().getGisJoin());
+                            double value =
+                                    JsonParser.parseString(populationResult).getAsJsonObject().get(comparisonField)
+                                            .getAsDouble();
+                            boolean valid = compareValueWithInputValue(comparisonOp, value, comparisonValue);
+
+                            if (valid) {
+                                SpatialResponse response = SpatialResponse.newBuilder()
+                                        .setData(populationResult)
+                                        .setResponseGeoJson(geoJson.toJson())
+                                        .build();
+                                responseObserver.onNext(TargetedCensusResponse.newBuilder().setSpatialResponse(response)
+                                        .build());
+                            }
+                        }   // end of geoJson loop
+
+                        responseObserver.onCompleted();
+                        break;
+                    case MedianHouseholdIncome:
+                        HashMap<String, String> incomeResults = IncomeController.fetchTargetedInfo(decade,
+                                resolution, comparisonOp, comparisonValue);
+                        break;
+                    case Race:
+                        break;
+                    case UNRECOGNIZED:
+                        log.warn("Invalid Census censusFeature requested");
+                        break;
+                }   // end of census-feature switch
+            } catch (Exception e) {
+                log.error(e);
+                e.printStackTrace();
+            }
+        }
+        */
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
             OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);
