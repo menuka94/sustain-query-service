@@ -31,11 +31,11 @@ public class LinearRegressionModel {
             // Initialize Spark Context
             JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
 
-            // Add dependency jar files to Spark Context - TODO fix hardcoded values
-            sparkContext.addJar("build/install/lib/mongo-spark-connector_2.12-3.0.0.jar");
-            sparkContext.addJar("build/install/lib/spark-core_2.12-3.0.0.jar");
-            sparkContext.addJar("build/install/lib/spark-mllib_2.12-3.0.0.jar");
-            sparkContext.addJar("build/install/lib/spark-sql_2.12-3.0.0.jar");
+            // Add dependency jar files to Spark Context
+            sparkContext.addJar("build/libs/mongo-spark-connector_2.12-3.0.0.jar");
+            sparkContext.addJar("build/libs/spark-core_2.12-3.0.0.jar");
+            sparkContext.addJar("build/libs/spark-mllib_2.12-3.0.0.jar");
+            sparkContext.addJar("build/libs/spark-sql_2.12-3.0.0.jar");
 
             String gisJoin = "G1201050";
 

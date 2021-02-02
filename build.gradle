@@ -5,6 +5,8 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     // Generate IntelliJ IDEA's .idea & .iml project files
     id 'idea'
+
+    id 'java'
 }
 
 group 'org.sustain.census'
@@ -48,9 +50,13 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
 }
 
-test {
-    useJUnitPlatform()
+
+task copyDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into file("$buildDir/libs")
 }
+
+build.dependsOn copyDependencies
 
 protobuf {
     protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
@@ -100,4 +106,9 @@ applicationDistribution.into('bin') {
     from(spatialClient)
     from(linearRegressionModel)
     fileMode = 0755
+}
+
+task copyToLib(type: Copy) {
+    into "${buildDir}/output/libs"
+    from configurations.runtime
 }
