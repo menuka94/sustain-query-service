@@ -24,14 +24,17 @@ build-with-tests:
 run-sustain-server:
 	chmod +x ./gradlew
 	./gradlew install -x test
-	sh ./build/install/sustain-census-grpc/bin/sustain-server
+	./build/install/sustain-census-grpc/bin/sustain-server
 
 test:
 	chmod +x ./gradlew
 	./gradlew test
 
 run-spatial-client:
-	sh ./build/install/sustain-census-grpc/bin/spatial-client
+	./build/install/sustain-census-grpc/bin/spatial-client
+
+run-linear-model:
+	./build/install/sustain-census-grpc/bin/linear-model
 
 proto:
 	chmod +x ./gradlew

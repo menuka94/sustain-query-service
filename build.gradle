@@ -81,13 +81,6 @@ task sustainServer(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
-task censusClient(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.client.CensusClient'
-    applicationName = 'census-client'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-}
-
 task spatialClient(type: CreateStartScripts) {
     mainClassName = 'org.sustain.client.SpatialClient'
     applicationName = 'spatial-client'
@@ -95,9 +88,16 @@ task spatialClient(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
+task linearRegressionModel(type: CreateStartScripts) {
+    mainClassName = 'org.sustain.modeling.LinearRegressionModel'
+    applicationName = 'linear-model'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = startScripts.classpath
+}
+
 applicationDistribution.into('bin') {
     from(sustainServer)
-    from(censusClient)
     from(spatialClient)
+    from(linearRegressionModel)
     fileMode = 0755
 }
