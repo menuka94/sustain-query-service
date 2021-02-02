@@ -21,11 +21,6 @@ service Sustain{
   // Query Social Vulnerability Index (SVI) values
   rpc SviQuery (SviRequest) returns (stream SviResponse) {}
 
-  // targeted queries - return geographical areas that satisfy a given value range of a census feature
-  // Example 1: Retrieve all counties where (population >= 1,000,000)
-  // Example 2: Retrieve all tracts where (median household income < $50,000/year)
-  rpc ExecuteTargetedCensusQuery (TargetedCensusRequest) returns (stream TargetedCensusResponse) {}
-
   rpc CompoundQuery (CompoundRequest) returns (stream CompoundResponse) {}
 
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
@@ -130,18 +125,6 @@ message DatasetEntry {
   string entry = 1;
 }
 
-message TargetedCensusRequest {
-  CensusResolution resolution = 1;
-  Predicate predicate = 2;
-  SpatialOp spatialOp = 3;
-  string requestGeoJson = 4; // bounding polygon
-}
-
-message TargetedCensusResponse {
-  string data = 1;
-  string responseGeoJson = 2; // geoJson associated with 'data'
-}
-
 enum CensusResolution {
   State = 0;
   County = 1;
@@ -178,7 +161,6 @@ enum JoinOperator {
     RIGHT_JOIN = 3;
 }
 
-
 enum ComparisonOperator {
     EQUAL = 0;
     GREATER_THAN = 1;
@@ -186,13 +168,6 @@ enum ComparisonOperator {
     GREATER_THAN_OR_EQUAL = 3;
     LESS_THAN_OR_EQUAL = 4;
  }
-
-
- message CompoundResponse {
-    string data = 1;
-    string geoJson = 2;
-}
-
 
 message CompoundRequest {
     oneof FirstPredicate {
@@ -208,6 +183,10 @@ message CompoundRequest {
     }
 }
 
+message CompoundResponse {
+    string data = 1;
+    string geoJson = 2;
+}
 
 message Query {
     string host = 1;

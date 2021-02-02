@@ -18,8 +18,6 @@ import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
 import org.sustain.SviRequest;
 import org.sustain.SviResponse;
-import org.sustain.TargetedCensusRequest;
-import org.sustain.TargetedCensusResponse;
 import org.sustain.util.Constants;
 import org.sustain.util.SampleGeoJson;
 
@@ -146,32 +144,6 @@ public class SpatialClient {
             count++;
         }
         log.info("Count: " + count);
-    }
-
-    private static void exampleTargetedQuery(SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
-        TargetedCensusRequest request = TargetedCensusRequest.newBuilder()
-                .setResolution(CensusResolution.Tract)
-                .setPredicate(
-                        Predicate.newBuilder().setCensusFeature(CensusFeature.TotalPopulation)
-                                .setComparisonOp(Predicate.ComparisonOperator.GREATER_THAN)
-                                .setDecade(Decade._2010)
-                                .setComparisonValue(2000)
-                                .build()
-                )
-                .setSpatialOp(SpatialOp.GeoWithin)
-                .setRequestGeoJson(geoJson)
-                .build();
-
-        Iterator<TargetedCensusResponse> censusResponseIterator =
-                censusBlockingStub.executeTargetedCensusQuery(request);
-        while (censusResponseIterator.hasNext()) {
-            TargetedCensusResponse response = censusResponseIterator.next();
-            String data = response.getData();
-            String responseGeoJson = response.getResponseGeoJson();
-            log.info("data: " + data);
-            log.info("geoJson: " + responseGeoJson);
-            System.out.println();
-        }
     }
 
     public SustainGrpc.SustainBlockingStub getSustainBlockingStub() {
