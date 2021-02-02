@@ -7,7 +7,6 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SparkSession.implicits$;
 import org.bson.Document;
 
 import org.apache.logging.log4j.LogManager;
