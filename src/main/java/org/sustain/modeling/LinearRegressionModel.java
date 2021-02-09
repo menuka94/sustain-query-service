@@ -174,7 +174,7 @@ public class LinearRegressionModel {
      */
     private void initSparkSession(String master, String appName, String mongoUri, String database, String collection) {
         log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
-                "spark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
+                "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
                 master, appName, mongoUri, database, collection);
 
         SparkSession sparkSession = SparkSession.builder()
@@ -220,6 +220,7 @@ public class LinearRegressionModel {
     }
 
     public void buildAndRunModel() {
+        log.info("Running Model...");
         ReadConfig readConfig = ReadConfig.create(sparkContext);
         JavaMongoRDD<Document> collection = MongoSpark.load(sparkContext, readConfig);
 
@@ -241,7 +242,7 @@ public class LinearRegressionModel {
         String[] gisJoins = {"G2100370051101"};
 
         LinearRegressionModel lrModel = new LinearRegressionModel("spark://lattice-165:8079", "testApplication",
-                "mongodb://lattice-46:27017", "sustaindb", "air_quality_raw");
+                "mongodb://lattice-46:27017", "sustaindb", "future_heat");
 
         lrModel.setFeatures(features);
         lrModel.setLabel(label);
