@@ -244,7 +244,7 @@ public class LinearRegressionModel {
         String[] gisJoins = {"G2100370051101"};
 
         LinearRegressionModel lrModel = new LinearRegressionModel("spark://lattice-165:8079", "testApplication",
-                "mongodb://lattice-46:27017", "sustaindb", "future_heat");
+                "mongodb://lattice-46:27017", "sustaindb", "air_quality_raw");
 
         lrModel.setFeatures(features);
         lrModel.setLabel(label);
