@@ -138,6 +138,8 @@ import com.mongodb.spark.rdd.api.java.JavaMongoRDD;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.bson.Document;
 
@@ -145,49 +147,107 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- *
+ * Provides an interface for building generalized Linear Regression
+ * models on data pulled in using Mongo's Spark Connector.
  */
 public class LinearRegressionModel {
 
     protected static final Logger log = LogManager.getLogger(LinearRegressionModel.class);
 
-    public static void main(String[] args) {
-        log.info("Running LinearRegressionModel main()");
+    private JavaSparkContext sparkContext;
+    private String[]         features, gisJoins;
+    private String           label;
 
-        try {
-            SparkSession sparkSession = SparkSession.builder()
-                    .master("spark://lattice-165:8079")
-                    .config("spark.mongodb.input.uri", "mongodb://lattice-46:27017")
-                    .config("spark.mongodb.input.database", "sustaindb")
-                    .config("spark.mongodb.input.collection", "future_heat")
-                    .appName("LinearRegressionModel")
-                    .getOrCreate();
+    public LinearRegressionModel(String master, String appName, String mongoUri, String database, String collection) {
+        log.info("LinearRegressionModel constructor invoked");
+        initSparkSession(master, appName, mongoUri, database, collection);
+        addClusterDependencyJars();
+    }
 
-            // Initialize Spark Context
-            JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+    /**
+     * Configures and builds a SparkSession and JavaSparkContext, then adds required dependency JARs to the cluster.
+     * @param master URI of the Spark master. Format: spark://<hostname>:<port>
+     * @param appName Human-readable name of the application.
+     * @param mongoUri URI of the Mongo database router. Format: mongodb://<hostname>:<port>
+     * @param database Name of the Mongo database to use.
+     * @param collection Name of the Mongo collection to import from above database.
+     */
+    private void initSparkSession(String master, String appName, String mongoUri, String database, String collection) {
+        log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
+                "spark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
+                master, appName, mongoUri, database, collection);
 
-            // Add dependency jar files to Spark Context
-            sparkContext.addJar("build/libs/mongo-spark-connector_2.12-3.0.0.jar");
-            sparkContext.addJar("build/libs/spark-core_2.12-3.0.0.jar");
-            sparkContext.addJar("build/libs/spark-mllib_2.12-3.0.0.jar");
-            sparkContext.addJar("build/libs/spark-sql_2.12-3.0.0.jar");
+        SparkSession sparkSession = SparkSession.builder()
+                .master(master)
+                .appName(appName)
+                .config("spark.mongodb.input.uri", mongoUri)
+                .config("spark.mongodb.input.database", database)
+                .config("spark.mongodb.input.collection", collection)
+                .getOrCreate();
 
-            QueryBuilder queryBuilder = QueryBuilder.start();
-            queryBuilder.and("year").greaterThanEquals(2006);
+        sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+        addClusterDependencyJars();
+    }
 
-            DBObject query = queryBuilder.get();
+    /**
+     * Adds required dependency jars to the Spark Context member.
+     */
+    private void addClusterDependencyJars() {
+        String[] jarPaths = {
+            "build/libs/mongo-spark-connector_2.12-3.0.0.jar",
+            "build/libs/spark-core_2.12-3.0.0.jar",
+            "build/libs/spark-mllib_2.12-3.0.0.jar",
+            "build/libs/spark-sql_2.12-3.0.0.jar",
+            "build/libs/bson-4.2.0.jar"
+        };
 
-            String gisJoin = "G1201050";
-
-            // Close Spark Context
-            sparkContext.close();
-        } catch (Exception e) {
-            log.error("Failed to create SparkSession: " + e.getMessage());
+        for (String jar: jarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkContext.addJar(jar);
         }
+    }
 
+    public void setFeatures(String[] features) {
+        this.features = features;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public void setGisJoins(String[] gisJoins) {
+        this.gisJoins = gisJoins;
+    }
+
+    public void buildAndRunModel() {
+        ReadConfig readConfig = ReadConfig.create(sparkContext);
+        JavaMongoRDD<Document> collection = MongoSpark.load(sparkContext, readConfig);
+
+        // For now, just count the records and log that.
+        log.info("Collection record count: {}", collection.count());
+
+        // Don't forget to close Spark Context!
+        sparkContext.close();
     }
 
 
+    /**
+     * Used exclusively for testing and running a linear model directly, without having to interface with gRPC.
+     * @param args Usually not used.
+     */
+    public static void main(String[] args) {
+        String[] features = {"gmtTimestamp"};
+        String label = "measurement";
+        String[] gisJoins = {"G2100370051101"};
 
+        LinearRegressionModel lrModel = new LinearRegressionModel("spark://lattice-165:8079", "testApplication",
+                "mongodb://lattice-46:27017", "sustaindb", "air_quality_raw");
+
+        lrModel.setFeatures(features);
+        lrModel.setLabel(label);
+        lrModel.setGisJoins(gisJoins);
+
+        lrModel.buildAndRunModel();
+    }
 
 }
