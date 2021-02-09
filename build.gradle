@@ -105,8 +105,3 @@ applicationDistribution.into('bin') {
     from(linearRegressionModel)
     fileMode = 0755
 }
-
-task copyToLib(type: Copy) {
-    into "${buildDir}/output/libs"
-    from configurations.runtime
-}
