@@ -180,7 +180,6 @@ public class LinearRegressionModel {
         SparkSession sparkSession = SparkSession.builder()
                 .master(master)
                 .appName(appName)
-                .config("spark.driver.memory", "5g")
                 .config("spark.mongodb.input.uri", mongoUri)
                 .config("spark.mongodb.input.database", database)
                 .config("spark.mongodb.input.collection", collection)
