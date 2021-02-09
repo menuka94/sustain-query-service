@@ -15,6 +15,7 @@ DB_PORT = 27017
 .PHONY: build
 build:
 	chmod +x ./gradlew
+	./gradlew copyDependencies
 	./gradlew install -x test
 
 build-with-tests:
