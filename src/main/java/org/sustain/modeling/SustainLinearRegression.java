@@ -404,7 +404,7 @@ public class SustainLinearRegression {
 
         lrModel.setConvergenceTolerance(1E-14);
         lrModel.setMaxIterations(100);
-        lrModel.setEpsilon(0.0001);
+        lrModel.setEpsilon(1.0001);
 
         lrModel.buildAndRunModel();
     }
