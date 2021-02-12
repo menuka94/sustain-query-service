@@ -311,8 +311,8 @@ public class LinearRegressionModel {
      * @param args Usually not used.
      */
     public static void main(String[] args) {
-        String[] features = {"min_eastward_wind"};
-        String label = "measurement";
+        String[] features = {"timestamp"};
+        String label = "max_specific_humidity";
         String[] gisJoins = {"G2100370051101"};
 
         LinearRegressionModel lrModel = new LinearRegressionModel("spark://lattice-165:8079", "testApplication",
