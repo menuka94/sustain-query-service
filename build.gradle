@@ -94,7 +94,7 @@ task spatialClient(type: CreateStartScripts) {
 }
 
 task linearRegressionModel(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.modeling.LinearRegressionModel'
+    mainClassName = 'org.sustain.modeling.SustainLinearRegression'
     applicationName = 'linear-model'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = startScripts.classpath
