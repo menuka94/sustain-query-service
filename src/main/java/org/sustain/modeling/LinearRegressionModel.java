@@ -275,17 +275,17 @@ public class LinearRegressionModel {
      * Compiles a List<String> of column names we desire from the loaded collection.
      * @return A List<String> of desired column names.
      */
-//    private Seq<String> desiredColumns() {
-//        List<String> cols = new ArrayList<String>();
-//        cols.add("gis_join");
-//        Collections.addAll(cols, this.features);
-//        cols.add(this.label);
-//        return convertListToSeq(cols);
-//    }
+    private Seq<String> desiredColumns() {
+        List<String> cols = new ArrayList<String>();
+        cols.add("gis_join");
+        Collections.addAll(cols, this.features);
+        cols.add(this.label);
+        return convertListToSeq(cols);
+    }
 
-//    public Seq<String> convertListToSeq(List<String> inputList) {
-//        return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
-//    }
+    public Seq<String> convertListToSeq(List<String> inputList) {
+        return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
+    }
 
     public void buildAndRunModel() {
         log.info("Running Model...");
@@ -295,7 +295,7 @@ public class LinearRegressionModel {
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
 
         // Select just the columns we want, discard the rest
-  //      Dataset<Row> selected = collection.select("_id", desiredColumns());
+        Dataset<Row> selected = collection.select("_id", desiredColumns());
 
         // Loop over GISJoins and create a model for each one
         for (String gisJoin: this.gisJoins) {
@@ -304,7 +304,7 @@ public class LinearRegressionModel {
 
             // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
             FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
-            //Dataset<Row> gisDataset = selected.filter(ff);
+            Dataset<Row> gisDataset = selected.filter(ff);
 
             // Define the schema
             //List<StructField> fields = new ArrayList<>();
@@ -318,7 +318,7 @@ public class LinearRegressionModel {
         }
 
  //       selected.show(5);
-        collection.show(5);
+        selected.show(5);
 
         // Don't forget to close Spark Context!
         sparkContext.close();
