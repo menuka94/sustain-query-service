@@ -325,9 +325,6 @@ public class LinearRegressionModel {
 
         selected.show(5);
 
-        // For now, just count the records and log that.
-        log.info("Collection record count: {}", collection.count());
-
         // Don't forget to close Spark Context!
         sparkContext.close();
     }
