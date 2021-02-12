@@ -348,8 +348,8 @@ public class SustainLinearRegression {
 
             // Transform the gisDataset to have the new "features" column vector
             Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
-            mergedDataset.show();
-            /*
+            mergedDataset.show(5);
+
             // Create Linear Regression object using user-specified parameters
             LinearRegression linearRegression = new LinearRegression()
                     .setLoss(this.loss)
@@ -379,9 +379,6 @@ public class SustainLinearRegression {
             log.info("RMSE: {}", summary.rootMeanSquaredError());
             log.info("R2: {}", summary.r2());
             log.info("===============================================");
-             */
-
-
 
         }
 
