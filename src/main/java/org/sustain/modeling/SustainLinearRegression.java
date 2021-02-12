@@ -396,7 +396,7 @@ public class SustainLinearRegression {
     public static void main(String[] args) {
         String[] features = {"timestamp"};
         String label = "max_specific_humidity";
-        String[] gisJoins = {"G2100370051101"};
+        String[] gisJoins = {"G0100290"};
 
         SustainLinearRegression lrModel = new SustainLinearRegression("spark://lattice-165:8079", "testApplication",
                 "mongodb://lattice-46:27017", "sustaindb", "macav2");
