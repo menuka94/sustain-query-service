@@ -203,9 +203,9 @@ public class LinearRegressionModel {
     private void addClusterDependencyJars() {
         String[] jarPaths = {
             "build/libs/mongo-spark-connector_2.12-3.0.0.jar",
-            "build/libs/spark-core_2.12-3.0.0.jar",
-            "build/libs/spark-mllib_2.12-3.0.0.jar",
-            "build/libs/spark-sql_2.12-3.0.0.jar",
+            "build/libs/spark-core_2.12-3.0.1.jar",
+            "build/libs/spark-mllib_2.12-3.0.1.jar",
+            "build/libs/spark-sql_2.12-3.0.1.jar",
             "build/libs/bson-4.0.5.jar",
             "build/libs/mongo-java-driver-3.12.5.jar",
             "build/libs/mongodb-driver-core-4.0.5.jar",
