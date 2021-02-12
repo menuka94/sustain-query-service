@@ -208,7 +208,8 @@ public class LinearRegressionModel {
             "build/libs/spark-sql_2.12-3.0.0.jar",
             "build/libs/bson-4.0.5.jar",
             "build/libs/mongo-java-driver-3.12.5.jar",
-            "build/libs/mongodb-driver-core-4.0.5.jar"
+            "build/libs/mongodb-driver-core-4.0.5.jar",
+            "build/libs/scala-library-2.12.11.jar"
         };
 
         for (String jar: jarPaths) {
