@@ -139,6 +139,7 @@ import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.regression.LinearRegression;
 import org.apache.spark.ml.regression.LinearRegressionModel;
 import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
+import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -333,8 +334,8 @@ public class SustainLinearRegression {
             log.info(">>> Building model for GISJoin {}", gisJoin);
 
             // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
-            FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
-            Dataset<Row> gisDataset = selected.filter(ff)
+            //FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
+            Dataset<Row> gisDataset = selected.filter((FilterFunction<Row>)(row -> row.getAs("gis_join") == gisJoin))
                     .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
 
             // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
