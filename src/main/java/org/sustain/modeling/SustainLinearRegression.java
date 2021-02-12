@@ -134,6 +134,7 @@ import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FilterFunction;
+import org.apache.spark.api.java.function.Function3;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.regression.LinearRegression;
@@ -143,6 +144,7 @@ import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import scala.Function1;
 import scala.collection.JavaConverters;
 
 import org.apache.logging.log4j.LogManager;
@@ -335,7 +337,7 @@ public class SustainLinearRegression {
 
             // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
             //FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
-            Dataset<Row> gisDataset = selected.filter((FilterFunction<Row>)(row -> row.getAs("gis_join") == gisJoin))
+            Dataset<Row> gisDataset = selected.filter((Function1<Row, Object>)(row -> row.getAs("gis_join") == gisJoin))
                     .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
 
             // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
