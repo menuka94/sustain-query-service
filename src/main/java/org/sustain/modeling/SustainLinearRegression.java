@@ -130,27 +130,24 @@
 
 package org.sustain.modeling;
 
-
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FilterFunction;
-import org.apache.spark.ml.linalg.VectorUDT;
+import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.ml.linalg.Vectors;
+import org.apache.spark.ml.regression.LinearRegression;
+import org.apache.spark.ml.regression.LinearRegressionModel;
+import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.types.DataTypes;
-import org.apache.spark.sql.types.StructField;
-import org.apache.spark.sql.types.StructType;
-import org.bson.Document;
 import scala.collection.JavaConverters;
-
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import scala.collection.Seq;
 
-import javax.print.Doc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -159,9 +156,9 @@ import java.util.List;
  * Provides an interface for building generalized Linear Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class LinearRegressionModel {
+public class SustainLinearRegression {
 
-    protected static final Logger log = LogManager.getLogger(LinearRegressionModel.class);
+    protected static final Logger log = LogManager.getLogger(SustainLinearRegression.class);
 
     private JavaSparkContext sparkContext;
     private String[]         features, gisJoins;
@@ -171,9 +168,33 @@ public class LinearRegressionModel {
     private Boolean          fitIntercept, setStandardization;
 
 
-    public LinearRegressionModel(String master, String appName, String mongoUri, String database, String collection) {
+    /**
+     * The default, overloaded constructor for the SustainLinearRegression class. Defines Mongo and Spark connection
+     * parameters, as well as what data we are using for the model.
+     * @param master The Spark master in the form spark://<host>:<port>
+     * @param appName The human-readable application name of the job we are launching
+     * @param mongoUri The MongoDB endpoint, most likely a Mongo Router, in the form mongodb://<host>:<port>
+     * @param database The name of the MongoDB database we are accessing
+     * @param collection The name of the MongoDB collection we are using for the model
+     */
+    public SustainLinearRegression(String master, String appName, String mongoUri, String database, String collection) {
         log.info("LinearRegressionModel constructor invoked");
         initSparkSession(master, appName, mongoUri, database, collection);
+
+        // Set default model parameters before user explicitly defines them
+        // Uses Spark's default values which can be found in the documentation here:
+        // https://spark.apache.org/docs/latest/api/java/org/apache/spark/ml/regression/LinearRegression.html
+        this.setLoss("squaredError");
+        this.setSolver("auto");
+        this.setAggregationDepth(2);
+        this.setMaxIterations(10);
+        this.setElasticNetParam(0.0);
+        this.setEpsilon(1.35);
+        this.setRegularizationParam(0.0);
+        this.setConvergenceTolerance(1E-6); // 1E-6 = 0.000001
+        this.setFitIntercept(true);
+        this.setSetStandardization(true);
+
         addClusterDependencyJars();
     }
 
@@ -276,23 +297,28 @@ public class LinearRegressionModel {
     }
 
     /**
-     * Compiles a List<String> of column names we desire from the loaded collection.
-     * @return A List<String> of desired column names.
+     * Compiles a List<String> of column names we desire from the loaded collection, using the features String array.
+     * @return A Scala Seq<String> of desired column names.
      */
     private Seq<String> desiredColumns() {
-        List<String> cols = new ArrayList<String>();
+        List<String> cols = new ArrayList<>();
         cols.add("gis_join");
         Collections.addAll(cols, this.features);
         cols.add(this.label);
         return convertListToSeq(cols);
     }
 
+    /**
+     * Converts a Java List<String> of inputs to a Scala Seq<String>
+     * @param inputList The Java List<String> we wish to transform
+     * @return A Scala Seq<String> representing the original input list
+     */
     public Seq<String> convertListToSeq(List<String> inputList) {
         return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
     }
 
     public void buildAndRunModel() {
-        log.info("Running Model...");
+        log.info("Running Models...");
         ReadConfig readConfig = ReadConfig.create(sparkContext);
 
         // Lazy-load the collection in as a DF
@@ -304,30 +330,56 @@ public class LinearRegressionModel {
         // Loop over GISJoins and create a model for each one
         for (String gisJoin: this.gisJoins) {
 
-            System.out.println(gisJoin);
+            log.info(">>> Building model for GISJoin {}", gisJoin);
 
             // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
             FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
-            Dataset<Row> gisDataset = selected.filter(ff);
+            Dataset<Row> gisDataset = selected.filter(ff)
+                    .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
 
-            // Define the schema
-            List<StructField> fields = new ArrayList<>();
-            StructField field1 = DataTypes.createStructField("label", DataTypes.DoubleType, true);
-            StructField field2 = DataTypes.createStructField("features", new VectorUDT(), true);
-            fields.add(field1);
-            fields.add(field2);
-            StructType schema = DataTypes.createStructType(fields);
+            // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
+            VectorAssembler vectorAssembler = new VectorAssembler()
+                    .setInputCols(this.features)
+                    .setOutputCol("features");
 
-            schema.printTreeString();
+            // Transform the gisDataset to have the new "features" column vector
+            Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
+
+            // Create Linear Regression object using user-specified parameters
+            LinearRegression linearRegression = new LinearRegression()
+                    .setLoss(this.loss)
+                    .setSolver(this.solver)
+                    .setAggregationDepth(this.aggregationDepth)
+                    .setMaxIter(this.maxIterations)
+                    .setEpsilon(this.epsilon)
+                    .setElasticNetParam(this.elasticNetParam)
+                    .setRegParam(this.regularizationParam)
+                    .setTol(this.convergenceTolerance)
+                    .setFitIntercept(this.fitIntercept)
+                    .setStandardization(this.setStandardization);
+
+            // Fit the dataset with the "features" and "label" columns
+            LinearRegressionModel lrModel = linearRegression.fit(mergedDataset);
+
+            // View training summary
+            LinearRegressionTrainingSummary summary = lrModel.summary();
+            log.info("================== SUMMARY ====================");
+            log.info("Model Slope Coefficients: {}", lrModel.coefficients());
+            log.info("Model Intercept: {}", lrModel.intercept());
+            log.info("Total Iterations: {}", summary.totalIterations());
+            log.info("Objective History: {}", Vectors.dense(summary.objectiveHistory()));
+
+            // Show residuals and accuracy metrics
+            summary.residuals().show();
+            log.info("RMSE: {}", summary.rootMeanSquaredError());
+            log.info("R2: {}", summary.r2());
+            log.info("===============================================");
+
         }
-
- //       selected.show(5);
-        selected.show(5);
 
         // Don't forget to close Spark Context!
         sparkContext.close();
     }
-
 
     /**
      * Used exclusively for testing and running a linear model directly, without having to interface with gRPC.
@@ -338,7 +390,7 @@ public class LinearRegressionModel {
         String label = "max_specific_humidity";
         String[] gisJoins = {"G2100370051101"};
 
-        LinearRegressionModel lrModel = new LinearRegressionModel("spark://lattice-165:8079", "testApplication",
+        SustainLinearRegression lrModel = new SustainLinearRegression("spark://lattice-165:8079", "testApplication",
                 "mongodb://lattice-46:27017", "sustaindb", "macav2");
 
         lrModel.setFeatures(features);
