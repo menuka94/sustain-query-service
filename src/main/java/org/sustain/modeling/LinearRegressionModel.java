@@ -142,9 +142,16 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.bson.Document;
+import scala.collection.JavaConverters;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import scala.collection.Seq;
+
+import javax.print.Doc;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Provides an interface for building generalized Linear Regression
@@ -156,7 +163,11 @@ public class LinearRegressionModel {
 
     private JavaSparkContext sparkContext;
     private String[]         features, gisJoins;
-    private String           label;
+    private String           label, loss, solver;
+    private Integer          aggregationDepth, maxIterations;
+    private Double           elasticNetParam, epsilon, regularizationParam, convergenceTolerance;
+    private Boolean          fitIntercept, setStandardization;
+
 
     public LinearRegressionModel(String master, String appName, String mongoUri, String database, String collection) {
         log.info("LinearRegressionModel constructor invoked");
@@ -180,9 +191,9 @@ public class LinearRegressionModel {
         SparkSession sparkSession = SparkSession.builder()
                 .master(master)
                 .appName(appName)
-                .config("spark.mongodb.input.uri", mongoUri)
-                .config("spark.mongodb.input.database", database)
-                .config("spark.mongodb.input.collection", collection)
+                .config("spark.mongodb.input.uri", mongoUri) // mongodb://lattice-46:27017
+                .config("spark.mongodb.input.database", database) // sustaindb
+                .config("spark.mongodb.input.collection", collection) // future_heat
                 .getOrCreate();
 
         sparkContext = new JavaSparkContext(sparkSession.sparkContext());
@@ -213,18 +224,79 @@ public class LinearRegressionModel {
         this.features = features;
     }
 
+    public void setGisJoins(String[] gisJoins) {
+        this.gisJoins = gisJoins;
+    }
+
     public void setLabel(String label) {
         this.label = label;
     }
 
-    public void setGisJoins(String[] gisJoins) {
-        this.gisJoins = gisJoins;
+    public void setLoss(String loss) {
+        this.loss = loss;
+    }
+
+    public void setSolver(String solver) {
+        this.solver = solver;
+    }
+
+    public void setAggregationDepth(Integer aggregationDepth) {
+        this.aggregationDepth = aggregationDepth;
+    }
+
+    public void setMaxIterations(Integer maxIterations) {
+        this.maxIterations = maxIterations;
+    }
+
+    public void setElasticNetParam(Double elasticNetParam) {
+        this.elasticNetParam = elasticNetParam;
+    }
+
+    public void setEpsilon(Double epsilon) {
+        this.epsilon = epsilon;
+    }
+
+    public void setRegularizationParam(Double regularizationParam) {
+        this.regularizationParam = regularizationParam;
+    }
+
+    public void setConvergenceTolerance(Double convergenceTolerance) {
+        this.convergenceTolerance = convergenceTolerance;
+    }
+
+    public void setFitIntercept(Boolean fitIntercept) {
+        this.fitIntercept = fitIntercept;
+    }
+
+    public void setSetStandardization(Boolean setStandardization) {
+        this.setStandardization = setStandardization;
+    }
+
+    /**
+     * Compiles a List<String> of column names we desire from the loaded collection.
+     * @return A List<String> of desired column names.
+     */
+    private Seq<String> desiredColumns() {
+        List<String> cols = new ArrayList<String>();
+        cols.add("gis_join");
+        Collections.addAll(cols, this.features);
+        cols.add(this.label);
+        return convertListToSeq(cols);
+    }
+
+    public Seq<String> convertListToSeq(List<String> inputList) {
+        return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
     }
 
     public void buildAndRunModel() {
         log.info("Running Model...");
         ReadConfig readConfig = ReadConfig.create(sparkContext);
-        JavaMongoRDD<Document> collection = MongoSpark.load(sparkContext, readConfig);
+        Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
+
+
+        Dataset<Row> selected = collection.select("_id", desiredColumns());
+
+        selected.show(5);
 
         // For now, just count the records and log that.
         log.info("Collection record count: {}", collection.count());
@@ -239,12 +311,12 @@ public class LinearRegressionModel {
      * @param args Usually not used.
      */
     public static void main(String[] args) {
-        String[] features = {"gmtTimestamp"};
+        String[] features = {"min_eastward_wind"};
         String label = "measurement";
         String[] gisJoins = {"G2100370051101"};
 
         LinearRegressionModel lrModel = new LinearRegressionModel("spark://lattice-165:8079", "testApplication",
-                "mongodb://lattice-46:27017", "sustaindb", "covid_county_cases");
+                "mongodb://lattice-46:27017", "sustaindb", "macav2");
 
         lrModel.setFeatures(features);
         lrModel.setLabel(label);
