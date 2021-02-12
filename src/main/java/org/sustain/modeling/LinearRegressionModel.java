@@ -134,6 +134,7 @@ package org.sustain.modeling;
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FilterFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -302,7 +303,7 @@ public class LinearRegressionModel {
             System.out.println(gisJoin);
 
             // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
-            //FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
+            FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
             //Dataset<Row> gisDataset = selected.filter(ff);
 
             // Define the schema
