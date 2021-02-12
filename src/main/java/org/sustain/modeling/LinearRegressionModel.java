@@ -130,6 +130,7 @@
 
 package org.sustain.modeling;
 
+import com.mongodb.Function;
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.QueryBuilder;
 import com.mongodb.DBObject;
@@ -138,11 +139,17 @@ import com.mongodb.spark.rdd.api.java.JavaMongoRDD;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FilterFunction;
+import org.apache.spark.ml.linalg.VectorUDT;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.bson.Document;
 import scala.collection.JavaConverters;
+
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -291,10 +298,30 @@ public class LinearRegressionModel {
     public void buildAndRunModel() {
         log.info("Running Model...");
         ReadConfig readConfig = ReadConfig.create(sparkContext);
+
+        // Lazy-load the collection in as a DF
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
 
-
+        // Select just the columns we want, discard the rest
         Dataset<Row> selected = collection.select("_id", desiredColumns());
+
+        // Loop over GISJoins and create a model for each one
+        for (String gisJoin: this.gisJoins) {
+
+            // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
+            FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
+            Dataset<Row> gisDataset = selected.filter(ff);
+
+            // Define the schema
+            List<StructField> fields = new ArrayList<>();
+            StructField field1 = DataTypes.createStructField("label", DataTypes.DoubleType, true);
+            StructField field2 = DataTypes.createStructField("features", new VectorUDT(), true);
+            fields.add(field1);
+            fields.add(field2);
+            StructType schema = DataTypes.createStructType(fields);
+
+            schema.printTreeString();
+        }
 
         selected.show(5);
 
