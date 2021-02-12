@@ -308,19 +308,21 @@ public class LinearRegressionModel {
         // Loop over GISJoins and create a model for each one
         for (String gisJoin: this.gisJoins) {
 
+            System.out.println(gisJoin);
+
             // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
-            FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
-            Dataset<Row> gisDataset = selected.filter(ff);
+            //FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
+            //Dataset<Row> gisDataset = selected.filter(ff);
 
             // Define the schema
-            List<StructField> fields = new ArrayList<>();
-            StructField field1 = DataTypes.createStructField("label", DataTypes.DoubleType, true);
-            StructField field2 = DataTypes.createStructField("features", new VectorUDT(), true);
-            fields.add(field1);
-            fields.add(field2);
-            StructType schema = DataTypes.createStructType(fields);
+            //List<StructField> fields = new ArrayList<>();
+            //StructField field1 = DataTypes.createStructField("label", DataTypes.DoubleType, true);
+            //StructField field2 = DataTypes.createStructField("features", new VectorUDT(), true);
+            //fields.add(field1);
+            //fields.add(field2);
+            //StructType schema = DataTypes.createStructType(fields);
 
-            schema.printTreeString();
+            //schema.printTreeString();
         }
 
         selected.show(5);
