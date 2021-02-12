@@ -135,9 +135,13 @@ import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FilterFunction;
+import org.apache.spark.ml.linalg.VectorUDT;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 import org.bson.Document;
 import scala.collection.JavaConverters;
 
@@ -307,14 +311,14 @@ public class LinearRegressionModel {
             Dataset<Row> gisDataset = selected.filter(ff);
 
             // Define the schema
-            //List<StructField> fields = new ArrayList<>();
-            //StructField field1 = DataTypes.createStructField("label", DataTypes.DoubleType, true);
-            //StructField field2 = DataTypes.createStructField("features", new VectorUDT(), true);
-            //fields.add(field1);
-            //fields.add(field2);
-            //StructType schema = DataTypes.createStructType(fields);
+            List<StructField> fields = new ArrayList<>();
+            StructField field1 = DataTypes.createStructField("label", DataTypes.DoubleType, true);
+            StructField field2 = DataTypes.createStructField("features", new VectorUDT(), true);
+            fields.add(field1);
+            fields.add(field2);
+            StructType schema = DataTypes.createStructType(fields);
 
-            //schema.printTreeString();
+            schema.printTreeString();
         }
 
  //       selected.show(5);
