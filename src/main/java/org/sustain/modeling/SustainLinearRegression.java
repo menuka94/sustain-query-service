@@ -193,7 +193,7 @@ public class SustainLinearRegression {
         this.setMaxIterations(10);
         this.setElasticNetParam(0.0);
         this.setEpsilon(1.35);
-        this.setRegularizationParam(0.0);
+        this.setRegularizationParam(0.5);
         this.setConvergenceTolerance(1E-6); // 1E-6 = 0.000001
         this.setFitIntercept(true);
         this.setSetStandardization(true);
@@ -392,8 +392,8 @@ public class SustainLinearRegression {
      */
     public static void main(String[] args) {
         String[] features = {"timestamp"};
-        String label = "max_specific_humidity";
-        String[] gisJoins = {"G0100290"};
+        String label = "max_max_air_temperature";
+        String[] gisJoins = {"G0100290"}; // Cleburne County, Alabama
 
         SustainLinearRegression lrModel = new SustainLinearRegression("spark://lattice-165:8079", "testApplication",
                 "mongodb://lattice-46:27017", "sustaindb", "macav2");
