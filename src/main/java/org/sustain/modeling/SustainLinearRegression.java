@@ -133,11 +133,13 @@ package org.sustain.modeling;
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FilterFunction;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.regression.LinearRegression;
 import org.apache.spark.ml.regression.LinearRegressionModel;
 import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
+import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -189,7 +191,7 @@ public class SustainLinearRegression {
         this.setMaxIterations(10);
         this.setElasticNetParam(0.0);
         this.setEpsilon(1.35);
-        this.setRegularizationParam(0.5);
+        this.setRegularizationParam(0.0);
         this.setConvergenceTolerance(1E-6); // 1E-6 = 0.000001
         this.setFitIntercept(true);
         this.setSetStandardization(true);
@@ -233,6 +235,8 @@ public class SustainLinearRegression {
             "build/libs/spark-sql_2.12-3.0.1.jar",
             "build/libs/bson-4.0.5.jar",
             "build/libs/mongo-java-driver-3.12.5.jar"
+            //"build/libs/mongodb-driver-core-4.0.5.jar",
+            //"build/libs/scala-library-2.12.11.jar"
         };
 
         for (String jar: jarPaths) {
@@ -331,8 +335,7 @@ public class SustainLinearRegression {
 
             // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
             //FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
-
-            Dataset<Row> gisDataset = selected.filter(selected.col("gis_join").$eq$eq$eq(gisJoin))
+            Dataset<Row> gisDataset = selected.filter((FilterFunction<Row>)(row -> row.getAs("gis_join") == gisJoin))
                     .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
 
             // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
@@ -342,7 +345,6 @@ public class SustainLinearRegression {
 
             // Transform the gisDataset to have the new "features" column vector
             Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
-            mergedDataset.show(5);
 
             // Create Linear Regression object using user-specified parameters
             LinearRegression linearRegression = new LinearRegression()
@@ -367,10 +369,8 @@ public class SustainLinearRegression {
             log.info("Model Intercept: {}", lrModel.intercept());
             log.info("Total Iterations: {}", summary.totalIterations());
             log.info("Objective History: {}", Vectors.dense(summary.objectiveHistory()));
-            log.info("===============================================");
 
             // Show residuals and accuracy metrics
-            log.info("================== RESIDUALS ==================");
             summary.residuals().show();
             log.info("RMSE: {}", summary.rootMeanSquaredError());
             log.info("R2: {}", summary.r2());
@@ -388,8 +388,8 @@ public class SustainLinearRegression {
      */
     public static void main(String[] args) {
         String[] features = {"timestamp"};
-        String label = "max_max_air_temperature";
-        String[] gisJoins = {"G0100290"}; // Cleburne County, Alabama
+        String label = "max_specific_humidity";
+        String[] gisJoins = {"G2100370051101"};
 
         SustainLinearRegression lrModel = new SustainLinearRegression("spark://lattice-165:8079", "testApplication",
                 "mongodb://lattice-46:27017", "sustaindb", "macav2");
@@ -397,10 +397,6 @@ public class SustainLinearRegression {
         lrModel.setFeatures(features);
         lrModel.setLabel(label);
         lrModel.setGisJoins(gisJoins);
-
-        lrModel.setConvergenceTolerance(1E-14);
-        lrModel.setMaxIterations(100);
-        lrModel.setEpsilon(1.35);
 
         lrModel.buildAndRunModel();
     }
