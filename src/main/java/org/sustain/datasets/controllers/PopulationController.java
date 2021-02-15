@@ -1,4 +1,4 @@
-package org.sustain.census.controller;
+package org.sustain.datasets.controllers;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -8,13 +8,6 @@ import com.mongodb.client.model.Filters;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.sustain.CensusFeature;
-import org.sustain.CensusResolution;
-import org.sustain.Decade;
-import org.sustain.Predicate;
-import org.sustain.SpatialOp;
-import org.sustain.TargetedCensusRequest;
 import org.sustain.db.mongodb.DBConnection;
 import org.sustain.util.Constants;
 
@@ -51,34 +44,6 @@ public class PopulationController {
             count++;
         }
         log.info("count: " + count);
-    }
-
-    public static void fetchTargetedPopulationByAge(TargetedCensusRequest request,
-                                                    ArrayList<String> geoJsonList,
-                                                    LinkedBlockingQueue<String> queue) {
-    }
-
-    public static void fetchTargetedTotalPopulation(TargetedCensusRequest request,
-                                                    ArrayList<String> geoJsonList,
-                                                    LinkedBlockingQueue<String> queue) {
-        CensusResolution resolution = request.getResolution();
-        Predicate predicate = request.getPredicate();
-        CensusFeature censusFeature = predicate.getCensusFeature();
-        Decade decade = predicate.getDecade();
-        SpatialOp spatialOp = request.getSpatialOp();
-        Predicate.ComparisonOperator comparisonOp = predicate.getComparisonOp();
-        double comparisonValue = predicate.getComparisonValue();
-
-        log.info("fetchTargetedInfo({decade: " + decade + ", resolution: " + resolution + ", comparisonOp: " + comparisonOp + "," +
-                " comparisonValue: " + comparisonValue + ", spatialOp: " + spatialOp + " })");
-        MongoDatabase db = DBConnection.getConnection();
-        MongoCollection<Document> collection =
-                db.getCollection(resolution + "_" + Constants.CensusFeatures.TOTAL_POPULATION);
-        String comparisonField = decade + "_" + Constants.CensusFeatures.TOTAL_POPULATION;
-        log.info("comparisonField: " + comparisonField);
-        Bson dataFilter = SpatialQueryUtil.getFilterOpFromComparisonOp(comparisonOp, comparisonField,
-                comparisonValue);
-
     }
 
 }

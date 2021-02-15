@@ -9,7 +9,7 @@ option java_outer_classname = "SustainQueryService";
 package sustain;
 
 service JsonProxy {
-    rpc ModelQuery(JsonModelRequest) returns (stream JsonModelResponse) {}    
+    rpc ModelQuery(JsonModelRequest) returns (stream JsonModelResponse) {}
 }
 
 message JsonModelRequest {
@@ -33,30 +33,25 @@ service Sustain {
   // Query Social Vulnerability Index (SVI) values
   rpc SviQuery (SviRequest) returns (stream SviResponse) {}
 
-  // targeted queries - return geographical areas that satisfy a given value range of a census feature
-  // Example 1: Retrieve all counties where (population >= 1,000,000)
-  // Example 2: Retrieve all tracts where (median household income < $50,000/year)
-  rpc ExecuteTargetedCensusQuery (TargetedCensusRequest) returns (stream TargetedCensusResponse) {}
-
   rpc CompoundQuery (CompoundRequest) returns (stream CompoundResponse) {}
 
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
 }
 
 enum ModelType {
-    KMeansClustering = 0;
-    LinearRegression = 1;
+    K_MEANS_CLUSTERING = 0;
+    LINEAR_REGRESSION = 1;
 }
 
 message ModelRequest {
   ModelType type = 1;
   KMeansClusteringRequest kMeansClusteringRequest = 2;
-  LinearRegressionRequest LinearRegressionRequest = 3;
+  LinearRegressionRequest linearRegressionRequest = 3;
 }
 
 message ModelResponse {
   KMeansClusteringResponse kMeansClusteringResponse = 1;
-  LinearRegressionResponse LinearRegressionResponse = 2;
+  LinearRegressionResponse linearRegressionResponse = 2;
 }
 
 message KMeansClusteringRequest {
@@ -164,18 +159,6 @@ enum IntraDatasetOp {
 
 message DatasetEntry {
   string entry = 1;
-}
-
-message TargetedCensusRequest {
-  CensusResolution resolution = 1;
-  Predicate predicate = 2;
-  SpatialOp spatialOp = 3;
-  string requestGeoJson = 4; // bounding polygon
-}
-
-message TargetedCensusResponse {
-  string data = 1;
-  string responseGeoJson = 2; // geoJson associated with 'data'
 }
 
 enum CensusResolution {

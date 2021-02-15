@@ -27,14 +27,13 @@ import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
 import org.sustain.SviRequest;
 import org.sustain.SviResponse;
-import org.sustain.census.CensusQueryHandler;
-import org.sustain.census.controller.SpatialQueryUtil;
-import org.sustain.dataModeling.ModelQueryHandler;
-import org.sustain.db.Util;
-import org.sustain.openStreetMaps.OsmQueryHandler;
-import org.sustain.otherDatasets.DatasetQueryHandler;
+import org.sustain.datasets.handlers.CensusQueryHandler;
+import org.sustain.datasets.controllers.SpatialQueryUtil;
+import org.sustain.modeling.ModelQueryHandler;
+import org.sustain.datasets.handlers.OsmQueryHandler;
+import org.sustain.datasets.handlers.DatasetQueryHandler;
 import org.sustain.querier.CompoundQueryHandler;
-import org.sustain.svi.SviController;
+import org.sustain.datasets.controllers.SviController;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
@@ -43,7 +42,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static org.sustain.census.controller.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
 
 
 public class SustainServer {
@@ -52,9 +51,23 @@ public class SustainServer {
     private Server server;
 
     public static void main(String[] args) throws IOException, InterruptedException {
+        logEnvironment();
         final SustainServer server = new SustainServer();
         server.start();
         server.blockUntilShutdown();
+    }
+
+    // Logs the environment variables that the server was started with.
+    public static void logEnvironment() {
+        log.info("--- Server Environment ---");
+        log.info("SERVER_HOST: " + Constants.Server.HOST);
+        log.info("SERVER_PORT: " + Constants.Server.PORT);
+        log.info("--- Database Environment ---");
+        log.info("DB_HOST: " + Constants.DB.HOST);
+        log.info("DB_PORT: " + Constants.DB.PORT);
+        log.info("DB_NAME: " + Constants.DB.NAME);
+        log.info("DB_USERNAME: " + Constants.DB.USERNAME);
+        log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
     }
 
 
@@ -107,7 +120,7 @@ public class SustainServer {
             try {
                 // open grpc channel
                 channel = ManagedChannelBuilder
-                    .forAddress(Util.getProperty(Constants.Server.HOST),
+                    .forAddress(Constants.Server.HOST,
                         Constants.Server.PORT)
                     .usePlaintext()
                     .build();
@@ -232,67 +245,6 @@ public class SustainServer {
             return false;
         }
 
-        /**
-         * Execute a TargetedQuery - return geographical areas that satisfy a given value range of a census feature
-         * Example 1: Retrieve all counties where (population >= 1,000,000)
-         * Example 2: Retrieve all tracts where (median household income < $50,000/year)
-         */
-        /*
-        @Override
-        public void executeTargetedCensusQuery(TargetedCensusRequest request,
-                                               StreamObserver<TargetedCensusResponse> responseObserver) {
-            Predicate predicate = request.getPredicate();
-            double comparisonValue = predicate.getComparisonValue();
-            Predicate.ComparisonOperator comparisonOp = predicate.getComparisonOp();
-            CensusFeature censusFeature = predicate.getCensusFeature();
-            Decade _decade = predicate.getDecade();
-            String resolution = Constants.TARGET_RESOLUTIONS.get(request.getResolution());
-
-            String decade = Constants.DECADES.get(_decade);
-            HashMap<String, GeoJson> geoJsonMap = getGeoList(request.getRequestGeoJson(), resolution,
-                    request.getSpatialOp());
-
-            try {
-                switch (censusFeature) {
-                    case TotalPopulation:
-                        String comparisonField = decade + "_" + Constants.CensusFeatures.TOTAL_POPULATION;
-                        for (GeoJson geoJson : geoList) {
-                            String populationResult =
-                                    PopulationController.getTotalPopulationResults(resolution,
-                                            geoJson.getProperties().getGisJoin());
-                            double value =
-                                    JsonParser.parseString(populationResult).getAsJsonObject().get(comparisonField)
-                                            .getAsDouble();
-                            boolean valid = compareValueWithInputValue(comparisonOp, value, comparisonValue);
-
-                            if (valid) {
-                                SpatialResponse response = SpatialResponse.newBuilder()
-                                        .setData(populationResult)
-                                        .setResponseGeoJson(geoJson.toJson())
-                                        .build();
-                                responseObserver.onNext(TargetedCensusResponse.newBuilder().setSpatialResponse(response)
-                                        .build());
-                            }
-                        }   // end of geoJson loop
-
-                        responseObserver.onCompleted();
-                        break;
-                    case MedianHouseholdIncome:
-                        HashMap<String, String> incomeResults = IncomeController.fetchTargetedInfo(decade,
-                                resolution, comparisonOp, comparisonValue);
-                        break;
-                    case Race:
-                        break;
-                    case UNRECOGNIZED:
-                        log.warn("Invalid Census censusFeature requested");
-                        break;
-                }   // end of census-feature switch
-            } catch (Exception e) {
-                log.error(e);
-                e.printStackTrace();
-            }
-        }
-        */
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
             OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);

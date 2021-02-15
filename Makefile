@@ -1,7 +1,15 @@
-
 # --------------------------------------------------------------------
 # Author: Menuka Warushavithana
 # --------------------------------------------------------------------
+
+.EXPORT_ALL_VARIABLES:
+
+SERVER_HOST = lattice-165
+DB_NAME = sustaindb
+DB_USERNAME = ""
+DB_PASSWORD = ""
+DB_HOST = lattice-46
+DB_PORT = 27017
 
 .PHONY: build
 build:
@@ -24,6 +32,7 @@ run-spatial-client:
 
 
 proto:
+	chmod +x gradlew
 	./gradlew generateProto
 
 

@@ -1,4 +1,4 @@
-package org.sustain.census.controller;
+package org.sustain.datasets.controllers;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

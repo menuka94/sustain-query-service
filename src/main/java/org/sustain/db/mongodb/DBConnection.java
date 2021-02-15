@@ -5,7 +5,6 @@ import com.mongodb.client.MongoDatabase;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.util.Constants;
-import org.sustain.db.Util;
 
 public class DBConnection {
     private static final Logger log = LogManager.getLogger(DBConnection.class);
@@ -15,11 +14,11 @@ public class DBConnection {
     private static MongoClient mongoClient;
 
     private static void initDatabaseProperties() {
-        host = Util.getProperty(Constants.DB.HOST);
+        host = Constants.DB.HOST;
         log.info("Host: " + host);
-        port = Util.getProperty(Constants.DB.PORT);
+        port = Constants.DB.PORT;
         log.info("Port: " + port);
-        db = Constants.DB.DB_NAME;
+        db = Constants.DB.NAME;
     }
 
     public static MongoDatabase getConnection() {

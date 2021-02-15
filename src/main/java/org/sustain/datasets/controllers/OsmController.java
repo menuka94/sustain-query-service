@@ -1,4 +1,4 @@
-package org.sustain.openStreetMaps.controller;
+package org.sustain.datasets.controllers;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -13,14 +13,13 @@ import org.bson.conversions.Bson;
 import org.sustain.OsmRequest;
 import org.sustain.SpatialOp;
 import org.sustain.util.Constants;
-import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.db.mongodb.DBConnection;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static org.sustain.census.controller.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
 
 public class OsmController {
     private static final Logger log = LogManager.getLogger(OsmController.class);
