@@ -23,6 +23,8 @@ def nettyTcNativeVersion = '2.0.30.Final'
 def protocVersion = '3.11.0'
 
 dependencies {
+    implementation "com.google.protobuf:protobuf-java-util:${protocVersion}"
+
     implementation "io.grpc:grpc-netty:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"

@@ -8,7 +8,19 @@ option java_outer_classname = "SustainQueryService";
 
 package sustain;
 
-service Sustain{
+service JsonProxy {
+    rpc ModelQuery(JsonModelRequest) returns (stream JsonModelResponse) {}    
+}
+
+message JsonModelRequest {
+    string json = 1;
+}
+
+message JsonModelResponse {
+    string json = 1;
+}
+
+service Sustain {
   // census query with MongoDB support
   rpc CensusQuery (CensusRequest) returns (stream CensusResponse) {}
 
@@ -31,12 +43,37 @@ service Sustain{
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
 }
 
+enum ModelType {
+    KMeansClustering = 0;
+    LinearRegression = 1;
+}
+
 message ModelRequest {
-  string request = 1;
+  ModelType type = 1;
+  KMeansClusteringRequest kMeansClusteringRequest = 2;
+  LinearRegressionRequest LinearRegressionRequest = 3;
 }
 
 message ModelResponse {
-  string results = 1;
+  KMeansClusteringResponse kMeansClusteringResponse = 1;
+  LinearRegressionResponse LinearRegressionResponse = 2;
+}
+
+message KMeansClusteringRequest {
+  int32 clusterCount = 1;
+  // TODO - fill out
+}
+
+message KMeansClusteringResponse {
+  // TODO - fill out
+}
+
+message LinearRegressionRequest {
+  // TODO - fill out
+}
+
+message LinearRegressionResponse {
+  // TODO - fill out
 }
 
 message SviRequest {
@@ -88,7 +125,6 @@ message OsmRequest {
   }
   repeated OsmRequestParam requestParams = 4;
 }
-
 
 message OsmResponse {
   string response = 1;
@@ -170,7 +206,6 @@ message Predicate {
   double comparisonValue = 4;
 }
 
-
 enum JoinOperator {
     INNER_JOIN = 0;
     OUTER_JOIN = 1;
@@ -178,21 +213,18 @@ enum JoinOperator {
     RIGHT_JOIN = 3;
 }
 
-
 enum ComparisonOperator {
     EQUAL = 0;
     GREATER_THAN = 1;
     LESS_THAN = 2;
     GREATER_THAN_OR_EQUAL = 3;
     LESS_THAN_OR_EQUAL = 4;
- }
+}
 
-
- message CompoundResponse {
+message CompoundResponse {
     string data = 1;
     string geoJson = 2;
 }
-
 
 message CompoundRequest {
     oneof FirstPredicate {
@@ -207,7 +239,6 @@ message CompoundRequest {
         CompoundRequest second_compound_request = 5;
     }
 }
-
 
 message Query {
     string host = 1;
