@@ -1,6 +1,9 @@
 package org.sustain.server;
 
+import com.google.protobuf.util.JsonFormat;
 import com.mongodb.client.model.geojson.Geometry;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -12,6 +15,9 @@ import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
 import org.sustain.DatasetRequest;
 import org.sustain.DatasetResponse;
+import org.sustain.JsonModelRequest;
+import org.sustain.JsonModelResponse;
+import org.sustain.JsonProxyGrpc;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.OsmRequest;
@@ -33,6 +39,7 @@ import org.sustain.util.Constants;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import static org.sustain.census.controller.SpatialQueryUtil.getGeometryFromGeoJson;
@@ -53,6 +60,7 @@ public class SustainServer {
     public void start() throws IOException {
         final int port = Constants.Server.PORT;
         server = ServerBuilder.forPort(port)
+                .addService(new JsonProxyService())
                 .addService(new SustainService())
                 .build().start();
         log.info("Server started, listening on " + port);
@@ -88,6 +96,65 @@ public class SustainServer {
         }
     }
 
+    // JsonProxyService implementation
+    static class JsonProxyService extends JsonProxyGrpc.JsonProxyImplBase {
+        @Override
+        public void modelQuery(JsonModelRequest request,
+                StreamObserver<JsonModelResponse> responseObserver) {
+            ManagedChannel channel = null;
+
+            try {
+                // open grpc channel
+                channel = ManagedChannelBuilder
+                    .forAddress("127.0.0.1", Constants.Server.PORT)
+                    .usePlaintext()
+                    .build();
+
+                // convert json to protobuf and service request
+                JsonFormat.Parser parser = JsonFormat.parser();
+                JsonFormat.Printer printer = JsonFormat.printer()
+                    .includingDefaultValueFields()
+                    .omittingInsignificantWhitespace();
+
+                // create model request
+                ModelRequest.Builder requestBuilder =
+                    ModelRequest.newBuilder();
+                parser.merge(request.getJson(), requestBuilder);
+
+                // issue model request
+                SustainGrpc.SustainBlockingStub blockingStub =
+                    SustainGrpc.newBlockingStub(channel);
+
+                Iterator<ModelResponse> iterator =
+                    blockingStub.modelQuery(requestBuilder.build());
+
+                // iterate over results
+                while (iterator.hasNext()) {
+                    ModelResponse response = iterator.next();
+
+                    // build JsonModelRequest
+                    String json = printer.print(response);
+                    JsonModelResponse jsonResponse =
+                        JsonModelResponse.newBuilder()
+                            .setJson(json)
+                            .build();
+
+                    responseObserver.onNext(jsonResponse);
+                }
+
+                // send response
+                responseObserver.onCompleted();
+            } catch (Exception e) {
+                log.error("failed to evaluate", e);
+                responseObserver.onError(e);
+            } finally {
+                if (channel != null) {
+                    channel.shutdownNow();
+                }
+            }
+        }
+    }
+
     // Server implementation
     static class SustainService extends SustainGrpc.SustainImplBase {
         @Override
@@ -99,6 +166,7 @@ public class SustainServer {
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
             ModelQueryHandler handler = new ModelQueryHandler(request, responseObserver);
+            responseObserver.onCompleted();
         }
 
         @Override
