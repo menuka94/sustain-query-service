@@ -30,6 +30,7 @@ import org.sustain.SviResponse;
 import org.sustain.census.CensusQueryHandler;
 import org.sustain.census.controller.SpatialQueryUtil;
 import org.sustain.dataModeling.ModelQueryHandler;
+import org.sustain.db.Util;
 import org.sustain.openStreetMaps.OsmQueryHandler;
 import org.sustain.otherDatasets.DatasetQueryHandler;
 import org.sustain.querier.CompoundQueryHandler;
@@ -106,7 +107,8 @@ public class SustainServer {
             try {
                 // open grpc channel
                 channel = ManagedChannelBuilder
-                    .forAddress("127.0.0.1", Constants.Server.PORT)
+                    .forAddress(Util.getProperty(Constants.Server.HOST),
+                        Constants.Server.PORT)
                     .usePlaintext()
                     .build();
 
