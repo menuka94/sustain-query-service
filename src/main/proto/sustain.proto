@@ -64,11 +64,39 @@ message KMeansClusteringResponse {
 }
 
 message LinearRegressionRequest {
-  // TODO - fill out
+  repeated Collection collections = 1;
+  repeated string gisJoins = 2;
+  string loss = 3;
+  string solver = 4;
+  int32 maxIterations = 5;
+  int32 aggregationDepth = 6;
+  double elasticNetParam = 7;
+  double epsilon = 8;
+  double convergenceTolerance = 9;
+  double regularizationParam = 10;
+  bool setStandardization = 11;
+  bool fitIntercept = 12;
 }
 
 message LinearRegressionResponse {
-  // TODO - fill out
+  repeated Collection collections = 1;
+
+  message LinearRegressionSummary {
+    string gisJoin = 1;
+    double totalIterations = 2;
+    double rmseResidual = 3;
+    double r2Residual = 4;
+    double intercept = 5;
+    repeated double slopeCoefficients = 6;
+    repeated double objectiveHistory = 7;
+  }
+  repeated LinearRegressionSummary summaries = 2;
+}
+
+message Collection {
+  string name = 1;
+  string label = 2;
+  repeated string features = 3;
 }
 
 message SviRequest {
