@@ -1,4 +1,4 @@
-package org.sustain.census;
+package org.sustain.datasets.handlers;
 
 import com.google.gson.JsonParser;
 import io.grpc.stub.StreamObserver;
@@ -9,10 +9,10 @@ import org.sustain.CensusRequest;
 import org.sustain.CensusResolution;
 import org.sustain.CensusResponse;
 import org.sustain.SpatialOp;
-import org.sustain.census.controller.IncomeController;
-import org.sustain.census.controller.PopulationController;
-import org.sustain.census.controller.RaceController;
-import org.sustain.census.controller.SpatialQueryUtil;
+import org.sustain.datasets.controllers.IncomeController;
+import org.sustain.datasets.controllers.PopulationController;
+import org.sustain.datasets.controllers.RaceController;
+import org.sustain.datasets.controllers.SpatialQueryUtil;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;

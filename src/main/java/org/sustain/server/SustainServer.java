@@ -27,13 +27,13 @@ import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
 import org.sustain.SviRequest;
 import org.sustain.SviResponse;
-import org.sustain.census.CensusQueryHandler;
-import org.sustain.census.controller.SpatialQueryUtil;
-import org.sustain.dataModeling.ModelQueryHandler;
-import org.sustain.openStreetMaps.OsmQueryHandler;
-import org.sustain.otherDatasets.DatasetQueryHandler;
+import org.sustain.datasets.handlers.CensusQueryHandler;
+import org.sustain.datasets.controllers.SpatialQueryUtil;
+import org.sustain.modeling.ModelQueryHandler;
+import org.sustain.datasets.handlers.OsmQueryHandler;
+import org.sustain.datasets.handlers.DatasetQueryHandler;
 import org.sustain.querier.CompoundQueryHandler;
-import org.sustain.svi.SviController;
+import org.sustain.datasets.controllers.SviController;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static org.sustain.census.controller.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
 
 
 public class SustainServer {

@@ -1,4 +1,4 @@
-package org.sustain.svi;
+package org.sustain.datasets.controllers;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;

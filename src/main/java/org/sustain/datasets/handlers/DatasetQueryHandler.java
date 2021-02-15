@@ -1,11 +1,11 @@
-package org.sustain.otherDatasets;
+package org.sustain.datasets.handlers;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.DatasetRequest;
 import org.sustain.DatasetResponse;
-import org.sustain.otherDatasets.controller.DatasetController;
+import org.sustain.datasets.controllers.DatasetController;
 
 import java.util.concurrent.LinkedBlockingQueue;
 

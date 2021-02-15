@@ -1,4 +1,4 @@
-package org.sustain.dataModeling;
+package org.sustain.modeling;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;

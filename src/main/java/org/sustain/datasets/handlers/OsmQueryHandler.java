@@ -1,11 +1,11 @@
-package org.sustain.openStreetMaps;
+package org.sustain.datasets.handlers;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.OsmRequest;
 import org.sustain.OsmResponse;
-import org.sustain.openStreetMaps.controller.OsmController;
+import org.sustain.datasets.controllers.OsmController;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
