@@ -133,18 +133,14 @@ package org.sustain.modeling;
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FilterFunction;
-import org.apache.spark.api.java.function.Function3;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.regression.LinearRegression;
 import org.apache.spark.ml.regression.LinearRegressionModel;
 import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
-import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import scala.Function1;
 import scala.collection.JavaConverters;
 
 import org.apache.logging.log4j.LogManager;
@@ -404,7 +400,7 @@ public class SustainLinearRegression {
 
         lrModel.setConvergenceTolerance(1E-14);
         lrModel.setMaxIterations(100);
-        lrModel.setEpsilon(1.0001);
+        lrModel.setEpsilon(1.35);
 
         lrModel.buildAndRunModel();
     }
