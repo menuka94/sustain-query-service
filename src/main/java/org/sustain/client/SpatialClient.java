@@ -34,6 +34,20 @@ public class SpatialClient {
         sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
     }
 
+    // Logs the environment variables that the server was started with.
+    public static void logEnvironment() {
+        log.info("--- Server Environment ---");
+        log.info("SERVER_HOST: " + Constants.Server.HOST);
+        log.info("SERVER_PORT: " + Constants.Server.PORT);
+        log.info("--- Database Environment ---");
+        log.info("DB_HOST: " + Constants.DB.HOST);
+        log.info("DB_PORT: " + Constants.DB.PORT);
+        log.info("DB_NAME: " + Constants.DB.NAME);
+        log.info("DB_USERNAME: " + Constants.DB.USERNAME);
+        log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
+    }
+
+
     public static void main(String[] args) {
         logEnvironment();
         SustainGrpc.SustainBlockingStub sustainBlockingStub = new SpatialClient().getSustainBlockingStub();
