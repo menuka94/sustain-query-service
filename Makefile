@@ -33,6 +33,7 @@ run-spatial-client:
 
 
 proto:
+	chmod +x gradlew
 	./gradlew generateProto
 
 
