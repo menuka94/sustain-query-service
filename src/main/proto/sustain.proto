@@ -45,8 +45,15 @@ enum ModelType {
 
 message ModelRequest {
   ModelType type = 1;
-  KMeansClusteringRequest kMeansClusteringRequest = 2;
-  LinearRegressionRequest linearRegressionRequest = 3;
+  repeated Collection collections = 2;
+  KMeansClusteringRequest kMeansClusteringRequest = 3;
+  LinearRegressionRequest linearRegressionRequest = 4;
+}
+
+message Collection {
+  string name = 1;
+  string label = 2;
+  repeated string features = 3;
 }
 
 message ModelResponse {
@@ -67,11 +74,27 @@ message KMeansClusteringResponse {
 }
 
 message LinearRegressionRequest {
-  // TODO - fill out
+  repeated string gisJoins = 2;
+  string loss = 3;
+  string solver = 4;
+  int32 maxIterations = 5;
+  int32 aggregationDepth = 6;
+  double elasticNetParam = 7;
+  double epsilon = 8;
+  double convergenceTolerance = 9;
+  double regularizationParam = 10;
+  bool setStandardization = 11;
+  bool fitIntercept = 12;
 }
 
 message LinearRegressionResponse {
-  // TODO - fill out
+  string gisJoin = 1;
+  double totalIterations = 2;
+  double rmseResidual = 3;
+  double r2Residual = 4;
+  double intercept = 5;
+  repeated double slopeCoefficients = 6;
+  repeated double objectiveHistory = 7;
 }
 
 message SviRequest {
