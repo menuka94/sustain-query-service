@@ -4,7 +4,7 @@
 
 .EXPORT_ALL_VARIABLES:
 
-SERVER_HOST = lattice-165
+SERVER_HOST = localhost
 DB_NAME = sustaindb
 DB_USERNAME = ""
 DB_PASSWORD = ""
