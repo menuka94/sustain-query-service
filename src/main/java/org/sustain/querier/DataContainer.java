@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import com.google.gson.JsonParser;
 import org.json.JSONObject;
@@ -30,8 +31,14 @@ public class DataContainer {
 	}
 
 	public void addData(String datum){
-		String gisjoin = JsonParser.parseString(datum).getAsJsonObject().get("GISJOIN").toString().replace("\"", "");
-		documents.put(gisjoin, new Gson().fromJson(datum, HashMap.class));
+		if (JsonParser.parseString(datum).getAsJsonObject().has("GISJOIN")) {
+			String gisjoin = JsonParser.parseString(datum).getAsJsonObject().get("GISJOIN").toString().replace("\"",
+					"");
+			documents.put(gisjoin, new Gson().fromJson(datum, HashMap.class));
+		} else {
+			String uniqueID = UUID.randomUUID().toString();
+			documents.put(uniqueID, new Gson().fromJson(datum, HashMap.class));
+		}
 	}
 
 	public DataContainer innerJoin(DataContainer other){
