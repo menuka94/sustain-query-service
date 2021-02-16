@@ -192,6 +192,7 @@ public class SustainServer {
                 case K_MEANS_CLUSTERING:
                     log.info("Received a K-Means Clustering Model request");
                     ClusteringQueryHandler clusteringHandler = new ClusteringQueryHandler(request, responseObserver);
+                    clusteringHandler.handleQuery();
                     break;
                 case UNRECOGNIZED:
                     responseObserver.onError(new Exception("Invalid Model Type"));
