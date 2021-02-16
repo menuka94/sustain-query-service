@@ -185,9 +185,12 @@ public class SustainServer {
             ModelType type = request.getType();
             switch (type) {
                 case LINEAR_REGRESSION:
+                    log.info("Received a Linear Regression Model request");
                     RegressionQueryHandler regressionHandler = new RegressionQueryHandler(request, responseObserver);
+                    regressionHandler.handleQuery();
                     break;
                 case K_MEANS_CLUSTERING:
+                    log.info("Received a K-Means Clustering Model request");
                     ClusteringQueryHandler clusteringHandler = new ClusteringQueryHandler(request, responseObserver);
                     break;
                 case UNRECOGNIZED:

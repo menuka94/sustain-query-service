@@ -50,6 +50,12 @@ message ModelRequest {
   LinearRegressionRequest linearRegressionRequest = 4;
 }
 
+message Collection {
+  string name = 1;
+  string label = 2;
+  repeated string features = 3;
+}
+
 message ModelResponse {
   KMeansClusteringResponse kMeansClusteringResponse = 1;
   LinearRegressionResponse linearRegressionResponse = 2;
@@ -89,12 +95,6 @@ message LinearRegressionResponse {
   double intercept = 5;
   repeated double slopeCoefficients = 6;
   repeated double objectiveHistory = 7;
-}
-
-message Collection {
-  string name = 1;
-  string label = 2;
-  repeated string features = 3;
 }
 
 message SviRequest {

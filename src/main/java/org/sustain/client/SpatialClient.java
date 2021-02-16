@@ -4,18 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.CensusFeature;
-import org.sustain.CensusRequest;
-import org.sustain.CensusResolution;
-import org.sustain.CensusResponse;
-import org.sustain.DatasetRequest;
-import org.sustain.DatasetResponse;
-import org.sustain.OsmRequest;
-import org.sustain.OsmResponse;
-import org.sustain.SpatialOp;
-import org.sustain.SustainGrpc;
-import org.sustain.SviRequest;
-import org.sustain.SviResponse;
+import org.sustain.*;
 import org.sustain.util.Constants;
 import org.sustain.util.SampleGeoJson;
 
@@ -25,23 +14,29 @@ public class SpatialClient {
     private static final Logger log = LogManager.getLogger(SpatialClient.class);
 
     private SustainGrpc.SustainBlockingStub sustainBlockingStub;
+    private JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub;
 
     public SpatialClient() {
-        String target = Constants.Server.HOST + ":" + 30001;
+        String target = Constants.Server.HOST + ":" + Constants.Server.PORT;
         log.info("Target: " + target);
 
         ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
+        jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
     }
 
     public static void main(String[] args) {
         logEnvironment();
-        SustainGrpc.SustainBlockingStub sustainBlockingStub = new SpatialClient().getSustainBlockingStub();
 
+        SpatialClient spatialClient = new SpatialClient();
+        SustainGrpc.SustainBlockingStub sustainBlockingStub = spatialClient.getSustainBlockingStub();
+        JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub = spatialClient.getJsonProxyBlockingStub();
+
+        exampleLRModelRequest(jsonProxyBlockingStub);
         //exampleSpatialQuery(sustainBlockingStub, geoJson);
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
-        exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
+        //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
         //exampleCensusQuery(CensusFeature.TotalPopulation, CensusResolution.County, sustainBlockingStub,
         //        SampleGeoJson.COLORADO);
         //exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoIntersects, sustainBlockingStub);
@@ -144,7 +139,52 @@ public class SpatialClient {
         log.info("Count: " + count);
     }
 
+    private static void exampleLRModelRequest(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "    \"type\": \"LINEAR_REGRESSION\",\n" +
+                "    \"collections\": [\n" +
+                "      {\n" +
+                "        \"name\": \"macav2\",\n" +
+                "        \"label\": \"max_max_air_temperature\",\n" +
+                "        \"features\": [\n" +
+                "          \"timestamp\"\n" +
+                "        ]\n" +
+                "      }\n" +
+                "    ],\n" +
+                "    \"linearRegressionRequest\": {\n" +
+                "      \"gisJoins\": [\n" +
+                "        \"G0100290\"\n" +
+                "      ],\n" +
+                "      \"loss\": \"squaredError\",\n" +
+                "      \"solver\": \"auto\",\n" +
+                "      \"aggregationDepth\": 2,\n" +
+                "      \"maxIterations\": 10,\n" +
+                "      \"elasticNetParam\": 0.0,\n" +
+                "      \"epsilon\": 1.35,\n" +
+                "      \"regularizationParam\": 0.5,\n" +
+                "      \"convergenceTolerance\": 0.000001,\n" +
+                "      \"fitIntercept\": true,\n" +
+                "      \"setStandardization\": true\n" +
+                "    }\n" +
+                "}";
+
+        JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                .setJson(request)
+                .build();
+
+        Iterator<JsonModelResponse> jsonResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+        while (jsonResponseIterator.hasNext()) {
+            JsonModelResponse jsonResponse = jsonResponseIterator.next();
+            log.info("JSON Model Response: {}", jsonResponse.getJson());
+        }
+
+    }
+
     public SustainGrpc.SustainBlockingStub getSustainBlockingStub() {
         return sustainBlockingStub;
+    }
+
+    public JsonProxyGrpc.JsonProxyBlockingStub getJsonProxyBlockingStub() {
+        return jsonProxyBlockingStub;
     }
 }
