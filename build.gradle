@@ -37,6 +37,14 @@ dependencies {
     
     compile 'org.json:json:20171018'
 
+    // --- Scala/Spark source dependencies ---
+    implementation 'org.scala-lang:scala-library:2.12.12'
+    implementation 'org.scala-lang.modules:scala-xml_2.12:1.2.0'
+    implementation 'org.apache.spark:spark-core_2.12:3.0.0'
+    implementation 'org.apache.spark:spark-sql_2.12:3.0.0'
+    implementation 'org.apache.spark:spark-mllib_2.12:3.0.0'
+    implementation 'org.mongodb.spark:mongo-spark-connector_2.12:3.0.0'
+
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
 
