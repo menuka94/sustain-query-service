@@ -56,11 +56,14 @@ message ModelResponse {
 
 message KMeansClusteringRequest {
   int32 clusterCount = 1;
-  // TODO - fill out
+  int32 maxIterations = 2;
+  CensusResolution resolution = 3;
+  repeated string features = 4;
 }
 
 message KMeansClusteringResponse {
-  // TODO - fill out
+  string gisJoin = 1;
+  int32 prediction = 2; // cluster
 }
 
 message LinearRegressionRequest {
