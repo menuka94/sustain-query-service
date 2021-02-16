@@ -20,6 +20,7 @@ import org.sustain.JsonModelResponse;
 import org.sustain.JsonProxyGrpc;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
+import org.sustain.ModelType;
 import org.sustain.OsmRequest;
 import org.sustain.OsmResponse;
 import org.sustain.Predicate;
@@ -29,9 +30,10 @@ import org.sustain.SviRequest;
 import org.sustain.SviResponse;
 import org.sustain.datasets.handlers.CensusQueryHandler;
 import org.sustain.datasets.controllers.SpatialQueryUtil;
-import org.sustain.modeling.ModelQueryHandler;
+import org.sustain.modeling.ClusteringQueryHandler;
 import org.sustain.datasets.handlers.OsmQueryHandler;
 import org.sustain.datasets.handlers.DatasetQueryHandler;
+import org.sustain.modeling.RegressionQueryHandler;
 import org.sustain.querier.CompoundQueryHandler;
 import org.sustain.datasets.controllers.SviController;
 import org.sustain.util.Constants;
@@ -180,7 +182,17 @@ public class SustainServer {
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-            ModelQueryHandler handler = new ModelQueryHandler(request, responseObserver);
+            ModelType type = request.getType();
+            switch (type) {
+                case LINEAR_REGRESSION:
+                    RegressionQueryHandler regressionHandler = new RegressionQueryHandler(request, responseObserver);
+                    break;
+                case K_MEANS_CLUSTERING:
+                    ClusteringQueryHandler clusteringHandler = new ClusteringQueryHandler(request, responseObserver);
+                    break;
+                case UNRECOGNIZED:
+                    responseObserver.onError(new Exception("Invalid Model Type"));
+            }
             responseObserver.onCompleted();
         }
 
