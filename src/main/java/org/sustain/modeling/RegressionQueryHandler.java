@@ -62,7 +62,14 @@ public class RegressionQueryHandler {
 
         // Set parameters of Linear Regression Model
         LinearRegressionRequest lrRequest = modelRequest.getLinearRegressionRequest();
-        model.setFeatures((String[]) collection.getFeaturesList().toArray());
+
+        int featuresCount = collection.getFeaturesCount();
+        String[] features = new String[featuresCount];
+        for (int i = 0; i < featuresCount; i++) {
+            features[i] = collection.getFeatures(i);
+        }
+
+        model.setFeatures(features);
         model.setLabel(collection.getLabel());
         model.setLoss(lrRequest.getLoss());
         model.setAggregationDepth(lrRequest.getAggregationDepth());
