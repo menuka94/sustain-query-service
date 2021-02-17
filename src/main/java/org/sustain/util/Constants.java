@@ -61,7 +61,7 @@ public class Constants {
 
     public static class Server {
         public static final String HOST = System.getenv("SERVER_HOST");
-        public static final int PORT = 50051;
+        public static final int PORT = Integer.parseInt(System.getenv("SERVER_PORT"));
     }
 
     public static class GeoJsonCollections {
