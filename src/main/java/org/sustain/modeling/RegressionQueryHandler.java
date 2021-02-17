@@ -53,7 +53,7 @@ public class RegressionQueryHandler {
 
     private LinearRegressionResponse buildModel(ModelRequest modelRequest, String gisJoin) {
         String sparkMaster = Constants.Spark.MASTER;
-        String mongoUri = String.format("mongo://%s:%d", Constants.DB.HOST, Constants.DB.PORT);
+        String mongoUri = String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT);
         String dbName = Constants.DB.NAME;
 
         Collection collection = modelRequest.getCollections(0); // We only support 1 collection currently
