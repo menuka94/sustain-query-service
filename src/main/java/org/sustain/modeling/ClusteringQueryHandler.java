@@ -17,6 +17,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.sustain.KMeansClusteringRequest;
+import org.sustain.KMeansClusteringResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.util.Constants;
@@ -96,16 +97,15 @@ public class ClusteringQueryHandler {
         log.info("results.size(): " + results.size());
 
         for (ClusteringResult result : results) {
-            log.info(result);
-            // write results to gRPC response
-            //responseObserver.onNext(ModelResponse.newBuilder()
-            //        .setKMeansClusteringResponse(
-            //                KMeansClusteringResponse.newBuilder()
-            //                        .setGisJoin(result.getGisJoin())
-            //                        .setPrediction(result.getPrediction())
-            //                        .build()
-            //        ).build()
-            //);
+            //write results to gRPC response
+            responseObserver.onNext(ModelResponse.newBuilder()
+                    .setKMeansClusteringResponse(
+                            KMeansClusteringResponse.newBuilder()
+                                    .setGisJoin(result.getGisJoin())
+                                    .setPrediction(result.getPrediction())
+                                    .build()
+                    ).build()
+            );
         }
 
     }
