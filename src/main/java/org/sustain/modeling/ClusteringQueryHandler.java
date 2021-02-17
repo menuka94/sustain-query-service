@@ -2,29 +2,33 @@ package org.sustain.modeling;
 
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
-import com.mongodb.spark.rdd.api.java.JavaMongoRDD;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.ml.linalg.Vector;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.bson.Document;
 import org.sustain.KMeansClusteringRequest;
+import org.sustain.KMeansClusteringResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
+import scala.collection.JavaConverters;
+import scala.collection.Seq;
 
-import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Paths;
+import org.apache.spark.ml.clustering.KMeansModel;
+import org.apache.spark.ml.clustering.KMeans;
+
 import java.util.ArrayList;
+import java.util.List;
 
 public class ClusteringQueryHandler {
     private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
     private final ModelRequest request;
     private final StreamObserver<ModelResponse> responseObserver;
-
+    private JavaSparkContext sparkContext;
 
     public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
         this.request = request;
@@ -33,29 +37,60 @@ public class ClusteringQueryHandler {
 
     public void handleQuery() {
         logRequest();
+        initSparkSession();
+        buildModel();
+        sparkContext.close();
+    }
 
+    public void initSparkSession() {
+        String resolution = request.getKMeansClusteringRequest().getResolution().toString().toLowerCase();
+        log.info("resolution: " + resolution);
         SparkSession sparkSession = SparkSession.builder()
                 .master("spark://menuka-HP:7077")
                 .appName("SUSTAIN Clustering Test")
-                .config("spark.mongodb.input.uri", "mongodb://localhost:27017/sustaindb.hospitals_geo")
+                .config("spark.mongodb.input.uri", "mongodb://localhost:27017/sustaindb." + resolution + "_stats")
                 .getOrCreate();
 
-        JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
-
+        sparkContext = new JavaSparkContext(sparkSession.sparkContext());
         addClusterDependencyJars(sparkContext);
+    }
 
+    private void buildModel() {
         ReadConfig readConfig = ReadConfig.create(sparkContext);
+        Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
 
-        JavaMongoRDD<Document> rdd =
-                MongoSpark.load(sparkContext, readConfig);
+        List<String> featuresList = new ArrayList<>(request.getKMeansClusteringRequest().getFeaturesList());
+        int k = request.getKMeansClusteringRequest().getClusterCount();
+        int maxIterations = request.getKMeansClusteringRequest().getMaxIterations();
+        Seq<String> features = convertListToSeq(featuresList);
 
-        // perform count evaluation
-        long count = rdd.count();
+        Dataset<Row> selectedFeatures = collection.select("GISJOIN", features);
 
-        log.info("'t\t\t Count: " + count);
 
-        // close spark context
-        sparkContext.close();
+        // KMeans Clustering
+        VectorAssembler assembler =
+                new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
+        Dataset<Row> featureDF = assembler.transform(selectedFeatures);
+        KMeans kmeans = new KMeans().setK(k).setSeed(1L);
+        KMeansModel model = kmeans.fit(featureDF);
+
+        Vector[] vectors = model.clusterCenters();
+        log.info("======================== CLUSTER CENTERS =====================================");
+        for (Vector vector : vectors) {
+            log.info(vector.toString());
+        }
+
+        responseObserver.onNext(ModelResponse.newBuilder()
+                .setKMeansClusteringResponse(
+                        KMeansClusteringResponse.newBuilder()
+                                .setGisJoin("test gisjoin")
+                        //.setPrediction(count).build()
+                ).build()
+        );
+    }
+
+    public Seq<String> convertListToSeq(List<String> inputList) {
+        return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
     }
 
     /**
@@ -71,22 +106,9 @@ public class ClusteringQueryHandler {
                 "build/libs/mongo-java-driver-3.12.5.jar"
         };
 
-        for (String jar: jarPaths) {
+        for (String jar : jarPaths) {
             log.info("Adding dependency JAR to the Spark Context: " + jar);
             sparkContext.addJar(jar);
-        }
-    }
-
-    private String getAbsolutePathToFile(String fileName) {
-        try {
-            URL res = getClass().getClassLoader().getResource(fileName);
-            assert res != null;
-            File file = Paths.get(res.toURI()).toFile();
-            return file.getAbsolutePath();
-        } catch (URISyntaxException e) {
-            log.error("File " + fileName + " not found");
-            e.printStackTrace();
-            return null;
         }
     }
 
@@ -99,7 +121,7 @@ public class ClusteringQueryHandler {
         log.info("\tmaxIterations: " + maxIterations);
         log.info("\tfeatures:");
         for (String feature : features) {
-            log.info("\t\t" + feature);
+            log.info("\t\tfeature: " + feature);
         }
     }
 }
