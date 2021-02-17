@@ -80,6 +80,9 @@ public class ClusteringQueryHandler {
             log.info(vector.toString());
         }
 
+        Dataset<Row> predictDF = model.transform(featureDF).select("GISJOIN", "prediction");
+        predictDF.show(10);
+
         responseObserver.onNext(ModelResponse.newBuilder()
                 .setKMeansClusteringResponse(
                         KMeansClusteringResponse.newBuilder()
