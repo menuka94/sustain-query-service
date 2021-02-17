@@ -52,7 +52,7 @@ public class ClusteringQueryHandler {
         String databaseUrl = "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT;
         String collection = resolution + "_stats";
         SparkSession sparkSession = SparkSession.builder()
-                .master("spark://menuka-HP:7077")
+                .master(Constants.Spark.SPARK_MASTER)
                 .appName("SUSTAIN Clustering")
                 .config("spark.mongodb.input.uri", databaseUrl + "/" + Constants.DB.NAME + "." + collection)
                 .getOrCreate();
@@ -107,7 +107,6 @@ public class ClusteringQueryHandler {
                     ).build()
             );
         }
-
     }
 
     public Seq<String> convertListToSeq(List<String> inputList) {

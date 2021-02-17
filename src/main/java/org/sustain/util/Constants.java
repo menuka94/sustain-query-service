@@ -71,11 +71,11 @@ public class Constants {
     }
 
     public static class DB {
-        public static final String NAME     = System.getenv("DB_NAME");
+        public static final String NAME = System.getenv("DB_NAME");
         public static final String USERNAME = System.getenv("DB_USERNAME");
         public static final String PASSWORD = System.getenv("DB_PASSWORD");
-        public static final String HOST     = System.getenv("DB_HOST");
-        public static final String PORT     = System.getenv("DB_PORT");
+        public static final String HOST = System.getenv("DB_HOST");
+        public static final String PORT = System.getenv("DB_PORT");
     }
 
     public static class CensusFeatures {
@@ -92,5 +92,9 @@ public class Constants {
         public static final String COUNTY = "county";
         public static final String TRACT = "tract";
         public static final String BLOCK = "block";
+    }
+
+    public static class Spark {
+        public static final String SPARK_MASTER = System.getenv("SPARK_MASTER");
     }
 }
