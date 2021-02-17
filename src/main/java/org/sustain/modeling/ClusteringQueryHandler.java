@@ -139,10 +139,7 @@ public class ClusteringQueryHandler {
         ArrayList<String> features = new ArrayList<>(kMeansClusteringRequest.getFeaturesList());
         log.info("\tk: " + k);
         log.info("\tmaxIterations: " + maxIterations);
-        log.info("\tfeatures:");
-        for (String feature : features) {
-            log.info("\t\tfeature: " + feature);
-        }
+        log.info("\tfeatures:{" + features.toString() + "}");
     }
 
     private static class ClusteringResult {
