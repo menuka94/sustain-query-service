@@ -6,7 +6,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.*;
 import org.sustain.util.Constants;
-import org.sustain.util.SampleGeoJson;
 
 import java.util.Iterator;
 
@@ -153,7 +152,10 @@ public class SpatialClient {
                 "    ],\n" +
                 "    \"linearRegressionRequest\": {\n" +
                 "      \"gisJoins\": [\n" +
-                "        \"G0100290\"\n" +
+                "        \"G0100290\",\n" +
+                "        \"G0100210\",\n" +
+                "        \"G0100190\",\n" +
+                "        \"G0100230\"\n" +
                 "      ],\n" +
                 "      \"loss\": \"squaredError\",\n" +
                 "      \"solver\": \"auto\",\n" +
@@ -167,6 +169,8 @@ public class SpatialClient {
                 "      \"setStandardization\": true\n" +
                 "    }\n" +
                 "}";
+
+        log.info("Sending JSON request:\n{}", request);
 
         JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
                 .setJson(request)

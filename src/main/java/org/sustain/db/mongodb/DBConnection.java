@@ -9,7 +9,7 @@ import org.sustain.util.Constants;
 public class DBConnection {
     private static final Logger log = LogManager.getLogger(DBConnection.class);
     private static String host;
-    private static String port;
+    private static Integer port;
     private static String db;
     private static MongoClient mongoClient;
 
@@ -25,7 +25,7 @@ public class DBConnection {
         if (mongoClient == null) {
             log.info("Creating new connection to MongoDB");
             initDatabaseProperties();
-            mongoClient = new MongoClient(host, Integer.parseInt(port));
+            mongoClient = new MongoClient(host, port);
         }
         log.debug("Connecting to MongoDB instance: {" + host + ":" + port + "}");
         return mongoClient.getDatabase(db);

@@ -147,9 +147,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import scala.collection.Seq;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Provides an interface for building generalized Linear Regression
@@ -160,10 +158,11 @@ public class SustainLinearRegression {
     protected static final Logger log = LogManager.getLogger(SustainLinearRegression.class);
 
     private JavaSparkContext sparkContext;
-    private String[]         features, gisJoins;
-    private String           label, loss, solver;
-    private Integer          aggregationDepth, maxIterations;
-    private Double           elasticNetParam, epsilon, regularizationParam, convergenceTolerance;
+    private String[]         features;
+    private String           gisJoin, label, loss, solver;
+    private Integer          aggregationDepth, maxIterations, totalIterations;
+    private Double           elasticNetParam, epsilon, regularizationParam, convergenceTolerance, rmse, r2, intercept;
+    private List<Double>     coefficients, objectiveHistory;
     private Boolean          fitIntercept, setStandardization;
 
 
@@ -171,18 +170,23 @@ public class SustainLinearRegression {
      * The default, overloaded constructor for the SustainLinearRegression class. Defines Mongo and Spark connection
      * parameters, as well as what data we are using for the model.
      * @param master The Spark master in the form spark://<host>:<port>
-     * @param appName The human-readable application name of the job we are launching
      * @param mongoUri The MongoDB endpoint, most likely a Mongo Router, in the form mongodb://<host>:<port>
      * @param database The name of the MongoDB database we are accessing
      * @param collection The name of the MongoDB collection we are using for the model
      */
-    public SustainLinearRegression(String master, String appName, String mongoUri, String database, String collection) {
-        log.info("LinearRegressionModel constructor invoked");
-        initSparkSession(master, appName, mongoUri, database, collection);
+    public SustainLinearRegression(String master, String mongoUri, String database, String collection, String gisJoin) {
+        initSparkSession(master, mongoUri, database, collection);
+        setGisJoin(gisJoin);
+        setModelParameterDefaults();
+        addClusterDependencyJars();
+    }
 
-        // Set default model parameters before user explicitly defines them
-        // Uses Spark's default values which can be found in the documentation here:
-        // https://spark.apache.org/docs/latest/api/java/org/apache/spark/ml/regression/LinearRegression.html
+    /**
+     * Set default model parameters before user explicitly defines them.
+     * Uses Spark's default values which can be found in the documentation here:
+     * https://spark.apache.org/docs/latest/api/java/org/apache/spark/ml/regression/LinearRegression.html
+     */
+    private void setModelParameterDefaults() {
         this.setLoss("squaredError");
         this.setSolver("auto");
         this.setAggregationDepth(2);
@@ -193,26 +197,23 @@ public class SustainLinearRegression {
         this.setConvergenceTolerance(1E-6); // 1E-6 = 0.000001
         this.setFitIntercept(true);
         this.setSetStandardization(true);
-
-        addClusterDependencyJars();
     }
 
     /**
      * Configures and builds a SparkSession and JavaSparkContext, then adds required dependency JARs to the cluster.
      * @param master URI of the Spark master. Format: spark://<hostname>:<port>
-     * @param appName Human-readable name of the application.
      * @param mongoUri URI of the Mongo database router. Format: mongodb://<hostname>:<port>
      * @param database Name of the Mongo database to use.
      * @param collection Name of the Mongo collection to import from above database.
      */
-    private void initSparkSession(String master, String appName, String mongoUri, String database, String collection) {
-        log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
+    private void initSparkSession(String master, String mongoUri, String database, String collection) {
+        log.info("Initializing SparkSession using:\n\tmaster={}\n\tspark.mongodb.input.uri={}" +
                 "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
-                master, appName, mongoUri, database, collection);
+                master, mongoUri, database, collection);
 
         SparkSession sparkSession = SparkSession.builder()
                 .master(master)
-                .appName(appName)
+                .appName("SUSTAIN Linear Regression Model")
                 .config("spark.mongodb.input.uri", mongoUri) // mongodb://lattice-46:27017
                 .config("spark.mongodb.input.database", database) // sustaindb
                 .config("spark.mongodb.input.collection", collection) // future_heat
@@ -245,8 +246,8 @@ public class SustainLinearRegression {
         this.features = features;
     }
 
-    public void setGisJoins(String[] gisJoins) {
-        this.gisJoins = gisJoins;
+    public void setGisJoin(String gisJoin) {
+        this.gisJoin = gisJoin;
     }
 
     public void setLabel(String label) {
@@ -293,6 +294,34 @@ public class SustainLinearRegression {
         this.setStandardization = setStandardization;
     }
 
+    public String getGisJoin() {
+        return gisJoin;
+    }
+
+    public Double getRmse() {
+        return rmse;
+    }
+
+    public Double getR2() {
+        return r2;
+    }
+
+    public Double getIntercept() {
+        return intercept;
+    }
+
+    public List<Double> getCoefficients() {
+        return coefficients;
+    }
+
+    public List<Double> getObjectiveHistory() {
+        return objectiveHistory;
+    }
+
+    public Integer getTotalIterations() {
+        return totalIterations;
+    }
+
     /**
      * Compiles a List<String> of column names we desire from the loaded collection, using the features String array.
      * @return A Scala Seq<String> of desired column names.
@@ -315,7 +344,6 @@ public class SustainLinearRegression {
     }
 
     public void buildAndRunModel() {
-        log.info("Running Models...");
         ReadConfig readConfig = ReadConfig.create(sparkContext);
 
         // Lazy-load the collection in as a DF
@@ -324,62 +352,78 @@ public class SustainLinearRegression {
         // Select just the columns we want, discard the rest
         Dataset<Row> selected = collection.select("_id", desiredColumns());
 
-        // Loop over GISJoins and create a model for each one
-        for (String gisJoin: this.gisJoins) {
+        log.info(">>> Building model for GISJoin {}", gisJoin);
 
-            log.info(">>> Building model for GISJoin {}", gisJoin);
+        // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
+        //FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
 
-            // Filter by the current GISJoin so we only get records corresponding to the current GISJoin
-            //FilterFunction<Row> ff = row -> row.getAs("gis_join") == gisJoin;
+        Dataset<Row> gisDataset = selected.filter(selected.col("gis_join").$eq$eq$eq(gisJoin))
+                .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
 
-            Dataset<Row> gisDataset = selected.filter(selected.col("gis_join").$eq$eq$eq(gisJoin))
-                    .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
+        // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
+        VectorAssembler vectorAssembler = new VectorAssembler()
+                .setInputCols(this.features)
+                .setOutputCol("features");
 
-            // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
-            VectorAssembler vectorAssembler = new VectorAssembler()
-                    .setInputCols(this.features)
-                    .setOutputCol("features");
+        // Transform the gisDataset to have the new "features" column vector
+        Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
+        mergedDataset.show(5);
 
-            // Transform the gisDataset to have the new "features" column vector
-            Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
-            mergedDataset.show(5);
+        // Create Linear Regression object using user-specified parameters
+        LinearRegression linearRegression = new LinearRegression()
+                .setLoss(this.loss)
+                .setSolver(this.solver)
+                .setAggregationDepth(this.aggregationDepth)
+                .setMaxIter(this.maxIterations)
+                .setEpsilon(this.epsilon)
+                .setElasticNetParam(this.elasticNetParam)
+                .setRegParam(this.regularizationParam)
+                .setTol(this.convergenceTolerance)
+                .setFitIntercept(this.fitIntercept)
+                .setStandardization(this.setStandardization);
 
-            // Create Linear Regression object using user-specified parameters
-            LinearRegression linearRegression = new LinearRegression()
-                    .setLoss(this.loss)
-                    .setSolver(this.solver)
-                    .setAggregationDepth(this.aggregationDepth)
-                    .setMaxIter(this.maxIterations)
-                    .setEpsilon(this.epsilon)
-                    .setElasticNetParam(this.elasticNetParam)
-                    .setRegParam(this.regularizationParam)
-                    .setTol(this.convergenceTolerance)
-                    .setFitIntercept(this.fitIntercept)
-                    .setStandardization(this.setStandardization);
+        // Fit the dataset with the "features" and "label" columns
+        LinearRegressionModel lrModel = linearRegression.fit(mergedDataset);
 
-            // Fit the dataset with the "features" and "label" columns
-            LinearRegressionModel lrModel = linearRegression.fit(mergedDataset);
+        // Save training summary
+        LinearRegressionTrainingSummary summary = lrModel.summary();
 
-            // View training summary
-            LinearRegressionTrainingSummary summary = lrModel.summary();
-            log.info("================== SUMMARY ====================");
-            log.info("Model Slope Coefficients: {}", lrModel.coefficients());
-            log.info("Model Intercept: {}", lrModel.intercept());
-            log.info("Total Iterations: {}", summary.totalIterations());
-            log.info("Objective History: {}", Vectors.dense(summary.objectiveHistory()));
-            log.info("===============================================");
-
-            // Show residuals and accuracy metrics
-            log.info("================== RESIDUALS ==================");
-            summary.residuals().show();
-            log.info("RMSE: {}", summary.rootMeanSquaredError());
-            log.info("R2: {}", summary.r2());
-            log.info("===============================================");
-
+        this.coefficients = new ArrayList<>();
+        double[] primitiveCoefficients = lrModel.coefficients().toArray();
+        for (double d: primitiveCoefficients) {
+            this.coefficients.add(d);
         }
+
+        this.objectiveHistory = new ArrayList<>();
+        double[] primitiveObjHistory = summary.objectiveHistory();
+        for (double d: primitiveObjHistory) {
+            this.objectiveHistory.add(d);
+        }
+
+        this.intercept = lrModel.intercept();
+        this.totalIterations = summary.totalIterations();
+        this.rmse = summary.rootMeanSquaredError();
+        this.r2 = summary.r2();
+
+        logModelResults();
 
         // Don't forget to close Spark Context!
         sparkContext.close();
+    }
+
+    /**
+     * Logs the Linear Model results for a single GISJoin.
+     */
+    private void logModelResults() {
+        log.info("Results for GISJoin {}\n" +
+                "Model Slope Coefficients: {}\n" +
+                "Model Intercept: {}\n" +
+                "Total Iterations: {}\n" +
+                "Objective History: {}\n" +
+                "RMSE Residual: {}\n" +
+                "R2 Residual: {}\n",
+                this.gisJoin, this.coefficients, this.intercept, this.totalIterations, this.objectiveHistory, this.rmse,
+                this.r2);
     }
 
     /**
@@ -389,14 +433,13 @@ public class SustainLinearRegression {
     public static void main(String[] args) {
         String[] features = {"timestamp"};
         String label = "max_max_air_temperature";
-        String[] gisJoins = {"G0100290"}; // Cleburne County, Alabama
 
         SustainLinearRegression lrModel = new SustainLinearRegression("spark://lattice-165:8079", "testApplication",
                 "mongodb://lattice-46:27017", "sustaindb", "macav2");
 
         lrModel.setFeatures(features);
         lrModel.setLabel(label);
-        lrModel.setGisJoins(gisJoins);
+        lrModel.setGisJoin("G0100290"); // Cleburne County, Alabama
 
         lrModel.setConvergenceTolerance(1E-14);
         lrModel.setMaxIterations(100);
