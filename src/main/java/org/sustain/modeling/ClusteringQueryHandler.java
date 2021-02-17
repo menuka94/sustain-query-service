@@ -1,6 +1,7 @@
 package org.sustain.modeling;
 
 import com.google.gson.Gson;
+import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
@@ -70,7 +71,6 @@ public class ClusteringQueryHandler {
 
         Dataset<Row> selectedFeatures = collection.select(Constants.GIS_JOIN, features);
 
-
         // KMeans Clustering
         VectorAssembler assembler =
                 new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
@@ -91,23 +91,22 @@ public class ClusteringQueryHandler {
         String jsonString = jsonResults.collectAsList().toString();
 
         Gson gson = new Gson();
-        Type type = new TypeToken<List<ClusteringResult>>() {
-        }.getType();
+        Type type = new TypeToken<List<ClusteringResult>>() {}.getType();
         List<ClusteringResult> results = gson.fromJson(jsonString, type);
         log.info("results.size(): " + results.size());
 
-        //for (ClusteringResult result : results) {
-        //log.info(result);
-        // write results to gRPC response
-        //responseObserver.onNext(ModelResponse.newBuilder()
-        //        .setKMeansClusteringResponse(
-        //                KMeansClusteringResponse.newBuilder()
-        //                        .setGisJoin(result.getGisJoin())
-        //                        .setPrediction(result.getPrediction())
-        //                        .build()
-        //        ).build()
-        //);
-        //}
+        for (ClusteringResult result : results) {
+            log.info(result);
+            // write results to gRPC response
+            //responseObserver.onNext(ModelResponse.newBuilder()
+            //        .setKMeansClusteringResponse(
+            //                KMeansClusteringResponse.newBuilder()
+            //                        .setGisJoin(result.getGisJoin())
+            //                        .setPrediction(result.getPrediction())
+            //                        .build()
+            //        ).build()
+            //);
+        }
 
     }
 
@@ -148,6 +147,7 @@ public class ClusteringQueryHandler {
     }
 
     private static class ClusteringResult {
+        @SerializedName("GISJOIN")
         String gisJoin;
         int prediction;
 
@@ -157,6 +157,14 @@ public class ClusteringQueryHandler {
 
         public int getPrediction() {
             return prediction;
+        }
+
+        @Override
+        public String toString() {
+            return "ClusteringResult{" +
+                    "gisJoin='" + gisJoin + '\'' +
+                    ", prediction=" + prediction +
+                    '}';
         }
     }
 }
