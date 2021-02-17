@@ -1,26 +1,28 @@
 package org.sustain.modeling;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.ml.clustering.KMeans;
+import org.apache.spark.ml.clustering.KMeansModel;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.sustain.KMeansClusteringRequest;
-import org.sustain.KMeansClusteringResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
+import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
-import org.apache.spark.ml.clustering.KMeansModel;
-import org.apache.spark.ml.clustering.KMeans;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,10 +47,12 @@ public class ClusteringQueryHandler {
     public void initSparkSession() {
         String resolution = request.getKMeansClusteringRequest().getResolution().toString().toLowerCase();
         log.info("resolution: " + resolution);
+        String databaseUrl = "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT;
+        String collection = resolution + "_stats";
         SparkSession sparkSession = SparkSession.builder()
                 .master("spark://menuka-HP:7077")
-                .appName("SUSTAIN Clustering Test")
-                .config("spark.mongodb.input.uri", "mongodb://localhost:27017/sustaindb." + resolution + "_stats")
+                .appName("SUSTAIN Clustering")
+                .config("spark.mongodb.input.uri", databaseUrl + "/" + Constants.DB.NAME + "." + collection)
                 .getOrCreate();
 
         sparkContext = new JavaSparkContext(sparkSession.sparkContext());
@@ -64,7 +68,7 @@ public class ClusteringQueryHandler {
         int maxIterations = request.getKMeansClusteringRequest().getMaxIterations();
         Seq<String> features = convertListToSeq(featuresList);
 
-        Dataset<Row> selectedFeatures = collection.select("GISJOIN", features);
+        Dataset<Row> selectedFeatures = collection.select(Constants.GIS_JOIN, features);
 
 
         // KMeans Clustering
@@ -80,16 +84,31 @@ public class ClusteringQueryHandler {
             log.info(vector.toString());
         }
 
-        Dataset<Row> predictDF = model.transform(featureDF).select("GISJOIN", "prediction");
+        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         predictDF.show(10);
 
-        responseObserver.onNext(ModelResponse.newBuilder()
-                .setKMeansClusteringResponse(
-                        KMeansClusteringResponse.newBuilder()
-                                .setGisJoin("test gisjoin")
-                        //.setPrediction(count).build()
-                ).build()
-        );
+        Dataset<String> jsonResults = predictDF.toJSON();
+        String jsonString = jsonResults.collectAsList().toString();
+
+        Gson gson = new Gson();
+        Type type = new TypeToken<List<ClusteringResult>>() {
+        }.getType();
+        List<ClusteringResult> results = gson.fromJson(jsonString, type);
+        log.info("results.size(): " + results.size());
+
+        //for (ClusteringResult result : results) {
+        //log.info(result);
+        // write results to gRPC response
+        //responseObserver.onNext(ModelResponse.newBuilder()
+        //        .setKMeansClusteringResponse(
+        //                KMeansClusteringResponse.newBuilder()
+        //                        .setGisJoin(result.getGisJoin())
+        //                        .setPrediction(result.getPrediction())
+        //                        .build()
+        //        ).build()
+        //);
+        //}
+
     }
 
     public Seq<String> convertListToSeq(List<String> inputList) {
@@ -125,6 +144,19 @@ public class ClusteringQueryHandler {
         log.info("\tfeatures:");
         for (String feature : features) {
             log.info("\t\tfeature: " + feature);
+        }
+    }
+
+    private static class ClusteringResult {
+        String gisJoin;
+        int prediction;
+
+        public String getGisJoin() {
+            return gisJoin;
+        }
+
+        public int getPrediction() {
+            return prediction;
         }
     }
 }
