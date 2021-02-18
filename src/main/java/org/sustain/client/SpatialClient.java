@@ -31,8 +31,8 @@ public class SpatialClient {
         SustainGrpc.SustainBlockingStub sustainBlockingStub = spatialClient.getSustainBlockingStub();
         JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub = spatialClient.getJsonProxyBlockingStub();
 
-        //exampleLRModelRequest(jsonProxyBlockingStub);
-        exampleKMeansClusteringRequest(jsonProxyBlockingStub);
+        exampleLRModelRequest(jsonProxyBlockingStub);
+        //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
         //exampleSpatialQuery(sustainBlockingStub, geoJson);
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
