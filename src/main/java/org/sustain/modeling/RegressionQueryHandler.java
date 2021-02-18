@@ -123,7 +123,6 @@ public class RegressionQueryHandler {
 
                 this.responseObserver.onNext(response);
             }
-            this.responseObserver.onCompleted();
         } else {
             log.warn("Invalid Model Request!");
         }
