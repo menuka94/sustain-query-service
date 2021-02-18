@@ -31,7 +31,8 @@ public class SpatialClient {
         SustainGrpc.SustainBlockingStub sustainBlockingStub = spatialClient.getSustainBlockingStub();
         JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub = spatialClient.getJsonProxyBlockingStub();
 
-        exampleLRModelRequest(jsonProxyBlockingStub);
+        //exampleLRModelRequest(jsonProxyBlockingStub);
+        exampleKMeansClusteringRequest(jsonProxyBlockingStub);
         //exampleSpatialQuery(sustainBlockingStub, geoJson);
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
@@ -182,6 +183,30 @@ public class SpatialClient {
             log.info("JSON Model Response: {}", jsonResponse.getJson());
         }
 
+    }
+
+    public static void exampleKMeansClusteringRequest(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "  \"type\": \"K_MEANS_CLUSTERING\",\n" +
+                "  \"kMeansClusteringRequest\": {\n" +
+                "    \"clusterCount\": 10,\n" +
+                "    \"maxIterations\": 100,\n" +
+                "    \"resolution\": \"County\",\n" +
+                "    \"features\": [\n" +
+                "      \"total_population\",\n" +
+                "      \"median_household_income\"\n" +
+                "    ]\n" +
+                "  }\n" +
+                "}";
+
+        JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                .setJson(request)
+                .build();
+        Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+        while (jsonModelResponseIterator.hasNext()) {
+            JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+            log.info("JSON Model Response: {}", jsonResponse.getJson());
+        }
     }
 
     public SustainGrpc.SustainBlockingStub getSustainBlockingStub() {

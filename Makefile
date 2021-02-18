@@ -13,20 +13,23 @@ DB_USERNAME = ""
 DB_PASSWORD = ""
 DB_HOST = lattice-46
 DB_PORT = 27017
+SPARK_MASTER = spark://
+SERVER_PORT = 50051
 
 .PHONY: build
-build: proto
+
+build:
 	chmod +x ./gradlew
 	./gradlew copyDependencies
 	./gradlew install -x test
 
 build-with-tests:
 	chmod +x ./gradlew
+	./gradlew copyDependencies
 	./gradlew install
 
 run-sustain-server:
 	chmod +x ./gradlew
-	./gradlew install -x test
 	./build/install/sustain-census-grpc/bin/sustain-server
 
 test:
@@ -34,9 +37,11 @@ test:
 	./gradlew test
 
 run-spatial-client:
+  chmod +x ./gradlew
 	./build/install/sustain-census-grpc/bin/spatial-client
 
 run-linear-model:
+	chmod +x ./gradlew
 	./build/install/sustain-census-grpc/bin/linear-model
 
 proto:
