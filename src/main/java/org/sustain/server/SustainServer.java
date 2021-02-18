@@ -70,6 +70,7 @@ public class SustainServer {
         log.info("DB_NAME: " + Constants.DB.NAME);
         log.info("DB_USERNAME: " + Constants.DB.USERNAME);
         log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
+        log.info("SPARK_MASTER: " + Constants.Spark.SPARK_MASTER);
     }
 
 
@@ -191,6 +192,7 @@ public class SustainServer {
                 case K_MEANS_CLUSTERING:
                     log.info("Received a K-Means Clustering Model request");
                     ClusteringQueryHandler clusteringHandler = new ClusteringQueryHandler(request, responseObserver);
+                    clusteringHandler.handleQuery();
                     break;
                 case UNRECOGNIZED:
                     responseObserver.onError(new Exception("Invalid Model Type"));
