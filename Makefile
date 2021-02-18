@@ -10,18 +10,23 @@ DB_USERNAME = ""
 DB_PASSWORD = ""
 DB_HOST = lattice-46
 DB_PORT = 27017
+SPARK_MASTER = spark://
+SERVER_PORT = 50051
 
 .PHONY: build
 build:
 	chmod +x gradlew
+	./gradlew copyDependencies
 	./gradlew install -x test
 
 build-with-tests:
 	chmod +x gradlew
+	./gradlew copyDependencies
 	./gradlew install
 
 run-sustain-server:
 	./gradlew install -x test
+	./gradlew copyDependencies
 	sh ./build/install/sustain-census-grpc/bin/sustain-server
 
 test:
