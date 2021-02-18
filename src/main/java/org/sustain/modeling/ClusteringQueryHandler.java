@@ -16,10 +16,7 @@ import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.sustain.KMeansClusteringRequest;
-import org.sustain.KMeansClusteringResponse;
-import org.sustain.ModelRequest;
-import org.sustain.ModelResponse;
+import org.sustain.*;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -65,9 +62,8 @@ public class ClusteringQueryHandler {
         ReadConfig readConfig = ReadConfig.create(sparkContext);
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
 
-        List<String> featuresList = new ArrayList<>(request.getKMeansClusteringRequest().getFeaturesList());
+        List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
         int k = request.getKMeansClusteringRequest().getClusterCount();
-        int maxIterations = request.getKMeansClusteringRequest().getMaxIterations();
         Seq<String> features = convertListToSeq(featuresList);
 
         Dataset<Row> selectedFeatures = collection.select(Constants.GIS_JOIN, features);
@@ -134,12 +130,25 @@ public class ClusteringQueryHandler {
 
     private void logRequest() {
         KMeansClusteringRequest kMeansClusteringRequest = request.getKMeansClusteringRequest();
-        int k = kMeansClusteringRequest.getClusterCount();
-        int maxIterations = kMeansClusteringRequest.getMaxIterations();
-        ArrayList<String> features = new ArrayList<>(kMeansClusteringRequest.getFeaturesList());
-        log.info("\tk: " + k);
-        log.info("\tmaxIterations: " + maxIterations);
-        log.info("\tfeatures:{" + features.toString() + "}");
+
+        log.info("============== REQUEST ===============");
+
+        log.info("Collections:");
+        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
+            Collection col = this.request.getCollections(i);
+            log.info("\tName: {}", col.getName());
+            log.info("\tLabel: {}", col.getLabel());
+            log.info("\tFeatures:");
+            for (int j = 0; j < col.getFeaturesCount(); j++) {
+                log.info("\t\t{}", col.getFeatures(j));
+            }
+        }
+
+        log.info("KMeansClusteringRequest:");
+        KMeansClusteringRequest req = this.request.getKMeansClusteringRequest();
+        log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
+        log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
+        log.info("=======================================");
     }
 
     private static class ClusteringResult {
