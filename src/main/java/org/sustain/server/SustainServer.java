@@ -70,7 +70,7 @@ public class SustainServer {
         log.info("DB_NAME: " + Constants.DB.NAME);
         log.info("DB_USERNAME: " + Constants.DB.USERNAME);
         log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
-        log.info("SPARK_MASTER: " + Constants.Spark.SPARK_MASTER);
+        log.info("SPARK_MASTER: " + Constants.Spark.MASTER);
     }
 
 
@@ -81,9 +81,8 @@ public class SustainServer {
                 .addService(new SustainService())
                 .build().start();
         log.info("Server started, listening on " + port);
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+
                 try {
                     SustainServer.this.stop();
                 } catch (InterruptedException e) {
@@ -91,8 +90,8 @@ public class SustainServer {
                     e.printStackTrace();
                 }
                 log.warn("Server is shutting down");
-            }
-        });
+
+        }));
     }
 
     public void stop() throws InterruptedException {

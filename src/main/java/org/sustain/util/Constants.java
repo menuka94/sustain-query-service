@@ -53,15 +53,9 @@ public class Constants {
                 put(DatasetRequest.Dataset.FLOOD_ZONES, "flood_zones_geo");
             }};
 
-    public static final class MongoDBCollections {
-        public static final String TOTAL_POPULATION = "total_population";
-        public static final String POPULATION_BY_AGE = "population_by_age";
-        public static final String MEDIAN_HOUSEHOLD_INCOME = "median_household_income";
-    }
-
     public static class Server {
-        public static final String HOST = System.getenv("SERVER_HOST");
-        public static final int PORT = Integer.parseInt(System.getenv("SERVER_PORT"));
+        public static final String  HOST = System.getenv("SERVER_HOST");
+        public static final Integer PORT = Integer.parseInt(System.getenv("SERVER_PORT"));
     }
 
     public static class GeoJsonCollections {
@@ -71,11 +65,11 @@ public class Constants {
     }
 
     public static class DB {
-        public static final String NAME = System.getenv("DB_NAME");
-        public static final String USERNAME = System.getenv("DB_USERNAME");
-        public static final String PASSWORD = System.getenv("DB_PASSWORD");
-        public static final String HOST = System.getenv("DB_HOST");
-        public static final String PORT = System.getenv("DB_PORT");
+        public static final String  NAME     = System.getenv("DB_NAME");
+        public static final String  USERNAME = System.getenv("DB_USERNAME");
+        public static final String  PASSWORD = System.getenv("DB_PASSWORD");
+        public static final String  HOST     = System.getenv("DB_HOST");
+        public static final Integer PORT     = Integer.parseInt(System.getenv("DB_PORT"));
     }
 
     public static class CensusFeatures {
@@ -95,6 +89,6 @@ public class Constants {
     }
 
     public static class Spark {
-        public static final String SPARK_MASTER = System.getenv("SPARK_MASTER");
+        public static final String MASTER = System.getenv("SPARK_MASTER");
     }
 }

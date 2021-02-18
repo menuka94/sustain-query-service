@@ -1,3 +1,4 @@
+
 # --------------------------------------------------------------------
 # Author: Menuka Warushavithana
 # --------------------------------------------------------------------
@@ -5,41 +6,46 @@
 .EXPORT_ALL_VARIABLES:
 
 SERVER_HOST = lattice-165
+SERVER_PORT = 50051
+SPARK_MASTER = spark://lattice-165:8079
 DB_NAME = sustaindb
 DB_USERNAME = ""
 DB_PASSWORD = ""
 DB_HOST = lattice-46
 DB_PORT = 27017
-SPARK_MASTER = spark://
 SERVER_PORT = 50051
 
 .PHONY: build
+
 build:
-	chmod +x gradlew
+	chmod +x ./gradlew
 	./gradlew copyDependencies
 	./gradlew install -x test
 
 build-with-tests:
-	chmod +x gradlew
+	chmod +x ./gradlew
 	./gradlew copyDependencies
 	./gradlew install
 
 run-sustain-server:
-	./gradlew install -x test
-	./gradlew copyDependencies
-	sh ./build/install/sustain-census-grpc/bin/sustain-server
+	chmod +x ./gradlew
+	./build/install/sustain-census-grpc/bin/sustain-server
 
 test:
+	chmod +x ./gradlew
 	./gradlew test
 
 run-spatial-client:
-	sh ./build/install/sustain-census-grpc/bin/spatial-client
+	chmod +x ./gradlew
+	./build/install/sustain-census-grpc/bin/spatial-client
 
+run-linear-model:
+	chmod +x ./gradlew
+	./build/install/sustain-census-grpc/bin/linear-model
 
 proto:
-	chmod +x gradlew
+	chmod +x ./gradlew
 	./gradlew generateProto
 
-
 clean:
-	rm -rf build
+	rm -rf build log

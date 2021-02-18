@@ -5,6 +5,8 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     // Generate IntelliJ IDEA's .idea & .iml project files
     id 'idea'
+
+    id 'java'
 }
 
 group 'org.sustain.census'
@@ -28,19 +30,19 @@ dependencies {
     implementation "io.grpc:grpc-netty:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
+    implementation 'org.json:json:20171018'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.8'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.8'
+    implementation group: 'org.mongodb', name: 'mongo-java-driver', version: '3.12.5'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.7'
+    implementation 'org.scala-lang:scala-library:2.12.10'
+    implementation "org.apache.spark:spark-core_2.12:3.0.1"
+    implementation "org.apache.spark:spark-sql_2.12:3.0.1"
+    implementation 'org.apache.spark:spark-mllib_2.12:3.0.1'
+    implementation 'org.mongodb.spark:mongo-spark-connector_2.12:3.0.1'
+
     compileOnly "org.apache.tomcat:annotations-api:6.0.53"
     runtimeOnly "io.netty:netty-tcnative-boringssl-static:${nettyTcNativeVersion}"
-
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.8'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.8'
-
-    // https://mvnrepository.com/artifact/org.mongodb/mongo-java-driver
-    compile group: 'org.mongodb', name: 'mongo-java-driver', version: '3.12.5'
-
-    compile 'org.json:json:20171018'
-
-    // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    compile group: 'com.google.code.gson', name: 'gson', version: '2.7'
 
     testCompile "io.grpc:grpc-testing:${grpcVersion}"
     testCompile "org.mockito:mockito-core:1.9.5"
@@ -55,9 +57,13 @@ dependencies {
     implementation 'org.mongodb.spark:mongo-spark-connector_2.12:3.0.1'
 }
 
-test {
-    useJUnitPlatform()
+
+task copyDependencies(type: Copy) {
+    from configurations.runtimeClasspath
+    into file("$buildDir/libs")
 }
+
+build.dependsOn copyDependencies
 
 protobuf {
     protoc { artifact = "com.google.protobuf:protoc:${protocVersion}" }
@@ -69,7 +75,6 @@ protobuf {
     }
 }
 
-
 // Inform IDEs like IntelliJ IDEA, Eclipse or NetBeans about the generated code.
 sourceSets {
     main {
@@ -80,25 +85,11 @@ sourceSets {
     }
 }
 
-task copyDependencies(type: Copy) {
-    from configurations.runtimeClasspath
-    into file("$buildDir/libs")
-}
-
-build.dependsOn copyDependencies
-
 startScripts.enabled = false
 
 task sustainServer(type: CreateStartScripts) {
     mainClassName = 'org.sustain.server.SustainServer'
     applicationName = 'sustain-server'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-}
-
-task censusClient(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.client.CensusClient'
-    applicationName = 'census-client'
     outputDir = new File(project.buildDir, 'tmp')
     classpath = startScripts.classpath
 }
@@ -110,9 +101,16 @@ task spatialClient(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
+task linearRegressionModel(type: CreateStartScripts) {
+    mainClassName = 'org.sustain.modeling.SustainLinearRegression'
+    applicationName = 'linear-model'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = startScripts.classpath
+}
+
 applicationDistribution.into('bin') {
     from(sustainServer)
-    from(censusClient)
     from(spatialClient)
+    from(linearRegressionModel)
     fileMode = 0755
 }
