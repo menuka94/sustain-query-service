@@ -65,7 +65,6 @@ message KMeansClusteringRequest {
   int32 clusterCount = 1;
   int32 maxIterations = 2;
   CensusResolution resolution = 3;
-  repeated string features = 4;
 }
 
 message KMeansClusteringResponse {
