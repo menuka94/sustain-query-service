@@ -15,7 +15,7 @@ DB_HOST = lattice-46
 DB_PORT = 27017
 
 .PHONY: build
-build:
+build: proto
 	chmod +x ./gradlew
 	./gradlew copyDependencies
 	./gradlew install -x test
