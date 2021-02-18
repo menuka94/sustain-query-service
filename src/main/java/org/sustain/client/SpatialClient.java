@@ -188,16 +188,22 @@ public class SpatialClient {
     public static void exampleKMeansClusteringRequest(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
         String request = "{\n" +
                 "  \"type\": \"K_MEANS_CLUSTERING\",\n" +
+                "  \"collections\": [\n" +
+                "    {\n" +
+                "      \"name\": \"county_stats\",\n" +
+                "      \"features\": [\n" +
+                "        \"total_population\",\n" +
+                "        \"median_household_income\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ],\n" +
                 "  \"kMeansClusteringRequest\": {\n" +
                 "    \"clusterCount\": 10,\n" +
                 "    \"maxIterations\": 100,\n" +
-                "    \"resolution\": \"County\",\n" +
-                "    \"features\": [\n" +
-                "      \"total_population\",\n" +
-                "      \"median_household_income\"\n" +
-                "    ]\n" +
+                "    \"resolution\": \"County\"\n" +
                 "  }\n" +
-                "}";
+                "}\n" +
+                "\n";
 
         JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
                 .setJson(request)
