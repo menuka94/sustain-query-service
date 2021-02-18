@@ -70,7 +70,7 @@ public class SustainServer {
         log.info("DB_NAME: " + Constants.DB.NAME);
         log.info("DB_USERNAME: " + Constants.DB.USERNAME);
         log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
-        log.info("SPARK_MASTER: " + Constants.Spark.SPARK_MASTER);
+        log.info("SPARK_MASTER: " + Constants.Spark.MASTER);
     }
 
 
