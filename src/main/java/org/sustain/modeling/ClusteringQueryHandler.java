@@ -74,13 +74,16 @@ public class ClusteringQueryHandler {
 
         Dataset<Row> selectedFeatures = collection.select(Constants.GIS_JOIN, features);
 
+        // Dropping rows with null values
+        selectedFeatures = selectedFeatures.na().drop();
+
         // Assembling
         VectorAssembler assembler =
                 new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
         Dataset<Row> featureDF = assembler.transform(selectedFeatures);
         featureDF.show(10);
 
-
+        // Scaling
         MinMaxScaler scaler = new MinMaxScaler()
                 .setInputCol("features")
                 .setOutputCol("normalized_features");
