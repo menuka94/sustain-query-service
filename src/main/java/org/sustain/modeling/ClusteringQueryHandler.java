@@ -11,12 +11,18 @@ import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.clustering.KMeans;
 import org.apache.spark.ml.clustering.KMeansModel;
+import org.apache.spark.ml.feature.MinMaxScaler;
+import org.apache.spark.ml.feature.MinMaxScalerModel;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.sustain.*;
+import org.sustain.Collection;
+import org.sustain.KMeansClusteringRequest;
+import org.sustain.KMeansClusteringResponse;
+import org.sustain.ModelRequest;
+import org.sustain.ModelResponse;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -68,10 +74,25 @@ public class ClusteringQueryHandler {
 
         Dataset<Row> selectedFeatures = collection.select(Constants.GIS_JOIN, features);
 
-        // KMeans Clustering
+        // Assembling
         VectorAssembler assembler =
                 new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
         Dataset<Row> featureDF = assembler.transform(selectedFeatures);
+        featureDF.show(10);
+
+
+        MinMaxScaler scaler = new MinMaxScaler()
+                .setInputCol("features")
+                .setOutputCol("normalized_features");
+        MinMaxScalerModel scalerModel = scaler.fit(featureDF);
+
+        featureDF = scalerModel.transform(featureDF);
+        featureDF = featureDF.drop("features");
+        featureDF = featureDF.withColumnRenamed("normalized_features", "features");
+
+        featureDF.show(10);
+
+        // KMeans Clustering
         KMeans kmeans = new KMeans().setK(k).setSeed(1L);
         KMeansModel model = kmeans.fit(featureDF);
 
@@ -88,7 +109,8 @@ public class ClusteringQueryHandler {
         String jsonString = jsonResults.collectAsList().toString();
 
         Gson gson = new Gson();
-        Type type = new TypeToken<List<ClusteringResult>>() {}.getType();
+        Type type = new TypeToken<List<ClusteringResult>>() {
+        }.getType();
         List<ClusteringResult> results = gson.fromJson(jsonString, type);
         log.info("results.size(): " + results.size());
 
@@ -136,11 +158,11 @@ public class ClusteringQueryHandler {
         log.info("Collections:");
         for (int i = 0; i < this.request.getCollectionsCount(); i++) {
             Collection col = this.request.getCollections(i);
-            log.info("\tName: {}", col.getName());
-            log.info("\tLabel: {}", col.getLabel());
+            log.info("\tName: " + col.getName());
+            log.info("\tLabel: " + col.getLabel());
             log.info("\tFeatures:");
             for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t{}", col.getFeatures(j));
+                log.info("\t\t" + col.getFeatures(j));
             }
         }
 
