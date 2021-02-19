@@ -13,7 +13,6 @@ DB_USERNAME = ""
 DB_PASSWORD = ""
 DB_HOST = lattice-46
 DB_PORT = 27017
-SERVER_PORT = 50051
 
 .PHONY: build
 
