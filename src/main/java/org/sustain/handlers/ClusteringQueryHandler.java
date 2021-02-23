@@ -1,4 +1,4 @@
-package org.sustain.modeling;
+package org.sustain.handlers;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;

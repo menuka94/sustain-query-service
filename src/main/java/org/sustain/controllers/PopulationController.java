@@ -1,4 +1,4 @@
-package org.sustain.datasets.controllers;
+package org.sustain.controllers;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -8,12 +8,6 @@ import com.mongodb.client.model.Filters;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
-import org.bson.conversions.Bson;
-import org.sustain.CensusFeature;
-import org.sustain.CensusResolution;
-import org.sustain.Decade;
-import org.sustain.Predicate;
-import org.sustain.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
 import org.sustain.util.Constants;
 

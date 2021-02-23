@@ -1,4 +1,4 @@
-package org.sustain.datasets.controllers;
+package org.sustain.controllers;
 
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;

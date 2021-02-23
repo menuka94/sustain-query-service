@@ -1,11 +1,11 @@
-package org.sustain.datasets.handlers;
+package org.sustain.handlers;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.OsmRequest;
 import org.sustain.OsmResponse;
-import org.sustain.datasets.controllers.OsmController;
+import org.sustain.controllers.OsmController;
 
 import java.util.concurrent.LinkedBlockingQueue;
 

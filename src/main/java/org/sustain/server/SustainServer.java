@@ -28,14 +28,14 @@ import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
 import org.sustain.SviRequest;
 import org.sustain.SviResponse;
-import org.sustain.datasets.handlers.CensusQueryHandler;
-import org.sustain.datasets.controllers.SpatialQueryUtil;
-import org.sustain.modeling.ClusteringQueryHandler;
-import org.sustain.datasets.handlers.OsmQueryHandler;
-import org.sustain.datasets.handlers.DatasetQueryHandler;
-import org.sustain.modeling.RegressionQueryHandler;
-import org.sustain.querier.CompoundQueryHandler;
-import org.sustain.datasets.controllers.SviController;
+import org.sustain.handlers.CensusQueryHandler;
+import org.sustain.controllers.SpatialQueryUtil;
+import org.sustain.handlers.ClusteringQueryHandler;
+import org.sustain.handlers.OsmQueryHandler;
+import org.sustain.handlers.DatasetQueryHandler;
+import org.sustain.handlers.RegressionQueryHandler;
+import org.sustain.handlers.CompoundQueryHandler;
+import org.sustain.controllers.SviController;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
@@ -44,7 +44,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
 
 
 public class SustainServer {
