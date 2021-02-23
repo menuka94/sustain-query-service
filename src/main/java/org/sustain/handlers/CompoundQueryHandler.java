@@ -8,8 +8,8 @@ import org.sustain.CompoundResponse;
 import org.sustain.CompoundRequest;
 import org.sustain.Query;
 
-import org.sustain.querier.DataContainer;
-import org.sustain.querier.Querier;
+import org.sustain.db.queries.DataContainer;
+import org.sustain.db.queries.Querier;
 
 import java.util.concurrent.LinkedBlockingQueue;
 

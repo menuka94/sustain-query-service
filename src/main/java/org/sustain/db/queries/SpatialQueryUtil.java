@@ -1,4 +1,4 @@
-package org.sustain.controllers;
+package org.sustain.db.queries;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

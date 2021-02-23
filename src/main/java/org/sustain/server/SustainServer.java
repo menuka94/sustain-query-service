@@ -29,7 +29,7 @@ import org.sustain.SustainGrpc;
 import org.sustain.SviRequest;
 import org.sustain.SviResponse;
 import org.sustain.handlers.CensusQueryHandler;
-import org.sustain.controllers.SpatialQueryUtil;
+import org.sustain.db.queries.SpatialQueryUtil;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.OsmQueryHandler;
 import org.sustain.handlers.DatasetQueryHandler;
@@ -44,7 +44,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static org.sustain.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.db.queries.SpatialQueryUtil.getGeometryFromGeoJson;
 
 
 public class SustainServer {
