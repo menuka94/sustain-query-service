@@ -41,6 +41,10 @@ service Sustain {
 enum ModelType {
     K_MEANS_CLUSTERING = 0;
     LINEAR_REGRESSION = 1;
+    BISECTING_K_MEANS =  2;
+    GAUSSIAN_MIXTURE = 3;
+    POWER_ITERATION_CLUSTERING = 4;
+    LATENT_DIRICHLET_ALLOCATION = 5;
 }
 
 message ModelRequest {
@@ -48,6 +52,10 @@ message ModelRequest {
   repeated Collection collections = 2;
   KMeansClusteringRequest kMeansClusteringRequest = 3;
   LinearRegressionRequest linearRegressionRequest = 4;
+  BisectingKMeansRequest bisectingKMeansRequest = 5;
+  GaussianMixtureRequest gaussianMixtureRequest = 6;
+  PowerIterationClusteringRequest powerIterationClusteringRequest = 7;
+  LatentDirichletAllocationRequest latentDirichletAllocationRequest = 8;
 }
 
 message Collection {
@@ -59,8 +67,13 @@ message Collection {
 message ModelResponse {
   KMeansClusteringResponse kMeansClusteringResponse = 1;
   LinearRegressionResponse linearRegressionResponse = 2;
+  BisectingKMeansResponse bisectingKMeansResponse = 5;
+  GaussianMixtureResponse gaussianMixtureResponse = 6;
+  PowerIterationClusteringResponse powerIterationClusteringResponse = 7;
+  LatentDirichletAllocationResponse latentDirichletAllocationResponse = 8;
 }
 
+// Clustering
 message KMeansClusteringRequest {
   int32 clusterCount = 1;
   int32 maxIterations = 2;
@@ -71,6 +84,40 @@ message KMeansClusteringResponse {
   string gisJoin = 1;
   int32 prediction = 2; // cluster
 }
+
+message BisectingKMeansRequest {
+
+}
+
+message BisectingKMeansResponse {
+
+}
+
+message GaussianMixtureRequest {
+
+}
+
+message GaussianMixtureResponse {
+
+}
+
+message PowerIterationClusteringRequest {
+
+}
+
+message PowerIterationClusteringResponse {
+
+}
+
+message LatentDirichletAllocationRequest {
+  
+}
+
+message LatentDirichletAllocationResponse {
+  
+}
+
+// End of Clustering
 
 message LinearRegressionRequest {
   repeated string gisJoins = 2;
