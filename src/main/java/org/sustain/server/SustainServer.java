@@ -45,6 +45,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import static org.sustain.ModelType.BISECTING_K_MEANS;
+import static org.sustain.ModelType.GAUSSIAN_MIXTURE;
 import static org.sustain.ModelType.K_MEANS_CLUSTERING;
 import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
 
@@ -202,6 +203,7 @@ public class SustainServer {
                     break;
                 case GAUSSIAN_MIXTURE:
                     log.info("Received a Gaussian Mixture Request");
+                    clusteringHandler.handleQuery(GAUSSIAN_MIXTURE);
                     break;
                 case POWER_ITERATION_CLUSTERING:
                     log.info("Received a Power Iteration Clustering Request");

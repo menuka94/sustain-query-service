@@ -33,7 +33,8 @@ public class SpatialClient {
 
         //exampleLRModelRequest(jsonProxyBlockingStub);
         //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
-        exampleBisectingKMeansQuery(jsonProxyBlockingStub);
+        //exampleBisectingKMeansQuery(jsonProxyBlockingStub);
+        exampleGaussianMixtureQuery(jsonProxyBlockingStub);
         //exampleSpatialQuery(sustainBlockingStub, geoJson);
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
@@ -42,6 +43,7 @@ public class SpatialClient {
         //        SampleGeoJson.COLORADO);
         //exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoIntersects, sustainBlockingStub);
     }
+
 
     // Logs the environment variables that the server was started with.
     public static void logEnvironment() {
@@ -229,6 +231,36 @@ public class SpatialClient {
                 "    }\n" +
                 "  ],\n" +
                 "  \"bisectingKMeansRequest\": {\n" +
+                "    \"clusterCount\": 10,\n" +
+                "    \"maxIterations\": 100,\n" +
+                "    \"resolution\": \"County\"\n" +
+                "  }\n" +
+                "}\n" +
+                "\n";
+
+        JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                .setJson(request)
+                .build();
+        Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+        while (jsonModelResponseIterator.hasNext()) {
+            JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+            log.info("JSON Model Response: {}", jsonResponse.getJson());
+        }
+    }
+
+    private static void exampleGaussianMixtureQuery(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "  \"type\": \"GAUSSIAN_MIXTURE\",\n" +
+                "  \"collections\": [\n" +
+                "    {\n" +
+                "      \"name\": \"county_stats\",\n" +
+                "      \"features\": [\n" +
+                "        \"total_population\",\n" +
+                "        \"median_household_income\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"gaussianMixtureRequest\": {\n" +
                 "    \"clusterCount\": 10,\n" +
                 "    \"maxIterations\": 100,\n" +
                 "    \"resolution\": \"County\"\n" +

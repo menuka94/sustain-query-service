@@ -97,11 +97,14 @@ message BisectingKMeansResponse {
 }
 
 message GaussianMixtureRequest {
-
+  int32 clusterCount = 1;
+  int32 maxIterations = 2;
+  CensusResolution resolution = 3;
 }
 
 message GaussianMixtureResponse {
-
+  string gisJoin = 1;
+  int32 prediction = 2; // cluster
 }
 
 message PowerIterationClusteringRequest {

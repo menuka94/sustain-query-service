@@ -9,8 +9,11 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.ml.Model;
 import org.apache.spark.ml.clustering.BisectingKMeans;
 import org.apache.spark.ml.clustering.BisectingKMeansModel;
+import org.apache.spark.ml.clustering.GaussianMixture;
+import org.apache.spark.ml.clustering.GaussianMixtureModel;
 import org.apache.spark.ml.clustering.KMeans;
 import org.apache.spark.ml.clustering.KMeansModel;
 import org.apache.spark.ml.feature.MinMaxScaler;
@@ -23,6 +26,8 @@ import org.apache.spark.sql.SparkSession;
 import org.sustain.BisectingKMeansRequest;
 import org.sustain.BisectingKMeansResponse;
 import org.sustain.Collection;
+import org.sustain.GaussianMixtureRequest;
+import org.sustain.GaussianMixtureResponse;
 import org.sustain.KMeansClusteringRequest;
 import org.sustain.KMeansClusteringResponse;
 import org.sustain.ModelRequest;
@@ -56,6 +61,9 @@ public class ClusteringQueryHandler {
             case BISECTING_K_MEANS:
                 resolution = request.getBisectingKMeansRequest().getResolution().toString().toLowerCase();
                 break;
+            case GAUSSIAN_MIXTURE:
+                resolution = request.getGaussianMixtureRequest().getResolution().toString().toLowerCase();
+                break;
         }
         log.info("resolution: " + resolution);
         String databaseUrl = "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT;
@@ -81,6 +89,7 @@ public class ClusteringQueryHandler {
                 buildBisectingKMeansModel();
                 break;
             case GAUSSIAN_MIXTURE:
+                buildGaussianMixtureModel();
                 break;
             case POWER_ITERATION_CLUSTERING:
                 break;
@@ -165,6 +174,48 @@ public class ClusteringQueryHandler {
         }
     }
 
+    private void buildGaussianMixtureModel() {
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF();
+        int k = request.getGaussianMixtureRequest().getClusterCount();
+        int maxIterations = request.getGaussianMixtureRequest().getMaxIterations();
+
+        GaussianMixture gaussianMixture = new GaussianMixture().setK(k).setMaxIter(maxIterations);
+        GaussianMixtureModel model = gaussianMixture.fit(featureDF);
+
+
+        for (int i = 0; i < model.getK(); i++) {
+            System.out.printf("Gaussian %d:\nweight=%f\nmu=%s\nsigma=\n%s\n\n",
+                    i, model.weights()[i], model.gaussians()[i].mean(), model.gaussians()[i].cov());
+        }
+
+        // Make predictions
+        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
+        log.info("Predictions ...");
+        predictDF.show(10);
+
+        Dataset<String> jsonResults = predictDF.toJSON();
+        String jsonString = jsonResults.collectAsList().toString();
+
+        Gson gson = new Gson();
+        Type type = new TypeToken<List<ClusteringResult>>() {
+        }.getType();
+        List<ClusteringResult> results = gson.fromJson(jsonString, type);
+        log.info("results.size(): " + results.size());
+
+        log.info("Writing GaussianMixtureResponses to stream");
+        for (ClusteringResult result : results) {
+            //write results to gRPC response
+            responseObserver.onNext(ModelResponse.newBuilder()
+                    .setGaussianMixtureResponse(
+                            GaussianMixtureResponse.newBuilder()
+                                    .setGisJoin(result.getGisJoin())
+                                    .setPrediction(result.getPrediction())
+                                    .build()
+                    ).build()
+            );
+        }
+    }
+
     private Dataset<Row> preprocessAndGetFeatureDF() {
         log.info("Preprocessing data");
         ReadConfig readConfig = ReadConfig.create(sparkContext);
@@ -225,57 +276,35 @@ public class ClusteringQueryHandler {
     }
 
     private void logRequest(ModelType modelType) {
+        log.info("Logging " + modelType.toString());
+        log.info("============== REQUEST ===============");
+        log.info("Collections:");
+        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
+            Collection col = this.request.getCollections(i);
+            log.info("\tName: " + col.getName());
+            log.info("\tLabel: " + col.getLabel());
+            log.info("\tFeatures:");
+            for (int j = 0; j < col.getFeaturesCount(); j++) {
+                log.info("\t\t" + col.getFeatures(j));
+            }
+        }
         switch (modelType) {
             case K_MEANS_CLUSTERING:
-                logKMeansRequest();
+                KMeansClusteringRequest kMeansClusteringRequest = request.getKMeansClusteringRequest();
+                log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
+                log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
                 break;
             case BISECTING_K_MEANS:
-                logBisectingKMeansRequest();
+                BisectingKMeansRequest bisectingKMeansRequest = request.getBisectingKMeansRequest();
+                log.info("\tClusterCount: " + bisectingKMeansRequest.getClusterCount());
+                log.info("\tMaxIterations: " + bisectingKMeansRequest.getMaxIterations());
+                break;
+            case GAUSSIAN_MIXTURE:
+                GaussianMixtureRequest gaussianMixtureRequest = request.getGaussianMixtureRequest();
+                log.info("\tClusterCount: " + gaussianMixtureRequest.getClusterCount());
+                log.info("\tMaxIterations: " + gaussianMixtureRequest.getMaxIterations());
                 break;
         }
-    }
-
-    private void logBisectingKMeansRequest() {
-        BisectingKMeansRequest bisectingKMeansRequest = request.getBisectingKMeansRequest();
-
-        log.info("============== REQUEST ===============");
-
-        log.info("Collections:");
-        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
-            Collection col = this.request.getCollections(i);
-            log.info("\tName: " + col.getName());
-            log.info("\tLabel: " + col.getLabel());
-            log.info("\tFeatures:");
-            for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t" + col.getFeatures(j));
-            }
-        }
-
-        log.info("BisectingKMeansRequest:");
-        log.info("\tClusterCount: " + bisectingKMeansRequest.getClusterCount());
-        log.info("\tMaxIterations: " + bisectingKMeansRequest.getMaxIterations());
-        log.info("=======================================");
-    }
-
-    private void logKMeansRequest() {
-        KMeansClusteringRequest kMeansClusteringRequest = request.getKMeansClusteringRequest();
-
-        log.info("============== REQUEST ===============");
-
-        log.info("Collections:");
-        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
-            Collection col = this.request.getCollections(i);
-            log.info("\tName: " + col.getName());
-            log.info("\tLabel: " + col.getLabel());
-            log.info("\tFeatures:");
-            for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t" + col.getFeatures(j));
-            }
-        }
-
-        log.info("KMeansClusteringRequest:");
-        log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
-        log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
         log.info("=======================================");
     }
 
