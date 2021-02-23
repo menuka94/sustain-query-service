@@ -60,7 +60,6 @@ public class OsmQueryHandler {
             log.info("Starting StreamWriter thread");
             int count = 0;
             while (!fetchingCompleted) {
-                // log.info("Queue size: " + data.size());
                 if (data.size() > 0) {
                     String datum = data.remove();
                     responseObserver.onNext(OsmResponse.newBuilder().setResponse(datum).build());
