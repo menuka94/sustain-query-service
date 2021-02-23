@@ -19,19 +19,28 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class CensusQueryHandler {
+public class CensusQueryHandler extends GrpcHandler<CensusRequest, CensusResponse> {
+
     private static final Logger log = LogManager.getLogger(CensusQueryHandler.class);
 
-    private final CensusRequest request;
-    private final StreamObserver<CensusResponse> responseObserver;
     private boolean fetchingCompleted = false;
 
     public CensusQueryHandler(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
-        this.request = request;
-        this.responseObserver = responseObserver;
+        super(request, responseObserver);
     }
 
-    public void handleCensusQuery() {
+    @Override
+    void logRequest(CensusRequest request) {
+        // TODO: Implement
+    }
+
+    @Override
+    void logResponse(CensusResponse response) {
+        // TODO: Implement
+    }
+
+    @Override
+    public void handleRequest() {
         CensusFeature censusFeature = request.getCensusFeature();
         String requestGeoJson = request.getRequestGeoJson();
         CensusResolution censusResolution = request.getCensusResolution();

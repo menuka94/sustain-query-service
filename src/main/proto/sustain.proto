@@ -21,10 +21,10 @@ message JsonModelResponse {
 }
 
 service Sustain {
-  // census query with MongoDB support
+  // Query Census data
   rpc CensusQuery (CensusRequest) returns (stream CensusResponse) {}
 
-  // Query Open Street Map Data
+  // Query Open Street Map data
   rpc OsmQuery (OsmRequest) returns (stream OsmResponse) {}
 
   // Query datasets (hospitals, dams, natural_gas_pipelines, power_plants, transmission_lines, etc.
@@ -33,8 +33,10 @@ service Sustain {
   // Query Social Vulnerability Index (SVI) values
   rpc SviQuery (SviRequest) returns (stream SviResponse) {}
 
+  // Query multiple collections and join the results together
   rpc CompoundQuery (CompoundRequest) returns (stream CompoundResponse) {}
 
+  // Create a Spark Model on a collection
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
 
   rpc DirectQuery (DirectRequest) returns (stream DirectResponse) {}
@@ -71,7 +73,7 @@ message KMeansClusteringRequest {
 
 message KMeansClusteringResponse {
   string gisJoin = 1;
-  int32 prediction = 2; // cluster
+  int32 prediction = 2; // Which cluster the GISJoin belongs to
 }
 
 message LinearRegressionRequest {
@@ -236,6 +238,7 @@ message CompoundResponse {
     string geoJson = 2;
 }
 
+
 message CompoundRequest {
     oneof FirstPredicate {
         Query first_query = 1;
@@ -251,10 +254,10 @@ message CompoundRequest {
 }
 
 message Query {
-    string host = 1;
-    int32 port = 2;
-    string collection = 3;
-    string query = 4; //This is a json representation of a mongodb query
+    string host = 1;          // MongoDB hostname
+    int32  port = 2;          // MongoDB port
+    string collection = 3;    // MongoDB collection
+    string query = 4;         // Json representation of a MongoDB query
 }
 
 message DirectRequest {
