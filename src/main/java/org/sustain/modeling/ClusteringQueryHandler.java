@@ -9,6 +9,8 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.ml.clustering.BisectingKMeans;
+import org.apache.spark.ml.clustering.BisectingKMeansModel;
 import org.apache.spark.ml.clustering.KMeans;
 import org.apache.spark.ml.clustering.KMeansModel;
 import org.apache.spark.ml.feature.MinMaxScaler;
@@ -18,11 +20,13 @@ import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.sustain.BisectingKMeansRequest;
 import org.sustain.Collection;
 import org.sustain.KMeansClusteringRequest;
 import org.sustain.KMeansClusteringResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
+import org.sustain.ModelType;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -42,13 +46,6 @@ public class ClusteringQueryHandler {
         this.responseObserver = responseObserver;
     }
 
-    public void handleQuery() {
-        logRequest();
-        initSparkSession();
-        buildModel();
-        sparkContext.close();
-    }
-
     public void initSparkSession() {
         String resolution = request.getKMeansClusteringRequest().getResolution().toString().toLowerCase();
         log.info("resolution: " + resolution);
@@ -64,37 +61,29 @@ public class ClusteringQueryHandler {
         addClusterDependencyJars(sparkContext);
     }
 
-    private void buildModel() {
-        ReadConfig readConfig = ReadConfig.create(sparkContext);
-        Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
+    public void handleQuery(ModelType modelType) {
+        logRequest(modelType);
+        initSparkSession();
+        switch (modelType) {
+            case K_MEANS_CLUSTERING:
+                buildKMeansModel();
+                break;
+            case BISECTING_K_MEANS:
+                buildBisectingKMeansModel();
+                break;
+            case GAUSSIAN_MIXTURE:
+                break;
+            case POWER_ITERATION_CLUSTERING:
+                break;
+            case LATENT_DIRICHLET_ALLOCATION:
+                break;
+        }
+        sparkContext.close();
+    }
 
-        List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
+    private void buildKMeansModel() {
         int k = request.getKMeansClusteringRequest().getClusterCount();
-        Seq<String> features = convertListToSeq(featuresList);
-
-        Dataset<Row> selectedFeatures = collection.select(Constants.GIS_JOIN, features);
-
-        // Dropping rows with null values
-        selectedFeatures = selectedFeatures.na().drop();
-
-        // Assembling
-        VectorAssembler assembler =
-                new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
-        Dataset<Row> featureDF = assembler.transform(selectedFeatures);
-        featureDF.show(10);
-
-        // Scaling
-        MinMaxScaler scaler = new MinMaxScaler()
-                .setInputCol("features")
-                .setOutputCol("normalized_features");
-        MinMaxScalerModel scalerModel = scaler.fit(featureDF);
-
-        featureDF = scalerModel.transform(featureDF);
-        featureDF = featureDF.drop("features");
-        featureDF = featureDF.withColumnRenamed("normalized_features", "features");
-
-        featureDF.show(10);
-
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF();
         // KMeans Clustering
         KMeans kmeans = new KMeans().setK(k).setSeed(1L);
         KMeansModel model = kmeans.fit(featureDF);
@@ -130,6 +119,57 @@ public class ClusteringQueryHandler {
         }
     }
 
+    private void buildBisectingKMeansModel() {
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF();
+        int k = request.getBisectingKMeansRequest().getClusterCount();
+        int maxIterations = request.getBisectingKMeansRequest().getMaxIterations();
+
+        BisectingKMeans bisectingKMeans = new BisectingKMeans().setK(k).setMaxIter(maxIterations);
+        BisectingKMeansModel model = bisectingKMeans.fit(featureDF);
+
+        // Make predictions
+        Dataset<Row> predictDF = model.transform(featureDF);
+        log.info("Predictions ...");
+        predictDF.show(10);
+        responseObserver.onCompleted();
+    }
+
+    private Dataset<Row> preprocessAndGetFeatureDF() {
+        log.info("Preprocessing data");
+        ReadConfig readConfig = ReadConfig.create(sparkContext);
+        Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
+        List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
+        Seq<String> features = convertListToSeq(featuresList);
+
+        Dataset<Row> selectedFeatures = collection.select(Constants.GIS_JOIN, features);
+
+        // Dropping rows with null values
+        selectedFeatures = selectedFeatures.na().drop();
+
+        // Assembling
+        VectorAssembler assembler =
+                new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
+        Dataset<Row> featureDF = assembler.transform(selectedFeatures);
+        featureDF.show(10);
+
+        // Scaling
+        log.info("Normalizing features");
+        MinMaxScaler scaler = new MinMaxScaler()
+                .setInputCol("features")
+                .setOutputCol("normalized_features");
+        MinMaxScalerModel scalerModel = scaler.fit(featureDF);
+
+        featureDF = scalerModel.transform(featureDF);
+        featureDF = featureDF.drop("features");
+        featureDF = featureDF.withColumnRenamed("normalized_features", "features");
+
+        log.info("Dataframe after min-max normalization");
+        featureDF.show(10);
+
+        return featureDF;
+    }
+
+
     public Seq<String> convertListToSeq(List<String> inputList) {
         return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
     }
@@ -153,7 +193,40 @@ public class ClusteringQueryHandler {
         }
     }
 
-    private void logRequest() {
+    private void logRequest(ModelType modelType) {
+        switch (modelType) {
+            case K_MEANS_CLUSTERING:
+                logKMeansRequest();
+                break;
+            case BISECTING_K_MEANS:
+                logBisectingKMeansRequest();
+                break;
+        }
+    }
+
+    private void logBisectingKMeansRequest() {
+        BisectingKMeansRequest bisectingKMeansRequest = request.getBisectingKMeansRequest();
+
+        log.info("============== REQUEST ===============");
+
+        log.info("Collections:");
+        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
+            Collection col = this.request.getCollections(i);
+            log.info("\tName: " + col.getName());
+            log.info("\tLabel: " + col.getLabel());
+            log.info("\tFeatures:");
+            for (int j = 0; j < col.getFeaturesCount(); j++) {
+                log.info("\t\t" + col.getFeatures(j));
+            }
+        }
+
+        log.info("KMeansClusteringRequest:");
+        log.info("\tClusterCount: " + bisectingKMeansRequest.getClusterCount());
+        log.info("\tMaxIterations: " + bisectingKMeansRequest.getMaxIterations());
+        log.info("=======================================");
+    }
+
+    private void logKMeansRequest() {
         KMeansClusteringRequest kMeansClusteringRequest = request.getKMeansClusteringRequest();
 
         log.info("============== REQUEST ===============");
@@ -170,7 +243,6 @@ public class ClusteringQueryHandler {
         }
 
         log.info("KMeansClusteringRequest:");
-        KMeansClusteringRequest req = this.request.getKMeansClusteringRequest();
         log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
         log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
         log.info("=======================================");

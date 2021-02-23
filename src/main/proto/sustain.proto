@@ -86,11 +86,14 @@ message KMeansClusteringResponse {
 }
 
 message BisectingKMeansRequest {
-
+  int32 clusterCount = 1;
+  int32 maxIterations = 2;
+  CensusResolution resolution = 3;
 }
 
 message BisectingKMeansResponse {
-
+  string gisJoin = 1;
+  int32 prediction = 2; // cluster
 }
 
 message GaussianMixtureRequest {
