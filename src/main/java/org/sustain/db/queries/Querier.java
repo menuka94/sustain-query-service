@@ -1,4 +1,4 @@
-package org.sustain.querier;
+package org.sustain.db.queries;
 
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;

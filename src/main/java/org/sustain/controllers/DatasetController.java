@@ -13,6 +13,7 @@ import org.bson.conversions.Bson;
 import org.sustain.DatasetRequest;
 import org.sustain.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
+import org.sustain.db.queries.SpatialQueryUtil;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static org.sustain.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.db.queries.SpatialQueryUtil.getGeometryFromGeoJson;
 
 public class DatasetController {
     private static final Logger log = LogManager.getLogger(DatasetController.class);

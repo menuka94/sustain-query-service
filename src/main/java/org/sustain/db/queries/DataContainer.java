@@ -1,9 +1,7 @@
-package org.sustain.querier;
+package org.sustain.db.queries;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import com.google.gson.JsonParser;
@@ -11,7 +9,6 @@ import org.json.JSONObject;
 import com.google.gson.Gson;
 
 import org.sustain.CompoundResponse;
-import org.sustain.CompoundRequest;
 
 import io.grpc.stub.StreamObserver;
 

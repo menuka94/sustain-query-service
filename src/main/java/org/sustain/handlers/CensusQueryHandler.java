@@ -12,7 +12,7 @@ import org.sustain.SpatialOp;
 import org.sustain.controllers.IncomeController;
 import org.sustain.controllers.PopulationController;
 import org.sustain.controllers.RaceController;
-import org.sustain.controllers.SpatialQueryUtil;
+import org.sustain.db.queries.SpatialQueryUtil;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
