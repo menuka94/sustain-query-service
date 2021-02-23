@@ -31,6 +31,7 @@ import org.sustain.SviResponse;
 import org.sustain.handlers.CensusQueryHandler;
 import org.sustain.db.queries.SpatialQueryUtil;
 import org.sustain.handlers.ClusteringQueryHandler;
+import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.OsmQueryHandler;
 import org.sustain.handlers.DatasetQueryHandler;
 import org.sustain.handlers.RegressionQueryHandler;
@@ -83,13 +84,13 @@ public class SustainServer {
         log.info("Server started, listening on " + port);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
-                try {
-                    SustainServer.this.stop();
-                } catch (InterruptedException e) {
-                    log.error("Error in stopping the server");
-                    e.printStackTrace();
-                }
-                log.warn("Server is shutting down");
+            try {
+                SustainServer.this.stop();
+            } catch (InterruptedException e) {
+                log.error("Error in stopping the server");
+                e.printStackTrace();
+            }
+            log.warn("Server is shutting down");
 
         }));
     }
@@ -116,34 +117,34 @@ public class SustainServer {
     static class JsonProxyService extends JsonProxyGrpc.JsonProxyImplBase {
         @Override
         public void modelQuery(JsonModelRequest request,
-                StreamObserver<JsonModelResponse> responseObserver) {
+                               StreamObserver<JsonModelResponse> responseObserver) {
             ManagedChannel channel = null;
 
             try {
                 // open grpc channel
                 channel = ManagedChannelBuilder
-                    .forAddress(Constants.Server.HOST,
-                        Constants.Server.PORT)
-                    .usePlaintext()
-                    .build();
+                        .forAddress(Constants.Server.HOST,
+                                Constants.Server.PORT)
+                        .usePlaintext()
+                        .build();
 
                 // convert json to protobuf and service request
                 JsonFormat.Parser parser = JsonFormat.parser();
                 JsonFormat.Printer printer = JsonFormat.printer()
-                    .includingDefaultValueFields()
-                    .omittingInsignificantWhitespace();
+                        .includingDefaultValueFields()
+                        .omittingInsignificantWhitespace();
 
                 // create model request
                 ModelRequest.Builder requestBuilder =
-                    ModelRequest.newBuilder();
+                        ModelRequest.newBuilder();
                 parser.merge(request.getJson(), requestBuilder);
 
                 // issue model request
                 SustainGrpc.SustainBlockingStub blockingStub =
-                    SustainGrpc.newBlockingStub(channel);
+                        SustainGrpc.newBlockingStub(channel);
 
                 Iterator<ModelResponse> iterator =
-                    blockingStub.modelQuery(requestBuilder.build());
+                        blockingStub.modelQuery(requestBuilder.build());
 
                 // iterate over results
                 while (iterator.hasNext()) {
@@ -152,9 +153,9 @@ public class SustainServer {
                     // build JsonModelRequest
                     String json = printer.print(response);
                     JsonModelResponse jsonResponse =
-                        JsonModelResponse.newBuilder()
-                            .setJson(json)
-                            .build();
+                            JsonModelResponse.newBuilder()
+                                    .setJson(json)
+                                    .build();
 
                     responseObserver.onNext(jsonResponse);
                 }
@@ -176,27 +177,29 @@ public class SustainServer {
     static class SustainService extends SustainGrpc.SustainImplBase {
         @Override
         public void censusQuery(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
-            CensusQueryHandler handler = new CensusQueryHandler(request, responseObserver);
-            handler.handleCensusQuery();
+            GrpcHandler<CensusRequest, CensusResponse> handler = new CensusQueryHandler(request, responseObserver);
+            handler.handleRequest();
         }
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
+            GrpcHandler<ModelRequest, ModelResponse> handler;
             ModelType type = request.getType();
             switch (type) {
                 case LINEAR_REGRESSION:
                     log.info("Received a Linear Regression Model request");
-                    RegressionQueryHandler regressionHandler = new RegressionQueryHandler(request, responseObserver);
-                    regressionHandler.handleQuery();
+                    handler = new RegressionQueryHandler(request, responseObserver);
                     break;
                 case K_MEANS_CLUSTERING:
                     log.info("Received a K-Means Clustering Model request");
-                    ClusteringQueryHandler clusteringHandler = new ClusteringQueryHandler(request, responseObserver);
-                    clusteringHandler.handleQuery();
+                    handler = new ClusteringQueryHandler(request, responseObserver);
                     break;
-                case UNRECOGNIZED:
+                default:
                     responseObserver.onError(new Exception("Invalid Model Type"));
+                    return;
             }
+
+            handler.handleRequest();
             responseObserver.onCompleted();
         }
 
@@ -263,21 +266,21 @@ public class SustainServer {
 
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
-            OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);
-            handler.handleOsmQuery();
+            GrpcHandler<OsmRequest, OsmResponse> handler = new OsmQueryHandler(request, responseObserver);
+            handler.handleRequest();
         }
 
         @Override
         public void datasetQuery(DatasetRequest request, StreamObserver<DatasetResponse> responseObserver) {
-            DatasetQueryHandler handler = new DatasetQueryHandler(request, responseObserver);
-            handler.handleDatasetQuery();
+            GrpcHandler<DatasetRequest, DatasetResponse> handler = new DatasetQueryHandler(request, responseObserver);
+            handler.handleRequest();
         }
 
         @Override
         public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
-            CompoundQueryHandler handler = new CompoundQueryHandler(responseObserver);
-            handler.handleCompoundQuery(request, true);
+            GrpcHandler<CompoundRequest, CompoundResponse> handler = new CompoundQueryHandler(request, responseObserver);
+            handler.handleRequest();
         }
 
-    }   // end of Server implementation
+    }
 }

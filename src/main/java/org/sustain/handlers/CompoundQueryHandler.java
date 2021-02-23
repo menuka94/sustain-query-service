@@ -13,67 +13,86 @@ import org.sustain.db.queries.Querier;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class CompoundQueryHandler {
+public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundResponse> {
+
     public static final Logger log = LogManager.getLogger(CompoundQueryHandler.class);
 
-    private final StreamObserver<CompoundResponse> responseObserver;
-    
-
-    public CompoundQueryHandler(StreamObserver<CompoundResponse> responseObserver) {
-        this.responseObserver = responseObserver;
+    public CompoundQueryHandler(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
+        super(request, responseObserver);
     }
 
-    public DataContainer handleCompoundQuery(CompoundRequest request, boolean topLevel) {
-        // If the first predicate is a MongoDB query or nested compound query
-        StreamWriter sw1 = null;
-        DataContainer dc1 = null;
-        if(request.getFirstPredicateCase().getNumber() == 1)
-            sw1 = startSingleQuery(request.getFirstQuery());
-        else if(request.getFirstPredicateCase().getNumber() == 2)
-            dc1 = handleCompoundQuery(request.getFirstCompoundRequest(), false);
+    @Override
+    void logRequest(CompoundRequest request) {
+        // TODO: Implement
+    }
 
-        // If the second predicate is a MongoDB query or nested compound query
-        StreamWriter sw2 = null;
-        DataContainer dc2 = null;
-        if(request.getSecondPredicateCase().getNumber() == 4)
-            sw2 = startSingleQuery(request.getSecondQuery());
-        else if(request.getSecondPredicateCase().getNumber() == 5)
-            dc2 = handleCompoundQuery(request.getSecondCompoundRequest(), false);
+    @Override
+    void logResponse(CompoundResponse response) {
+        // TODO: Implement
+    }
+
+    @Override
+    public void handleRequest() {
+        DataContainer compoundQueryResults = processCompoundQuery(this.request, true);
+        compoundQueryResults.writeToClient(this.responseObserver);
+        responseObserver.onCompleted();
+    }
+
+    public DataContainer processCompoundQuery(CompoundRequest request, boolean topLevel) {
+
+        StreamWriter  sw1 = null, sw2 = null;
+        DataContainer dc1 = null, dc2 = null;
+
+        // Evaluate first part of CompoundQuery
+        switch (request.getFirstPredicateCase().getNumber()) {
+            case 1: // Non-recursive type Query
+                sw1 = startSingleQuery(request.getFirstQuery());
+                break;
+            case 2: // Recursive type CompoundRequest
+                dc1 = processCompoundQuery(request.getFirstCompoundRequest(), false);
+                break;
+        }
+
+        // Evaluate second part of CompoundQuery
+        switch (request.getSecondPredicateCase().getNumber()) {
+            case 4: // Non-recursive type Query
+                sw2 = startSingleQuery(request.getSecondQuery());
+                break;
+            case 5: // Recursive type CompoundRequest
+                dc2 = processCompoundQuery(request.getSecondCompoundRequest(), false);
+                break;
+        }
 
         // Wait for queries to complete
-        try{
-            if(sw1 != null){
+        try {
+            if (sw1 != null) {
                 sw1.join();
                 dc1 = sw1.getDataContainer();
-                if(sw2 != null){
+                if (sw2 != null) {
                     sw2.join();
                     dc2 = sw2.getDataContainer();
                 }
             }
-        } catch (InterruptedException e){
+        } catch (InterruptedException e) {
             return new DataContainer();
-		}
+        }
 
         // If we had multiple predicates, merge the results
         DataContainer dc = dc1;
-        if(request.getSecondPredicateCase().getNumber() == 4 || request.getSecondPredicateCase().getNumber() == 5)
-            dc = dc1.innerJoin(dc2);  
-            
-        // If this is the top of the tree (final query(s))
-        if(topLevel){
-            dc.writeToClient(this.responseObserver);
-            responseObserver.onCompleted();
-	}
+        if (request.getSecondPredicateCase().getNumber() == 4 || request.getSecondPredicateCase().getNumber() == 5) {
+            return dc1.innerJoin(dc2);
+        }
+
         return dc;
     }
 
-    private StreamWriter startSingleQuery(Query q){
+    private StreamWriter startSingleQuery(Query q) {
         LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
         CompoundQueryHandler.StreamWriter sw = new CompoundQueryHandler.StreamWriter(responseObserver, queue);
         sw.start();
         new Querier(this, q, queue, sw).start();
         return sw;
-	}
+    }
 
 
     public class StreamWriter extends Thread {
@@ -90,13 +109,13 @@ public class CompoundQueryHandler {
             this.start = System.currentTimeMillis();
         }
 
-        public synchronized void setFetchingCompleted(boolean fetchingCompleted){
+        public synchronized void setFetchingCompleted(boolean fetchingCompleted) {
             this.fetchingCompleted = fetchingCompleted;
-		}
+        }
 
-        public DataContainer getDataContainer(){
-            return dc;  
-		}
+        public DataContainer getDataContainer() {
+            return dc;
+        }
 
         @Override
         public void run() {
@@ -123,11 +142,5 @@ public class CompoundQueryHandler {
             //dc.innerJoin();
         }
 
-        private void writeDataToStream(String datum) {
-            //String jsonDatum = JsonParser.parseString(datum).getAsJsonObject().get(
-            //        Constants.GIS_JOIN).toString().replace("\"", "");
-            //String responseGeoJson = geoJsonMap.get(gisJoinInDataRecord);
-            responseObserver.onNext(CompoundResponse.newBuilder().setData(datum).setGeoJson("").build());
-        }
     }
 }

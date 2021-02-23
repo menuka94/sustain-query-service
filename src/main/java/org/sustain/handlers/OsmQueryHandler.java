@@ -9,19 +9,28 @@ import org.sustain.controllers.OsmController;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class OsmQueryHandler {
+public class OsmQueryHandler extends GrpcHandler<OsmRequest, OsmResponse> {
+
     private static final Logger log = LogManager.getLogger(OsmQueryHandler.class);
 
-    private final OsmRequest request;
-    private final StreamObserver<OsmResponse> responseObserver;
     private boolean fetchingCompleted = false;
 
     public OsmQueryHandler(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
-        this.request = request;
-        this.responseObserver = responseObserver;
+        super(request, responseObserver);
     }
 
-    public void handleOsmQuery() {
+    @Override
+    void logRequest(OsmRequest request) {
+        // TODO: Implement
+    }
+
+    @Override
+    void logResponse(OsmResponse response) {
+        // TODO: Implement
+    }
+
+    @Override
+    public void handleRequest() {
         OsmRequest.Dataset dataset = request.getDataset();
         LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
         new StreamWriter(queue, responseObserver).start();

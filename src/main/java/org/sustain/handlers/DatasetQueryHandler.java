@@ -9,24 +9,31 @@ import org.sustain.controllers.DatasetController;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class DatasetQueryHandler {
+public class DatasetQueryHandler extends GrpcHandler<DatasetRequest, DatasetResponse> {
+
     private static final Logger log = LogManager.getLogger(DatasetQueryHandler.class);
 
-    private final DatasetRequest request;
-    private final StreamObserver<DatasetResponse> responseObserver;
     private boolean fetchingCompleted = false;
 
     public DatasetQueryHandler(DatasetRequest request, StreamObserver<DatasetResponse> responseObserver) {
-        this.request = request;
-        this.responseObserver = responseObserver;
+       super(request, responseObserver);
     }
 
-    public void handleDatasetQuery() {
+    @Override
+    void logRequest(DatasetRequest request) {
+        // TODO: Implement
+    }
+
+    @Override
+    void logResponse(DatasetResponse response) {
+        // TODO: Implement
+    }
+
+    @Override
+    public void handleRequest() {
         LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
         new StreamWriter(queue, responseObserver).start();
-
         DatasetController.getData(request, queue);
-
         fetchingCompleted = true;
     }
 

@@ -9,8 +9,8 @@ import io.grpc.stub.StreamObserver;
  */
 public abstract class GrpcHandler<T, E> {
 
-    private final T request;
-    private final StreamObserver<E> responseObserver;
+    final T request;
+    final StreamObserver<E> responseObserver;
 
     public GrpcHandler(T request, StreamObserver<E> responseObserver) {
         this.request = request;
@@ -32,6 +32,6 @@ public abstract class GrpcHandler<T, E> {
     /**
      * Processes a gRPC request from start to finish.
      */
-    abstract void handleRequest();
+    public abstract void handleRequest();
 
 }
