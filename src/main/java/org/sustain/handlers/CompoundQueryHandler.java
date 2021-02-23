@@ -1,16 +1,15 @@
-package org.sustain.querier;
+package org.sustain.handlers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import com.google.gson.JsonParser;
 
 import io.grpc.stub.StreamObserver;
 import org.sustain.CompoundResponse;
 import org.sustain.CompoundRequest;
 import org.sustain.Query;
 
-import org.sustain.util.Constants;
+import org.sustain.querier.DataContainer;
+import org.sustain.querier.Querier;
 
 import java.util.concurrent.LinkedBlockingQueue;
 

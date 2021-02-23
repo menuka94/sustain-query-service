@@ -1,4 +1,4 @@
-package org.sustain.datasets.controllers;
+package org.sustain.controllers;
 
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
+import static org.sustain.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
 
 public class DatasetController {
     private static final Logger log = LogManager.getLogger(DatasetController.class);
