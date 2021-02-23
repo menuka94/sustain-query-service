@@ -21,6 +21,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.sustain.BisectingKMeansRequest;
+import org.sustain.BisectingKMeansResponse;
 import org.sustain.Collection;
 import org.sustain.KMeansClusteringRequest;
 import org.sustain.KMeansClusteringResponse;
@@ -46,8 +47,16 @@ public class ClusteringQueryHandler {
         this.responseObserver = responseObserver;
     }
 
-    public void initSparkSession() {
-        String resolution = request.getKMeansClusteringRequest().getResolution().toString().toLowerCase();
+    public void initSparkSession(ModelType modelType) {
+        String resolution = "";
+        switch (modelType) {
+            case K_MEANS_CLUSTERING:
+                resolution = request.getKMeansClusteringRequest().getResolution().toString().toLowerCase();
+                break;
+            case BISECTING_K_MEANS:
+                resolution = request.getBisectingKMeansRequest().getResolution().toString().toLowerCase();
+                break;
+        }
         log.info("resolution: " + resolution);
         String databaseUrl = "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT;
         String collection = resolution + "_stats";
@@ -63,7 +72,7 @@ public class ClusteringQueryHandler {
 
     public void handleQuery(ModelType modelType) {
         logRequest(modelType);
-        initSparkSession();
+        initSparkSession(modelType);
         switch (modelType) {
             case K_MEANS_CLUSTERING:
                 buildKMeansModel();
@@ -106,6 +115,7 @@ public class ClusteringQueryHandler {
         List<ClusteringResult> results = gson.fromJson(jsonString, type);
         log.info("results.size(): " + results.size());
 
+        log.info("Writing KMeansClusteringResponses to stream");
         for (ClusteringResult result : results) {
             //write results to gRPC response
             responseObserver.onNext(ModelResponse.newBuilder()
@@ -128,10 +138,31 @@ public class ClusteringQueryHandler {
         BisectingKMeansModel model = bisectingKMeans.fit(featureDF);
 
         // Make predictions
-        Dataset<Row> predictDF = model.transform(featureDF);
+        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions ...");
         predictDF.show(10);
-        responseObserver.onCompleted();
+
+        Dataset<String> jsonResults = predictDF.toJSON();
+        String jsonString = jsonResults.collectAsList().toString();
+
+        Gson gson = new Gson();
+        Type type = new TypeToken<List<ClusteringResult>>() {
+        }.getType();
+        List<ClusteringResult> results = gson.fromJson(jsonString, type);
+        log.info("results.size(): " + results.size());
+
+        log.info("Writing BisectingKMeansResponses to stream");
+        for (ClusteringResult result : results) {
+            //write results to gRPC response
+            responseObserver.onNext(ModelResponse.newBuilder()
+                    .setBisectingKMeansResponse(
+                            BisectingKMeansResponse.newBuilder()
+                                    .setGisJoin(result.getGisJoin())
+                                    .setPrediction(result.getPrediction())
+                                    .build()
+                    ).build()
+            );
+        }
     }
 
     private Dataset<Row> preprocessAndGetFeatureDF() {
@@ -220,7 +251,7 @@ public class ClusteringQueryHandler {
             }
         }
 
-        log.info("KMeansClusteringRequest:");
+        log.info("BisectingKMeansRequest:");
         log.info("\tClusterCount: " + bisectingKMeansRequest.getClusterCount());
         log.info("\tMaxIterations: " + bisectingKMeansRequest.getMaxIterations());
         log.info("=======================================");

@@ -31,8 +31,9 @@ public class SpatialClient {
         SustainGrpc.SustainBlockingStub sustainBlockingStub = spatialClient.getSustainBlockingStub();
         JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub = spatialClient.getJsonProxyBlockingStub();
 
-        exampleLRModelRequest(jsonProxyBlockingStub);
+        //exampleLRModelRequest(jsonProxyBlockingStub);
         //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
+        exampleBisectingKMeansQuery(jsonProxyBlockingStub);
         //exampleSpatialQuery(sustainBlockingStub, geoJson);
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
@@ -198,6 +199,36 @@ public class SpatialClient {
                 "    }\n" +
                 "  ],\n" +
                 "  \"kMeansClusteringRequest\": {\n" +
+                "    \"clusterCount\": 10,\n" +
+                "    \"maxIterations\": 100,\n" +
+                "    \"resolution\": \"County\"\n" +
+                "  }\n" +
+                "}\n" +
+                "\n";
+
+        JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                .setJson(request)
+                .build();
+        Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+        while (jsonModelResponseIterator.hasNext()) {
+            JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+            log.info("JSON Model Response: {}", jsonResponse.getJson());
+        }
+    }
+
+    public static void exampleBisectingKMeansQuery(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "  \"type\": \"BISECTING_K_MEANS\",\n" +
+                "  \"collections\": [\n" +
+                "    {\n" +
+                "      \"name\": \"county_stats\",\n" +
+                "      \"features\": [\n" +
+                "        \"total_population\",\n" +
+                "        \"median_household_income\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"bisectingKMeansRequest\": {\n" +
                 "    \"clusterCount\": 10,\n" +
                 "    \"maxIterations\": 100,\n" +
                 "    \"resolution\": \"County\"\n" +

@@ -44,6 +44,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
+import static org.sustain.ModelType.BISECTING_K_MEANS;
+import static org.sustain.ModelType.K_MEANS_CLUSTERING;
 import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
 
 
@@ -183,6 +185,7 @@ public class SustainServer {
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
             ModelType type = request.getType();
+            ClusteringQueryHandler clusteringHandler = new ClusteringQueryHandler(request, responseObserver);
             switch (type) {
                 case LINEAR_REGRESSION:
                     log.info("Received a Linear Regression Model request");
@@ -191,8 +194,20 @@ public class SustainServer {
                     break;
                 case K_MEANS_CLUSTERING:
                     log.info("Received a K-Means Clustering Model request");
-                    ClusteringQueryHandler clusteringHandler = new ClusteringQueryHandler(request, responseObserver);
-                    clusteringHandler.handleQuery();
+                    clusteringHandler.handleQuery(K_MEANS_CLUSTERING);
+                    break;
+                case BISECTING_K_MEANS:
+                    log.info("Received a Bisecting K-Means Model Request");
+                    clusteringHandler.handleQuery(BISECTING_K_MEANS);
+                    break;
+                case GAUSSIAN_MIXTURE:
+                    log.info("Received a Gaussian Mixture Request");
+                    break;
+                case POWER_ITERATION_CLUSTERING:
+                    log.info("Received a Power Iteration Clustering Request");
+                    break;
+                case LATENT_DIRICHLET_ALLOCATION:
+                    log.info("Received a Latent Dirichlet Allocation Request");
                     break;
                 case UNRECOGNIZED:
                     responseObserver.onError(new Exception("Invalid Model Type"));
