@@ -137,7 +137,6 @@ public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundR
             }
             log.info("Streaming completed! No. of entries: " + count);
             log.info("Milliseconds taken: " + (System.currentTimeMillis() - this.start));
-            //dc.innerJoin();
         }
 
     }

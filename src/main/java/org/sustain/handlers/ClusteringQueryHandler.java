@@ -58,7 +58,6 @@ public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
         }
 
         log.info("KMeansClusteringRequest:");
-        KMeansClusteringRequest req = this.request.getKMeansClusteringRequest();
         log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
         log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
         log.info("=======================================");

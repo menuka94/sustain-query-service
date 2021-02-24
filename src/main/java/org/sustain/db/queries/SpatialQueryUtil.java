@@ -18,6 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.sustain.ComparisonOperator;
 import org.sustain.Predicate;
 import org.sustain.SpatialOp;
 import org.sustain.db.mongodb.DBConnection;
@@ -33,18 +34,18 @@ public class SpatialQueryUtil {
 
     /**
      * @param geoJson of the following form;
-     *                {
-     *                "type": "Feature",
-     *                "properties": {},
-     *                "geometry": {
-     *                "type": "Polygon",
-     *                "coordinates": [
-     *                [
-     *                [x1, y1],
-     *                [x2, y2]
-     *                ]
-     *                ]
-     *                }
+     *  {
+     *    "type": "Feature",
+     *    "properties": {},
+     *    "geometry": {
+     *    "type": "Polygon",
+     *    "coordinates": [
+     *      [
+     *        [x1, y1],
+     *        [x2, y2]
+     *      ]
+     *    ]
+     *  }
      * @return Geometry
      */
     public static Geometry constructPolygon(JsonObject geoJson) {
@@ -143,7 +144,7 @@ public class SpatialQueryUtil {
         return geoJsonMap;
     }
 
-    public static Bson getFilterOpFromComparisonOp(Predicate.ComparisonOperator comparisonOperator,
+    public static Bson getFilterOpFromComparisonOp(ComparisonOperator comparisonOperator,
                                                    String comparisonField, double comparisonValue) {
         switch (comparisonOperator) {
             case EQUAL:

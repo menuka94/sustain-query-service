@@ -1,6 +1,7 @@
 package org.sustain.util;
 
 import org.sustain.CensusResolution;
+import org.sustain.ComparisonOperator;
 import org.sustain.DatasetRequest;
 import org.sustain.Decade;
 import org.sustain.OsmRequest;
@@ -25,13 +26,13 @@ public class Constants {
                 put(CensusResolution.Tract, CensusResolutions.TRACT);
                 put(CensusResolution.Block, CensusResolutions.BLOCK);
             }};
-    public static final HashMap<Predicate.ComparisonOperator, String> COMPARISON_OPS =
-            new HashMap<Predicate.ComparisonOperator, String>() {{
-                put(Predicate.ComparisonOperator.EQUAL, "=");
-                put(Predicate.ComparisonOperator.GREATER_THAN, ">");
-                put(Predicate.ComparisonOperator.GREATER_THAN_OR_EQUAL, ">=");
-                put(Predicate.ComparisonOperator.LESS_THAN, "<");
-                put(Predicate.ComparisonOperator.LESS_THAN_OR_EQUAL, "<=");
+    public static final HashMap<ComparisonOperator, String> COMPARISON_OPS =
+            new HashMap<ComparisonOperator, String>() {{
+                put(ComparisonOperator.EQUAL, "=");
+                put(ComparisonOperator.GREATER_THAN, ">");
+                put(ComparisonOperator.GREATER_THAN_OR_EQUAL, ">=");
+                put(ComparisonOperator.LESS_THAN, "<");
+                put(ComparisonOperator.LESS_THAN_OR_EQUAL, "<=");
             }};
     public static final HashMap<OsmRequest.Dataset, String> OSM_DATASETS =
             new HashMap<OsmRequest.Dataset, String>() {{

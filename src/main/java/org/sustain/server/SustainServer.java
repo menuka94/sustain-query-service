@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.CensusRequest;
 import org.sustain.CensusResponse;
+import org.sustain.ComparisonOperator;
 import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
 import org.sustain.DatasetRequest;
@@ -244,7 +245,7 @@ public class SustainServer {
          * @param comparisonValue comparisonValue from gRPC request
          * @return comparison of 'value' to 'comparisonValue'
          */
-        boolean compareValueWithInputValue(Predicate.ComparisonOperator comparisonOp, Double value,
+        boolean compareValueWithInputValue(ComparisonOperator comparisonOp, Double value,
                                            Double comparisonValue) {
             switch (comparisonOp) {
                 case EQUAL:
