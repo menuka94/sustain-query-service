@@ -8,6 +8,10 @@ option java_outer_classname = "SustainQueryService";
 
 package sustain;
 
+// Used as a proxy service, allowing the front-end client to encapsulate a JSON-formatted
+// message into a gRPC message and send it to this JsonProxy service. This service then
+// takes that JSON-formatted message and converts it into an appropriate gRPC message,
+// as defined by the ModelRequest message type.
 service JsonProxy {
     rpc ModelQuery(JsonModelRequest) returns (stream JsonModelResponse) {}
 }
@@ -205,13 +209,6 @@ enum Decade {
 }
 
 message Predicate {
-  enum ComparisonOperator {
-    EQUAL = 0;
-    GREATER_THAN = 1;
-    LESS_THAN = 2;
-    GREATER_THAN_OR_EQUAL = 3;
-    LESS_THAN_OR_EQUAL = 4;
-  }
   CensusFeature censusFeature = 1;
   Decade decade = 2;
   ComparisonOperator comparisonOp = 3;
@@ -237,7 +234,6 @@ message CompoundResponse {
     string data = 1;
     string geoJson = 2;
 }
-
 
 message CompoundRequest {
     oneof FirstPredicate {
