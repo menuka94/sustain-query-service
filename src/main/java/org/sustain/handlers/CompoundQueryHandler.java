@@ -126,14 +126,12 @@ public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundR
             while (!fetchingCompleted && System.currentTimeMillis() - start < 10000) {
                 if (data.size() > 0) {
                     String datum = data.remove();
-                    //writeDataToStream(datum);
                     dc.addData(datum);
                     count++;
                 }
             }
 
             for (String datum : data) {
-                //writeDataToStream(datum);
                 dc.addData(datum);
                 count++;
             }
