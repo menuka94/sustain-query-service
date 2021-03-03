@@ -5,9 +5,9 @@
 
 .EXPORT_ALL_VARIABLES:
 
-SERVER_HOST = lattice-1
-SERVER_PORT = 30051
-SPARK_MASTER = spark://lattice-1:32531
+SERVER_HOST = lattice-165
+SERVER_PORT = 50051
+SPARK_MASTER = spark://lattice-165:8079
 DB_NAME = sustaindb
 DB_USERNAME = ""
 DB_PASSWORD = ""
