@@ -1,0 +1,25 @@
+{
+  "type": "R_FOREST",
+  "collections": [
+    {
+      "name": "macav2",
+      "label": "min_eastward_wind",
+      "features": [
+        "max_eastward_wind","max_min_air_temperature"
+      ]
+    }
+  ],
+  "rForestRegressionRequest": {
+    "gisJoins": [
+      "G0100290"
+    ],
+    "isBootstrap": true,
+    "subsamplingRate": 0.9,
+    "numTrees": 10,
+    "featureSubsetStrategy": "sqrt",
+    "impurity": "variance",
+    "maxDepth": 4,
+    "maxBins": 50,
+    "trainSplit": 0.9
+  }
+}

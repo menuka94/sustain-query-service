@@ -111,9 +111,18 @@ task linearRegressionModel(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
+task rforest(type: CreateStartScripts) {
+    mainClassName = 'org.sustain.modeling.RFRegressionModel'
+    applicationName = 'rforest'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = startScripts.classpath
+}
+
 // Distribute generated binaries from above tasks into the bin/ folder at project root.
 applicationDistribution.into('bin') {
     from(sustainServer)
     from(linearRegressionModel)
+    from(rforest)
+    fileMode = 0755
     fileMode = 0755 // Make generated binaries executable
 }
