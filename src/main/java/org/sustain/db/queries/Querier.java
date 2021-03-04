@@ -38,7 +38,7 @@ public class Querier extends Thread {
 
     @Override
 	public void run() {
-        MongoDatabase db = DBConnection.getConnection(request.getHost(), Integer.toString(request.getPort()));
+        MongoDatabase db = DBConnection.getConnection(request.getHost(), request.getPort());
         MongoCollection<Document> collection = db.getCollection(request.getCollection());
         ArrayList<BasicDBObject> query = new ArrayList<BasicDBObject>();
         JSONArray parsedQuery = new JSONArray(request.getQuery());
