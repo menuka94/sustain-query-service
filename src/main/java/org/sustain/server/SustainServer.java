@@ -15,6 +15,8 @@ import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
 import org.sustain.DatasetRequest;
 import org.sustain.DatasetResponse;
+import org.sustain.DirectRequest;
+import org.sustain.DirectResponse;
 import org.sustain.JsonModelRequest;
 import org.sustain.JsonModelResponse;
 import org.sustain.JsonProxyGrpc;
@@ -34,6 +36,7 @@ import org.sustain.modeling.ClusteringQueryHandler;
 import org.sustain.datasets.handlers.OsmQueryHandler;
 import org.sustain.datasets.handlers.DatasetQueryHandler;
 import org.sustain.modeling.RegressionQueryHandler;
+import org.sustain.querier.DirectQueryHandler;
 import org.sustain.querier.CompoundQueryHandler;
 import org.sustain.datasets.controllers.SviController;
 import org.sustain.util.Constants;
@@ -279,5 +282,12 @@ public class SustainServer {
             handler.handleCompoundQuery(request, true);
         }
 
+        @Override
+        public void directQuery(DirectRequest request,
+                StreamObserver<DirectResponse> responseObserver) {
+            DirectQueryHandler handler =
+                new DirectQueryHandler(responseObserver);
+            handler.handleDirectQuery(request);
+        }
     }   // end of Server implementation
 }
