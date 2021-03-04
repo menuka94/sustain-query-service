@@ -1,6 +1,8 @@
 package org.sustain.handlers;
 
 import io.grpc.stub.StreamObserver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Abstract interface for gRPC handlers.
@@ -8,6 +10,8 @@ import io.grpc.stub.StreamObserver;
  * @param <E> A generic for the type of gRPC response.
  */
 public abstract class GrpcHandler<T, E> {
+
+    private static final Logger log = LogManager.getLogger(GrpcHandler.class);
 
     final T request;
     final StreamObserver<E> responseObserver;
@@ -21,13 +25,17 @@ public abstract class GrpcHandler<T, E> {
      * Logs the incoming gRPC request fields, as chosen by the implementer.
      * @param request The gRPC request object.
      */
-    abstract void logRequest(T request);
+    public void logRequest(T request) {
+        log.info("\n\n--- {} ---\n{}", request.getClass().getName(), request.toString());
+    }
 
     /**
      * Logs an outgoing gRPC response, as chosen by the implementer.
      * @param response The gRPC response object.
      */
-    abstract void logResponse(E response);
+    public void logResponse(E response) {
+        log.info("\n\n--- {} ---\n{}", response.getClass().getName(), response.toString());
+    }
 
     /**
      * Processes a gRPC request from start to finish.

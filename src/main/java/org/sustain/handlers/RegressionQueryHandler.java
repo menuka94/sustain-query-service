@@ -22,16 +22,6 @@ public class RegressionQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
     }
 
     @Override
-    void logRequest(ModelRequest request) {
-        log.info("\n\n--- ModelRequest ---\n{}", request.toString());
-    }
-
-    @Override
-    void logResponse(ModelResponse response) {
-        // TODO: Implement
-    }
-
-    @Override
     public void handleRequest() {
         if (isValidModelRequest(this.request)) {
             logRequest(this.request);
@@ -42,6 +32,7 @@ public class RegressionQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
                         .setLinearRegressionResponse(modelResults)
                         .build();
 
+                logResponse(response);
                 this.responseObserver.onNext(response);
             }
         } else {

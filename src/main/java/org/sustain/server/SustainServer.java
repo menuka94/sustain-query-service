@@ -9,9 +9,6 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.CensusRequest;
-import org.sustain.CensusResponse;
-import org.sustain.ComparisonOperator;
 import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
 import org.sustain.DatasetRequest;
@@ -24,12 +21,10 @@ import org.sustain.ModelResponse;
 import org.sustain.ModelType;
 import org.sustain.OsmRequest;
 import org.sustain.OsmResponse;
-import org.sustain.Predicate;
 import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
 import org.sustain.SviRequest;
 import org.sustain.SviResponse;
-import org.sustain.handlers.CensusQueryHandler;
 import org.sustain.db.queries.SpatialQueryUtil;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.GrpcHandler;
@@ -174,13 +169,8 @@ public class SustainServer {
         }
     }
 
-    // Server implementation
+    // SUSTAIN gRPC Server Implementation
     static class SustainService extends SustainGrpc.SustainImplBase {
-        @Override
-        public void censusQuery(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
-            GrpcHandler<CensusRequest, CensusResponse> handler = new CensusQueryHandler(request, responseObserver);
-            handler.handleRequest();
-        }
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {

@@ -25,8 +25,6 @@ message JsonModelResponse {
 }
 
 service Sustain {
-  // Query Census data
-  rpc CensusQuery (CensusRequest) returns (stream CensusResponse) {}
 
   // Query Open Street Map data
   rpc OsmQuery (OsmRequest) returns (stream OsmResponse) {}
@@ -154,18 +152,6 @@ message OsmRequest {
 
 message OsmResponse {
   string response = 1;
-}
-
-message CensusRequest {
-  CensusResolution censusResolution = 1;
-  CensusFeature censusFeature = 2;
-  string requestGeoJson = 3; // bounding polygon
-  SpatialOp spatialOp = 4;
-}
-
-message CensusResponse {
-  string data = 1;
-  string responseGeoJson = 2; // geoJson associated with 'data'
 }
 
 enum SpatialOp {

@@ -20,16 +20,6 @@ public class OsmQueryHandler extends GrpcHandler<OsmRequest, OsmResponse> {
     }
 
     @Override
-    void logRequest(OsmRequest request) {
-        // TODO: Implement
-    }
-
-    @Override
-    void logResponse(OsmResponse response) {
-        // TODO: Implement
-    }
-
-    @Override
     public void handleRequest() {
         OsmRequest.Dataset dataset = request.getDataset();
         LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();

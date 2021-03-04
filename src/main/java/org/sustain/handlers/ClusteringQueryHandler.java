@@ -41,16 +41,6 @@ public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
     }
 
     @Override
-    void logRequest(ModelRequest request) {
-        log.info("\n\n--- ModelRequest ---\n{}", request.toString());
-    }
-
-    @Override
-    void logResponse(ModelResponse response) {
-        // TODO: Implement
-    }
-
-    @Override
     public void handleRequest() {
         logRequest(this.request);
         initSparkSession();
