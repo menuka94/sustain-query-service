@@ -20,16 +20,6 @@ public class DatasetQueryHandler extends GrpcHandler<DatasetRequest, DatasetResp
     }
 
     @Override
-    void logRequest(DatasetRequest request) {
-        // TODO: Implement
-    }
-
-    @Override
-    void logResponse(DatasetResponse response) {
-        // TODO: Implement
-    }
-
-    @Override
     public void handleRequest() {
         LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
         new StreamWriter(queue, responseObserver).start();

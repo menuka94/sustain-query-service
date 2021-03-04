@@ -37,8 +37,6 @@ public class SpatialClient {
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
         //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
-        //exampleCensusQuery(CensusFeature.TotalPopulation, CensusResolution.County, sustainBlockingStub,
-        //        SampleGeoJson.COLORADO);
         //exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoIntersects, sustainBlockingStub);
     }
 
@@ -114,29 +112,6 @@ public class SpatialClient {
             log.info(response.getResponse() + "\n");
         }
 
-        log.info("Count: " + count);
-    }
-
-    private static void exampleCensusQuery(CensusFeature censusFeature, CensusResolution censusResolution,
-                                           SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
-        CensusRequest request = CensusRequest.newBuilder()
-                .setCensusFeature(censusFeature)
-                .setCensusResolution(censusResolution)
-                .setSpatialOp(SpatialOp.GeoWithin)
-                .setRequestGeoJson(geoJson)
-                .build();
-
-        int count = 0;
-        Iterator<CensusResponse> CensusResponseIterator = censusBlockingStub.censusQuery(request);
-        while (CensusResponseIterator.hasNext()) {
-            CensusResponse response = CensusResponseIterator.next();
-            String data = response.getData();
-            String responseGeoJson = response.getResponseGeoJson();
-            log.info("data: " + data);
-            log.info("geoJson: " + responseGeoJson);
-            System.out.println();
-            count++;
-        }
         log.info("Count: " + count);
     }
 

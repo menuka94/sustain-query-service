@@ -22,16 +22,6 @@ public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundR
     }
 
     @Override
-    void logRequest(CompoundRequest request) {
-        // TODO: Implement
-    }
-
-    @Override
-    void logResponse(CompoundResponse response) {
-        // TODO: Implement
-    }
-
-    @Override
     public void handleRequest() {
         DataContainer compoundQueryResults = processCompoundQuery(this.request, true);
         compoundQueryResults.writeToClient(this.responseObserver);
