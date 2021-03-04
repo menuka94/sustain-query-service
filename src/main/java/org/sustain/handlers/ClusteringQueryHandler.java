@@ -42,7 +42,7 @@ public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
 
     @Override
     void logRequest(ModelRequest request) {
-        log.info("\n--- ModelRequest ---\n{}", request.toString());
+        log.info("\n\n--- ModelRequest ---\n{}", request.toString());
     }
 
     @Override
