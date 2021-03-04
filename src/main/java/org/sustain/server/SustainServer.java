@@ -65,17 +65,16 @@ public class SustainServer {
 
     // Logs the environment variables that the server was started with.
     public static void logEnvironment() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n--- Server Environment ---\n");
-        sb.append(String.format("SERVER_HOST: %s\n", Constants.Server.HOST));
-        sb.append(String.format("SERVER_PORT: %s\n", Constants.Server.PORT));
-        sb.append("\n--- Database Environment ---\n");
-        sb.append(String.format("DB_HOST: %s\n", Constants.DB.HOST));
-        sb.append(String.format("DB_PORT: %s\n", Constants.DB.PORT));
-        sb.append(String.format("DB_NAME: %s\n", Constants.DB.NAME));
-        sb.append(String.format("DB_USERNAME: %s\n", Constants.DB.USERNAME));
-        sb.append(String.format("DB_PASSWORD: %s\n", Constants.DB.PASSWORD));
-        log.info(sb.toString());
+        log.info("\n\n--- Server Environment ---\n" +
+                        "SERVER_HOST: {}\n" +
+                        "SERVER_PORT: {}\n" +
+                        "\n\n--- Database Environment ---\n" +
+                        "DB_HOST: {}\n" +
+                        "DB_PORT: {}\n" +
+                        "DB_NAME: {}\n" +
+                        "DB_USERNAME: {}\n" +
+                        "DB_PASSWORD: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
+                Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
     }
 
 
