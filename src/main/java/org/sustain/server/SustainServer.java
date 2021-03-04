@@ -236,35 +236,6 @@ public class SustainServer {
             responseObserver.onCompleted();
         }
 
-        /**
-         * Determine if a given value is valid after comparing it with the actual value using the\
-         * given comparison Operator
-         *
-         * @param comparisonOp    comparison operator from gRPC request
-         * @param value           value returned by the census data record
-         * @param comparisonValue comparisonValue from gRPC request
-         * @return comparison of 'value' to 'comparisonValue'
-         */
-        boolean compareValueWithInputValue(ComparisonOperator comparisonOp, Double value,
-                                           Double comparisonValue) {
-            switch (comparisonOp) {
-                case EQUAL:
-                    return value.equals(comparisonValue);
-                case GREATER_THAN_OR_EQUAL:
-                    return value >= comparisonValue;
-                case LESS_THAN:
-                    return value < comparisonValue;
-                case LESS_THAN_OR_EQUAL:
-                    return value <= comparisonValue;
-                case GREATER_THAN:
-                    return value > comparisonValue;
-                case UNRECOGNIZED:
-                    log.warn("Unknown comparison operator");
-                    return false;
-            }
-            return false;
-        }
-
         @Override
         public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
             GrpcHandler<OsmRequest, OsmResponse> handler = new OsmQueryHandler(request, responseObserver);
