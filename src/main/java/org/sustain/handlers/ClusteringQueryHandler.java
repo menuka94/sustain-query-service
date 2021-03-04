@@ -42,25 +42,7 @@ public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
 
     @Override
     void logRequest(ModelRequest request) {
-        KMeansClusteringRequest kMeansClusteringRequest = request.getKMeansClusteringRequest();
-
-        log.info("============== REQUEST ===============");
-
-        log.info("Collections:");
-        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
-            Collection col = this.request.getCollections(i);
-            log.info("\tName: " + col.getName());
-            log.info("\tLabel: " + col.getLabel());
-            log.info("\tFeatures:");
-            for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t" + col.getFeatures(j));
-            }
-        }
-
-        log.info("KMeansClusteringRequest:");
-        log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
-        log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
-        log.info("=======================================");
+        log.info("\n--- ModelRequest ---\n{}", request.toString());
     }
 
     @Override
