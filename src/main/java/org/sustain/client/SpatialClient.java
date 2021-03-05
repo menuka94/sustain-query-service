@@ -33,11 +33,6 @@ public class SpatialClient {
 
         exampleLRModelRequest(jsonProxyBlockingStub);
         //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
-        //exampleSpatialQuery(sustainBlockingStub, geoJson);
-        //exampleTargetedQuery(sustainBlockingStub, geoJson);
-        //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
-        //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
-        //exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoIntersects, sustainBlockingStub);
     }
 
     // Logs the environment variables that the server was started with.
@@ -54,66 +49,6 @@ public class SpatialClient {
                 Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
     }
 
-
-    private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,
-                                            SustainGrpc.SustainBlockingStub sustainBlockingStub, String geoJson) {
-        DatasetRequest request = DatasetRequest.newBuilder()
-                .setDataset(dataset)
-                .setSpatialOp(SpatialOp.GeoWithin)
-                .setRequestGeoJson(geoJson)
-                .build();
-        Iterator<DatasetResponse> datasetResponseIterator = sustainBlockingStub.datasetQuery(request);
-        int count = 0;
-        while (datasetResponseIterator.hasNext()) {
-            DatasetResponse response = datasetResponseIterator.next();
-            count++;
-            log.info(response.getResponse() + "\n");
-        }
-
-        log.info("Count: " + count);
-    }
-
-    private static void exampleSviQuery(String geoJson, SpatialOp spatialOp,
-                                        SustainGrpc.SustainBlockingStub sustainBlockingStub) {
-        SviRequest request = SviRequest.newBuilder()
-                .setRequestGeoJson(geoJson)
-                .setSpatialOp(spatialOp)
-                .build();
-
-        Iterator<SviResponse> responseIterator = sustainBlockingStub.sviQuery(request);
-        int count = 0;
-        while (responseIterator.hasNext()) {
-            SviResponse response = responseIterator.next();
-            count++;
-            log.info(response.getData());
-            //log.info(response.getResponseGeoJson());
-            System.out.println();
-        }
-        log.info("Count: " + count);
-    }
-
-    private static void exampleOsmQuery(SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
-        OsmRequest request = OsmRequest.newBuilder()
-                .setDataset(OsmRequest.Dataset.ALL)
-                .setSpatialOp(SpatialOp.GeoWithin)
-                // .addRequestParams(OsmRequest.OsmRequestParam.newBuilder()
-                //         .setKey("properties.highway")
-                //         .setValue("primary"))
-                // .addRequestParams(OsmRequest.OsmRequestParam.newBuilder()
-                //         .setKey("properties.highway")
-                //         .setValue("residential"))
-                .setRequestGeoJson(geoJson).build();
-
-        Iterator<OsmResponse> osmResponseIterator = censusBlockingStub.osmQuery(request);
-        int count = 0;
-        while (osmResponseIterator.hasNext()) {
-            OsmResponse response = osmResponseIterator.next();
-            count++;
-            log.info(response.getResponse() + "\n");
-        }
-
-        log.info("Count: " + count);
-    }
 
     private static void exampleLRModelRequest(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
         String request = "{\n" +
