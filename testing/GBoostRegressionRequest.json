@@ -1,5 +1,5 @@
 {
-  "type": "R_FOREST",
+  "type": "G_BOOST",
   "collections": [
     {
       "name": "macav2",
@@ -9,13 +9,12 @@
       ]
     }
   ],
-  "rForestRegressionRequest": {
+  "gBoostRegressionRequest": {
     "gisJoins": [
       "G0100290"
     ],
-    "isBootstrap": true,
     "subsamplingRate": 0.9,
-    "numTrees": 10,
+    "stepSize": 0.1,
     "featureSubsetStrategy": "sqrt",
     "impurity": "variance",
     "maxDepth": 4,
@@ -23,6 +22,8 @@
     "trainSplit": 0.9,
     "minInfoGain" : 0.01,
     "minInstancesPerNode" : 2,
-    "minWeightFractionPerNode" : 0.1
+    "minWeightFractionPerNode" : 0.1,
+    "lossType" : "squared",
+    "maxIter" : 5
   }
 }

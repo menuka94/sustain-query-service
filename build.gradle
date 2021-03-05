@@ -118,11 +118,18 @@ task rforest(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
+task gboost(type: CreateStartScripts) {
+    mainClassName = 'org.sustain.modeling.GBoostRegressionModel'
+    applicationName = 'rforest'
+    outputDir = new File(project.buildDir, 'tmp')
+    classpath = startScripts.classpath
+}
+
 // Distribute generated binaries from above tasks into the bin/ folder at project root.
 applicationDistribution.into('bin') {
     from(sustainServer)
     from(linearRegressionModel)
     from(rforest)
-    fileMode = 0755
+    from(gboost)
     fileMode = 0755 // Make generated binaries executable
 }

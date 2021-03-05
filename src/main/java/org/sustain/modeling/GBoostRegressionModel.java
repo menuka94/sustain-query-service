@@ -28,13 +28,13 @@ import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.evaluation.RegressionEvaluator;
 import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.ml.regression.GBTRegressionModel;
+import org.apache.spark.ml.regression.GBTRegressor;
 import org.apache.spark.ml.regression.RandomForestRegressionModel;
 import org.apache.spark.ml.regression.RandomForestRegressor;
-import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -46,15 +46,14 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import scala.Tuple2;
 /**
  * Provides an interface for building generalized Random Forest Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class RFRegressionModel {
+public class GBoostRegressionModel {
 
     // DATABASE PARAMETERS
-    protected static final Logger log = LogManager.getLogger(RFRegressionModel.class);
+    protected static final Logger log = LogManager.getLogger(GBoostRegressionModel.class);
     private String[] features;
     private String label, gisJoin;
 
@@ -62,18 +61,20 @@ public class RFRegressionModel {
     private JavaSparkContext sparkContext;
 
     // MODEL PARAMETERS
+    // Loss function which GBT tries to minimize. (case-insensitive) Supported: "squared" (L2) and "absolute" (L1) (default = squared)
+    private String lossType = null;
+    // Max number of iterations
+    private Integer maxIter = null;
     //Minimum information gain for a split to be considered at a tree node. default 0.0
     private Double minInfoGain = null;
     // Minimum number of instances each child must have after split. If a split causes the left or right child to have fewer than minInstancesPerNode, the split will be discarded as invalid. Must be at least 1. (default = 1)
     private Integer minInstancesPerNode = null;
     //Minimum fraction of the weighted sample count that each child must have after split. Should be in the interval [0.0, 0.5). (default = 0.0)
     private Double minWeightFractionPerNode = null;
-    //Whether bootstrap samples are used when building trees.
-    private Boolean isBootstrap = null;
     //Fraction of the training data used for learning each decision tree, in range (0, 1]. (default = 1.0)
     private Double subsamplingRate = null;
-    //Number of trees to train (at least 1). If 1, then no bootstrapping is used. If greater than 1, then bootstrapping is done.
-    private Integer numTrees = 1;
+    //Param for Step size (a.k.a. learning rate) in interval (0, 1] for shrinking the contribution of each estimator. (default = 0.1)
+    private Double stepSize = null;
     // Number of features to consider for splits at each node. Supported: "auto", "all", "sqrt", "log2", "onethird".
     // If "auto" is set, this parameter is set based on numTrees: if numTrees == 1, set to "all"; if numTrees > 1 (forest) set to "onethird".
     private String featureSubsetStrategy = null; //auto/all/sqrt/log2/onethird
@@ -83,14 +84,29 @@ public class RFRegressionModel {
     private Integer maxDepth = null;
     //maxBins - Maximum number of bins used for splitting features. (suggested value: 100)
     private Integer maxBins = null;
-    private Double trainSplit = 0.7d;
-    String errorType = "rmse";
-    String queryField = "gis_join";
+    private Double trainSplit = 0.9d;
 
+    String queryField = "gis_join";
+    //String queryField = "countyName";
 
     double rmse = 0.0;
     private double r2 = 0.0;
 
+    public String getLossType() {
+        return lossType;
+    }
+
+    public void setLossType(String lossType) {
+        this.lossType = lossType;
+    }
+
+    public Integer getMaxIter() {
+        return maxIter;
+    }
+
+    public void setMaxIter(Integer maxIter) {
+        this.maxIter = maxIter;
+    }
 
     public Double getMinInfoGain() {
         return minInfoGain;
@@ -136,7 +152,7 @@ public class RFRegressionModel {
         this.trainSplit = trainSplit;
     }
 
-    public RFRegressionModel(String master, String mongoUri, String database, String collection, String gisJoin) {
+    public GBoostRegressionModel(String master, String mongoUri, String database, String collection, String gisJoin) {
         log.info("Random Forest constructor invoked");
         setGisjoin(gisJoin);
         initSparkSession(master, mongoUri, database, collection);
@@ -167,14 +183,6 @@ public class RFRegressionModel {
         return label;
     }
 
-    public Boolean getBootstrap() {
-        return isBootstrap;
-    }
-
-    public void setBootstrap(Boolean bootstrap) {
-        isBootstrap = bootstrap;
-    }
-
     public Double getSubsamplingRate() {
         return subsamplingRate;
     }
@@ -183,12 +191,12 @@ public class RFRegressionModel {
         this.subsamplingRate = subsamplingRate;
     }
 
-    public Integer getNumTrees() {
-        return numTrees;
+    public Double getStepSize() {
+        return stepSize;
     }
 
-    public void setNumTrees(Integer numTrees) {
-        this.numTrees = numTrees;
+    public void setStepSize(Double stepSize) {
+        this.stepSize = stepSize;
     }
 
     public String getFeatureSubsetStrategy() {
@@ -335,23 +343,23 @@ public class RFRegressionModel {
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
         startTime = System.currentTimeMillis();
 
-        RandomForestRegressor rf = new RandomForestRegressor().setFeaturesCol("features").setLabelCol("label");
+        GBTRegressor gb = new GBTRegressor().setFeaturesCol("features").setLabelCol("label");
 
         // POPULATING USER PARAMETERS
-        ingestParameters(rf);
+        ingestParameters(gb);
 
-        RandomForestRegressionModel rmodel = rf.fit(trainrdd);
+        GBTRegressionModel gbModel = gb.fit(trainrdd);
 
         fancy_logging("Model Training completed in "+calc_interval(startTime));
         startTime = System.currentTimeMillis();
 
-        Dataset<Row> predictions = rmodel.transform(testrdd);
+        Dataset<Row> predictions = gbModel.transform(testrdd);
 
         fancy_logging("Model Test completed in "+calc_interval(startTime));
         startTime = System.currentTimeMillis();
 
         //System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n"+Arrays.toString(predictions.columns())+"\n"+predictions.first());
-        RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName(errorType);
+        RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName("rmse");
 
         this.rmse = eval.evaluate(predictions);
 
@@ -365,45 +373,49 @@ public class RFRegressionModel {
     }
 
     // INJECTING USER-DEFINED PARAMETERS INTO MODEL
-    private void ingestParameters(RandomForestRegressor rf) {
-        if (this.isBootstrap != null) {
-            rf.setBootstrap(this.isBootstrap);
-        }
+    private void ingestParameters(GBTRegressor gb) {
         if (this.subsamplingRate != null) {
-            rf.setSubsamplingRate(this.subsamplingRate);
+            gb.setSubsamplingRate(this.subsamplingRate);
         }
-        if (this.numTrees != null) {
-            rf.setNumTrees(this.numTrees);
+        if (this.stepSize != null) {
+            gb.setStepSize(this.stepSize);
         }
         if (this.featureSubsetStrategy != null) {
-            rf.setFeatureSubsetStrategy(this.featureSubsetStrategy);
+            gb.setFeatureSubsetStrategy(this.featureSubsetStrategy);
         }
         if (this.impurity != null) {
-            rf.setImpurity(this.impurity);
+            gb.setImpurity(this.impurity);
         }
         if (this.maxDepth != null) {
-            rf.setMaxDepth(this.maxDepth);
+            gb.setMaxDepth(this.maxDepth);
         }
         if (this.maxBins != null) {
-            rf.setMaxBins(this.maxBins);
+            gb.setMaxBins(this.maxBins);
         }
 
         if (this.minInfoGain != null) {
-            rf.setMinInfoGain(this.minInfoGain);
+            gb.setMinInfoGain(this.minInfoGain);
         }
 
         if (this.minInstancesPerNode != null) {
-            rf.setMinInstancesPerNode(this.minInstancesPerNode);
+            gb.setMinInstancesPerNode(this.minInstancesPerNode);
         }
 
         if (this.minWeightFractionPerNode != null) {
-            rf.setMinWeightFractionPerNode(this.minWeightFractionPerNode);
+            gb.setMinWeightFractionPerNode(this.minWeightFractionPerNode);
+        }
+
+        if (this.lossType != null) {
+            gb.setLossType(this.lossType);
+        }
+        if (this.maxIter != null) {
+            gb.setMaxIter(this.maxIter);
         }
 
     }
 
     public void populateTest() {
-        this.numTrees = 1;
+        this.maxIter = 5;
     }
 
     private void logModelResults() {
@@ -424,7 +436,7 @@ public class RFRegressionModel {
         String gisJoins = "G0100290";
         String collection_name = "macav2";
 
-        RFRegressionModel lrModel = new RFRegressionModel("spark://lattice-1.cs.colostate.edu:32531",
+        GBoostRegressionModel lrModel = new GBoostRegressionModel("spark://lattice-1.cs.colostate.edu:32531",
                 "mongodb://lattice-46:27017", "sustaindb", collection_name, gisJoins);
 
         lrModel.populateTest();
