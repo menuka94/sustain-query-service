@@ -153,7 +153,7 @@ public class GBoostRegressionModel {
     }
 
     public GBoostRegressionModel(String master, String mongoUri, String database, String collection, String gisJoin) {
-        log.info("Random Forest constructor invoked");
+        log.info("Gradient Boosting constructor invoked");
         setGisjoin(gisJoin);
         initSparkSession(master, mongoUri, database, collection);
         addClusterDependencyJars();
@@ -240,7 +240,7 @@ public class GBoostRegressionModel {
      */
     private void initSparkSession(String master, String mongoUri, String database, String collection) {
 
-        String appName = "SUSTAIN RandomForest Regression Model";
+        String appName = "SUSTAIN GBoost Regression Model";
         log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
                 "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
                 master, appName, mongoUri, database, collection);
