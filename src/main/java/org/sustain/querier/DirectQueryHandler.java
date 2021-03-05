@@ -1,8 +1,8 @@
 package org.sustain.querier;
 
+import org.sustain.db.mongodb.DBConnection;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.MongoClient;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
@@ -40,58 +40,49 @@ public class DirectQueryHandler {
     }
 
     public void handleDirectQuery(DirectRequest request) {
-        log.debug("recv query for collection '"
+        log.debug("Received query for collection '"
             + request.getCollection() + "'");
         long startTime = System.currentTimeMillis();
 
-		AtomicLong count = new AtomicLong(0);
-		LinkedBlockingQueue<Document> queue = new LinkedBlockingQueue();
+        AtomicLong count = new AtomicLong(0);
+        LinkedBlockingQueue<Document> queue = new LinkedBlockingQueue();
         ReentrantLock lock = new ReentrantLock();
 
-        // start worker threads
-        ArrayList<Thread> threads = new ArrayList();
-        for (int i = 0; i < 1; i++) {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        while (true) {
-                            // retrieve next document
-                            Document document = queue.take();
+        // start serialization thread
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    while (true) {
+                        // retrieve next document
+                        Document document = queue.take();
 
-                            // initialize response
-                            DirectResponse response =
-                                DirectResponse.newBuilder()
-                                    .setData(document.toJson())
-                                    .build();
+                        // initialize response
+                        DirectResponse response =
+                            DirectResponse.newBuilder()
+                                .setData(document.toJson())
+                                .build();
 
-                            // send response
-                            lock.lock();
-                            try {
-                                responseObserver.onNext(response);
-                            } finally {
-                                lock.unlock();
-                            }
-
-                            // decrement active count
-                            count.decrementAndGet();
+                        // send response
+                        lock.lock();
+                        try {
+                            responseObserver.onNext(response);
+                        } finally {
+                            lock.unlock();
                         }
-                    } catch (InterruptedException e) {}
-                }
-            });
 
-            thread.start();
+                        // decrement active count
+                        count.decrementAndGet();
+                    }
+                } catch (InterruptedException e) {}
+            }
+        });
 
-            // add thread to arraylist
-            threads.add(thread);
-        }
+        thread.start();
 
         try {
             // connect to mongodb
-            MongoClient mongo = new MongoClient(
-                new ServerAddress(Constants.DB.HOST, Constants.DB.PORT));
-            MongoDatabase mongoDatabase =
-                mongo.getDatabase(Constants.DB.NAME);
+            MongoDatabase mongoDatabase = DBConnection.getConnection();
             MongoCollection mongoCollection = 
                 mongoDatabase.getCollection(request.getCollection());
 
@@ -123,19 +114,17 @@ public class DirectQueryHandler {
                 Thread.sleep(50);
             }
 
-            // stop worker threads
-            for (Thread thread : threads) {
-                thread.interrupt();
-            }
+            // stop worker thread
+            thread.interrupt();
 
             this.responseObserver.onCompleted();
 
             long duration = System.currentTimeMillis() - startTime;
-            log.info("processed " + totalCount
+            log.info("Processed " + totalCount
                 + " document(s) from collection '"
                 + request.getCollection() + "' in " + duration + "ms");
         } catch (Exception e) {
-            log.error("failed to evaluate query", e);
+            log.error("Failed to evaluate query", e);
             responseObserver.onError(e);
         }
     }
