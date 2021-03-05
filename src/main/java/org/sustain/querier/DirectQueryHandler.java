@@ -3,9 +3,7 @@ package org.sustain.querier;
 import org.sustain.db.mongodb.DBConnection;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.ServerAddress;
 import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoCollection;
 
@@ -25,9 +23,6 @@ import org.sustain.Query;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class DirectQueryHandler {
     public static final Logger log =
@@ -43,42 +38,6 @@ public class DirectQueryHandler {
         log.debug("Received query for collection '"
             + request.getCollection() + "'");
         long startTime = System.currentTimeMillis();
-
-        AtomicLong count = new AtomicLong(0);
-        LinkedBlockingQueue<Document> queue = new LinkedBlockingQueue();
-        ReentrantLock lock = new ReentrantLock();
-
-        // start serialization thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        // retrieve next document
-                        Document document = queue.take();
-
-                        // initialize response
-                        DirectResponse response =
-                            DirectResponse.newBuilder()
-                                .setData(document.toJson())
-                                .build();
-
-                        // send response
-                        lock.lock();
-                        try {
-                            responseObserver.onNext(response);
-                        } finally {
-                            lock.unlock();
-                        }
-
-                        // decrement active count
-                        count.decrementAndGet();
-                    }
-                } catch (InterruptedException e) {}
-            }
-        });
-
-        thread.start();
 
         try {
             // connect to mongodb
@@ -98,34 +57,47 @@ public class DirectQueryHandler {
                 query.add(queryComponent);
             }
 
-            // iterate over query results
+            // submit mongodb query
             AggregateIterable<Document> documents =
                 mongoCollection.aggregate(query);
-            long totalCount = 0; 
+
+            // initialize and start stream writer
+            DirectStreamWriter streamWriter =
+                new DirectStreamWriter(responseObserver, 1);
+            streamWriter.start();
+
+            // process results
+            long count = 0; 
             for (Document document : documents) {
-				queue.add(document);
-
-				count.incrementAndGet();
-                totalCount += 1;
+                streamWriter.add(document);
+                count += 1;
             }
 
-            // wait for worker threads to complete
-            while (count.get() != 0) {
-                Thread.sleep(50);
-            }
-
-            // stop worker thread
-            thread.interrupt();
-
+            // shutdown streamWriter and responseObserver
+            streamWriter.stop(false);
             this.responseObserver.onCompleted();
 
             long duration = System.currentTimeMillis() - startTime;
-            log.info("Processed " + totalCount
-                + " document(s) from collection '"
+            log.info("Processed " + count + " document(s) from collection '"
                 + request.getCollection() + "' in " + duration + "ms");
         } catch (Exception e) {
             log.error("Failed to evaluate query", e);
             responseObserver.onError(e);
+        }
+    }
+
+    class DirectStreamWriter extends StreamWriter<Document, DirectResponse> {
+        public DirectStreamWriter(
+                StreamObserver<DirectResponse> responseObserver,
+                int threadCount) {
+            super(responseObserver, threadCount);
+        }
+
+        @Override
+        public DirectResponse convert(Document document) {
+            return DirectResponse.newBuilder()
+                .setData(document.toJson())
+                .build();
         }
     }
 }
