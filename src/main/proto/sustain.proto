@@ -8,6 +8,10 @@ option java_outer_classname = "SustainQueryService";
 
 package sustain;
 
+// Used as a proxy service, allowing the front-end client to encapsulate a JSON-formatted
+// message into a gRPC message and send it to this JsonProxy service. This service then
+// takes that JSON-formatted message and converts it into an appropriate gRPC message,
+// as defined by the ModelRequest message type.
 service JsonProxy {
     rpc ModelQuery(JsonModelRequest) returns (stream JsonModelResponse) {}
 }
@@ -21,20 +25,11 @@ message JsonModelResponse {
 }
 
 service Sustain {
-  // census query with MongoDB support
-  rpc CensusQuery (CensusRequest) returns (stream CensusResponse) {}
 
-  // Query Open Street Map Data
-  rpc OsmQuery (OsmRequest) returns (stream OsmResponse) {}
-
-  // Query datasets (hospitals, dams, natural_gas_pipelines, power_plants, transmission_lines, etc.
-  rpc DatasetQuery (DatasetRequest) returns (stream DatasetResponse) {}
-
-  // Query Social Vulnerability Index (SVI) values
-  rpc SviQuery (SviRequest) returns (stream SviResponse) {}
-
+  // Query multiple collections and join the results together
   rpc CompoundQuery (CompoundRequest) returns (stream CompoundResponse) {}
 
+  // Create a Spark Model on a collection
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
 
   rpc DirectQuery (DirectRequest) returns (stream DirectResponse) {}
@@ -71,7 +66,7 @@ message KMeansClusteringRequest {
 
 message KMeansClusteringResponse {
   string gisJoin = 1;
-  int32 prediction = 2; // cluster
+  int32 prediction = 2; // Which cluster the GISJoin belongs to
 }
 
 message LinearRegressionRequest {
@@ -98,94 +93,9 @@ message LinearRegressionResponse {
   repeated double objectiveHistory = 7;
 }
 
-message SviRequest {
-  string requestGeoJson = 1;
-  SpatialOp spatialOp = 2;
-}
-
-message SviResponse {
-  string data = 1;
-  string responseGeoJson = 2; // geoJson associated with 'data'
-}
-
-message DatasetRequest {
-  enum Dataset {
-    HOSPITALS = 0;
-    DAMS = 1;
-    ELECTRICAL_SUBSTATIONS = 2;
-    TRANSMISSION_LINES = 3;
-    NATURAL_GAS_PIPELINES = 4;
-    POWER_PLANTS = 5;
-    FIRE_STATIONS = 6;
-    FLOOD_ZONES = 7;
-  }
-  Dataset dataset = 1;
-  string requestGeoJson = 2;
-  SpatialOp spatialOp = 3;
-  map<string, string> requestParams = 4;
-}
-
-message DatasetResponse {
-  string response = 1;
-}
-
-message OsmRequest {
-  enum Dataset {
-    POINTS = 0;
-    LINES = 1;
-    MULTI_LINES = 2;
-    MULTI_POLYGONS = 3;
-    OTHER = 4;
-    ALL = 5;
-  }
-  Dataset dataset = 1;
-  string requestGeoJson = 2;
-  SpatialOp spatialOp = 3;
-  message OsmRequestParam {
-    string key = 1;
-    string value = 2;
-  }
-  repeated OsmRequestParam requestParams = 4;
-}
-
-message OsmResponse {
-  string response = 1;
-}
-
-message CensusRequest {
-  CensusResolution censusResolution = 1;
-  CensusFeature censusFeature = 2;
-  string requestGeoJson = 3; // bounding polygon
-  SpatialOp spatialOp = 4;
-}
-
-message CensusResponse {
-  string data = 1;
-  string responseGeoJson = 2; // geoJson associated with 'data'
-}
-
 enum SpatialOp {
   GeoWithin = 0;
   GeoIntersects = 1;
-}
-
-enum CensusFeature {
-  TotalPopulation = 0;
-  MedianHouseholdIncome = 1;
-  PopulationByAge = 2;
-  MedianAge = 3;
-  Poverty = 4;
-  Race = 5;
-}
-
-enum IntraDatasetOp {
-  INTERSECTION = 0;
-  UNION = 1;
-  OVERLAP = 2;
-}
-
-message DatasetEntry {
-  string entry = 1;
 }
 
 enum CensusResolution {
@@ -193,27 +103,6 @@ enum CensusResolution {
   County = 1;
   Tract = 2;
   Block = 3;
-}
-
-enum Decade {
-  _2010 = 0;
-  _2000 = 1;
-  _1990 = 2;
-  _1980 = 3;
-}
-
-message Predicate {
-  enum ComparisonOperator {
-    EQUAL = 0;
-    GREATER_THAN = 1;
-    LESS_THAN = 2;
-    GREATER_THAN_OR_EQUAL = 3;
-    LESS_THAN_OR_EQUAL = 4;
-  }
-  CensusFeature censusFeature = 1;
-  Decade decade = 2;
-  ComparisonOperator comparisonOp = 3;
-  double comparisonValue = 4;
 }
 
 enum JoinOperator {
@@ -251,15 +140,15 @@ message CompoundRequest {
 }
 
 message Query {
-    string host = 1;
-    int32 port = 2;
-    string collection = 3;
-    string query = 4; //This is a json representation of a mongodb query
+    string host = 1;          // MongoDB hostname
+    int32  port = 2;          // MongoDB port
+    string collection = 3;    // MongoDB collection
+    string query = 4;         // Json representation of a MongoDB query
 }
 
 message DirectRequest {
     string collection = 1;
-    string query = 2; //This is a json representation of a mongodb query
+    string query = 2; // JSON representation of a MongoDB query
 }
 
 message DirectResponse {

@@ -1,7 +1,6 @@
 package org.sustain.server;
 
 import com.google.protobuf.util.JsonFormat;
-import com.mongodb.client.model.geojson.Geometry;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
@@ -9,12 +8,8 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.CensusRequest;
-import org.sustain.CensusResponse;
 import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
-import org.sustain.DatasetRequest;
-import org.sustain.DatasetResponse;
 import org.sustain.DirectRequest;
 import org.sustain.DirectResponse;
 import org.sustain.JsonModelRequest;
@@ -23,31 +18,18 @@ import org.sustain.JsonProxyGrpc;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.ModelType;
-import org.sustain.OsmRequest;
-import org.sustain.OsmResponse;
-import org.sustain.Predicate;
-import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
-import org.sustain.SviRequest;
-import org.sustain.SviResponse;
-import org.sustain.datasets.handlers.CensusQueryHandler;
-import org.sustain.datasets.controllers.SpatialQueryUtil;
-import org.sustain.modeling.ClusteringQueryHandler;
-import org.sustain.datasets.handlers.OsmQueryHandler;
-import org.sustain.datasets.handlers.DatasetQueryHandler;
-import org.sustain.modeling.RegressionQueryHandler;
-import org.sustain.querier.DirectQueryHandler;
-import org.sustain.querier.CompoundQueryHandler;
-import org.sustain.datasets.controllers.SviController;
+import org.sustain.handlers.ClusteringQueryHandler;
+import org.sustain.handlers.CompoundQueryHandler;
+import org.sustain.handlers.GrpcHandler;
+import org.sustain.handlers.RegressionQueryHandler;
+import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static org.sustain.datasets.controllers.SpatialQueryUtil.getGeometryFromGeoJson;
 
 
 public class SustainServer {
@@ -64,16 +46,16 @@ public class SustainServer {
 
     // Logs the environment variables that the server was started with.
     public static void logEnvironment() {
-        log.info("--- Server Environment ---");
-        log.info("SERVER_HOST: " + Constants.Server.HOST);
-        log.info("SERVER_PORT: " + Constants.Server.PORT);
-        log.info("--- Database Environment ---");
-        log.info("DB_HOST: " + Constants.DB.HOST);
-        log.info("DB_PORT: " + Constants.DB.PORT);
-        log.info("DB_NAME: " + Constants.DB.NAME);
-        log.info("DB_USERNAME: " + Constants.DB.USERNAME);
-        log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
-        log.info("SPARK_MASTER: " + Constants.Spark.MASTER);
+        log.info("\n\n--- Server Environment ---\n" +
+                        "SERVER_HOST: {}\n" +
+                        "SERVER_PORT: {}\n" +
+                        "\n\n--- Database Environment ---\n" +
+                        "DB_HOST: {}\n" +
+                        "DB_PORT: {}\n" +
+                        "DB_NAME: {}\n" +
+                        "DB_USERNAME: {}\n" +
+                        "DB_PASSWORD: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
+                Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
     }
 
 
@@ -175,119 +157,41 @@ public class SustainServer {
         }
     }
 
-    // Server implementation
+    // SUSTAIN gRPC Server Implementation
     static class SustainService extends SustainGrpc.SustainImplBase {
-        @Override
-        public void censusQuery(CensusRequest request, StreamObserver<CensusResponse> responseObserver) {
-            CensusQueryHandler handler = new CensusQueryHandler(request, responseObserver);
-            handler.handleCensusQuery();
-        }
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
+            GrpcHandler<ModelRequest, ModelResponse> handler;
             ModelType type = request.getType();
             switch (type) {
                 case LINEAR_REGRESSION:
                     log.info("Received a Linear Regression Model request");
-                    RegressionQueryHandler regressionHandler = new RegressionQueryHandler(request, responseObserver);
-                    regressionHandler.handleQuery();
+                    handler = new RegressionQueryHandler(request, responseObserver);
                     break;
                 case K_MEANS_CLUSTERING:
                     log.info("Received a K-Means Clustering Model request");
-                    ClusteringQueryHandler clusteringHandler = new ClusteringQueryHandler(request, responseObserver);
-                    clusteringHandler.handleQuery();
+                    handler = new ClusteringQueryHandler(request, responseObserver);
                     break;
-                case UNRECOGNIZED:
+                default:
                     responseObserver.onError(new Exception("Invalid Model Type"));
+                    return;
             }
+
+            handler.handleRequest();
             responseObserver.onCompleted();
-        }
-
-        @Override
-        public void sviQuery(SviRequest request, StreamObserver<SviResponse> responseObserver) {
-            Geometry geometry = getGeometryFromGeoJson(request.getRequestGeoJson());
-            SpatialOp spatialOp = request.getSpatialOp();
-            log.info("SVI Query{spatialOp: " + spatialOp + "}");
-            HashMap<String, String> geos = new HashMap<>();
-            switch (spatialOp) {
-                case GeoWithin:
-                    geos = SpatialQueryUtil.findGeoWithin(Constants.GeoJsonCollections.TRACTS_GEO,
-                            geometry);
-                    break;
-                case GeoIntersects:
-                    geos = SpatialQueryUtil.findGeoIntersects(Constants.GeoJsonCollections.TRACTS_GEO,
-                            geometry);
-                    break;
-                case UNRECOGNIZED:
-                    log.warn("Invalid spatial op: " + spatialOp);
-            }
-            ArrayList<String> gisJoins = new ArrayList<>(geos.keySet());
-            for (String gisJoin : gisJoins) {
-                String svi = SviController.getSviByGisJoin(gisJoin);
-                if (svi != null) {
-                    responseObserver.onNext(SviResponse.newBuilder()
-                            .setData(svi)
-                            .setResponseGeoJson(geos.get(gisJoin))
-                            .build());
-                }
-            }
-
-            responseObserver.onCompleted();
-        }
-
-        /**
-         * Determine if a given value is valid after comparing it with the actual value using the\
-         * given comparison Operator
-         *
-         * @param comparisonOp    comparison operator from gRPC request
-         * @param value           value returned by the census data record
-         * @param comparisonValue comparisonValue from gRPC request
-         * @return comparison of 'value' to 'comparisonValue'
-         */
-        boolean compareValueWithInputValue(Predicate.ComparisonOperator comparisonOp, Double value,
-                                           Double comparisonValue) {
-            switch (comparisonOp) {
-                case EQUAL:
-                    return value.equals(comparisonValue);
-                case GREATER_THAN_OR_EQUAL:
-                    return value >= comparisonValue;
-                case LESS_THAN:
-                    return value < comparisonValue;
-                case LESS_THAN_OR_EQUAL:
-                    return value <= comparisonValue;
-                case GREATER_THAN:
-                    return value > comparisonValue;
-                case UNRECOGNIZED:
-                    log.warn("Unknown comparison operator");
-                    return false;
-            }
-            return false;
-        }
-
-        @Override
-        public void osmQuery(OsmRequest request, StreamObserver<OsmResponse> responseObserver) {
-            OsmQueryHandler handler = new OsmQueryHandler(request, responseObserver);
-            handler.handleOsmQuery();
-        }
-
-        @Override
-        public void datasetQuery(DatasetRequest request, StreamObserver<DatasetResponse> responseObserver) {
-            DatasetQueryHandler handler = new DatasetQueryHandler(request, responseObserver);
-            handler.handleDatasetQuery();
         }
 
         @Override
         public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
-            CompoundQueryHandler handler = new CompoundQueryHandler(responseObserver);
-            handler.handleCompoundQuery(request, true);
+            CompoundQueryHandler handler = new CompoundQueryHandler(request, responseObserver);
+            handler.handleRequest();
         }
 
         @Override
-        public void directQuery(DirectRequest request,
-                StreamObserver<DirectResponse> responseObserver) {
-            DirectQueryHandler handler =
-                new DirectQueryHandler(responseObserver);
-            handler.handleDirectQuery(request);
+        public void directQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
+            GrpcHandler<DirectRequest, DirectResponse> handler = new DirectQueryHandler(request, responseObserver);
+            handler.handleRequest();
         }
-    }   // end of Server implementation
+    }
 }

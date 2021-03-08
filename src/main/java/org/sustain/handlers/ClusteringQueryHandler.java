@@ -1,4 +1,4 @@
-package org.sustain.modeling;
+package org.sustain.handlers;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -31,19 +31,18 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClusteringQueryHandler {
+public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelResponse> {
+
     private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
-    private final ModelRequest request;
-    private final StreamObserver<ModelResponse> responseObserver;
     private JavaSparkContext sparkContext;
 
     public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        this.request = request;
-        this.responseObserver = responseObserver;
+        super(request, responseObserver);
     }
 
-    public void handleQuery() {
-        logRequest();
+    @Override
+    public void handleRequest() {
+        logRequest(this.request);
         initSparkSession();
         buildModel();
         sparkContext.close();
@@ -151,29 +150,6 @@ public class ClusteringQueryHandler {
             log.info("Adding dependency JAR to the Spark Context: " + jar);
             sparkContext.addJar(jar);
         }
-    }
-
-    private void logRequest() {
-        KMeansClusteringRequest kMeansClusteringRequest = request.getKMeansClusteringRequest();
-
-        log.info("============== REQUEST ===============");
-
-        log.info("Collections:");
-        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
-            Collection col = this.request.getCollections(i);
-            log.info("\tName: " + col.getName());
-            log.info("\tLabel: " + col.getLabel());
-            log.info("\tFeatures:");
-            for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t" + col.getFeatures(j));
-            }
-        }
-
-        log.info("KMeansClusteringRequest:");
-        KMeansClusteringRequest req = this.request.getKMeansClusteringRequest();
-        log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
-        log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
-        log.info("=======================================");
     }
 
     private static class ClusteringResult {

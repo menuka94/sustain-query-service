@@ -1,11 +1,9 @@
-package org.sustain.querier;
+package org.sustain.handlers;
 
 import org.sustain.db.mongodb.DBConnection;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.ServerAddress;
 import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoCollection;
 
@@ -20,50 +18,44 @@ import org.json.JSONArray;
 
 import org.sustain.DirectResponse;
 import org.sustain.DirectRequest;
-import org.sustain.Query;
-
-import org.sustain.util.Constants;
 
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class DirectQueryHandler {
-    public static final Logger log =
-        LogManager.getLogger(DirectQueryHandler.class);
+public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectResponse> {
 
-    private final StreamObserver<DirectResponse> responseObserver;
+    public static final Logger log = LogManager.getLogger(DirectQueryHandler.class);
 
-    public DirectQueryHandler(StreamObserver<DirectResponse> responseObserver) {
-        this.responseObserver = responseObserver;
+    public DirectQueryHandler(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
+        super(request, responseObserver);
     }
 
-    public void handleDirectQuery(DirectRequest request) {
-        log.debug("Received query for collection '"
-            + request.getCollection() + "'");
+    @Override
+    public void handleRequest() {
+        log.info("Received query for collection '{}'", request.getCollection());
         long startTime = System.currentTimeMillis();
 
         AtomicLong count = new AtomicLong(0);
-        LinkedBlockingQueue<Document> queue = new LinkedBlockingQueue();
+        LinkedBlockingQueue<Document> queue = new LinkedBlockingQueue<>();
         ReentrantLock lock = new ReentrantLock();
 
-        // start serialization thread
+        // Start serialization thread
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     while (true) {
-                        // retrieve next document
+                        // Retrieve next document
                         Document document = queue.take();
 
-                        // initialize response
-                        DirectResponse response =
-                            DirectResponse.newBuilder()
+                        // Initialize response
+                        DirectResponse response = DirectResponse.newBuilder()
                                 .setData(document.toJson())
                                 .build();
 
-                        // send response
+                        // Send response
                         lock.lock();
                         try {
                             responseObserver.onNext(response);
@@ -71,58 +63,54 @@ public class DirectQueryHandler {
                             lock.unlock();
                         }
 
-                        // decrement active count
+                        // Decrement active count
                         count.decrementAndGet();
                     }
-                } catch (InterruptedException e) {}
+                } catch (InterruptedException e) {
+                    log.info("Thread interrupted");
+                }
             }
         });
 
+        // Start the Thread to process/stream Document results back to the gRPC client
         thread.start();
 
         try {
-            // connect to mongodb
+            // Connect to MongoDB
             MongoDatabase mongoDatabase = DBConnection.getConnection();
-            MongoCollection mongoCollection = 
-                mongoDatabase.getCollection(request.getCollection());
+            MongoCollection<Document> mongoCollection = mongoDatabase.getCollection(request.getCollection());
 
-            // construct mongodb query object
-            ArrayList<BasicDBObject> query =
-                new ArrayList<BasicDBObject>();
+            // Construct MongoDB query object
+            ArrayList<BasicDBObject> query = new ArrayList<>();
 
+            // Build MongoDB
             JSONArray parsedQuery = new JSONArray(request.getQuery());
             for (int i = 0; i < parsedQuery.length(); i++) {
-                BasicDBObject queryComponent = new BasicDBObject()
-                    .parse(parsedQuery.getJSONObject(i).toString());
-
+                BasicDBObject queryComponent = BasicDBObject.parse(parsedQuery.getJSONObject(i).toString());
                 query.add(queryComponent);
             }
 
-            // iterate over query results
-            AggregateIterable<Document> documents =
-                mongoCollection.aggregate(query);
-            long totalCount = 0; 
+            // Iterate over query results
+            AggregateIterable<Document> documents = mongoCollection.aggregate(query);
+            long totalCount = 0;
             for (Document document : documents) {
-				queue.add(document);
-
-				count.incrementAndGet();
+                queue.add(document);
+                count.incrementAndGet();
                 totalCount += 1;
             }
 
-            // wait for worker threads to complete
+            // Wait for worker threads to complete
             while (count.get() != 0) {
                 Thread.sleep(50);
             }
 
-            // stop worker thread
+            // Stop worker thread and end gRPC stream
             thread.interrupt();
-
             this.responseObserver.onCompleted();
 
             long duration = System.currentTimeMillis() - startTime;
-            log.info("Processed " + totalCount
-                + " document(s) from collection '"
-                + request.getCollection() + "' in " + duration + "ms");
+            log.info("Processed {} document(s) from collection '{}' in {} ms", totalCount,
+                    request.getCollection(), duration);
         } catch (Exception e) {
             log.error("Failed to evaluate query", e);
             responseObserver.onError(e);

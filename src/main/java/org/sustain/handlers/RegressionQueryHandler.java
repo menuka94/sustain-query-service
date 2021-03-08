@@ -1,54 +1,43 @@
-package org.sustain.modeling;
+package org.sustain.handlers;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.*;
+
+import org.sustain.Collection;
+import org.sustain.LinearRegressionRequest;
+import org.sustain.LinearRegressionResponse;
+import org.sustain.ModelRequest;
+import org.sustain.ModelResponse;
+import org.sustain.ModelType;
+import org.sustain.modeling.SustainLinearRegression;
 import org.sustain.util.Constants;
 
-public class RegressionQueryHandler {
+public class RegressionQueryHandler extends GrpcHandler<ModelRequest, ModelResponse> {
+
     private static final Logger log = LogManager.getLogger(RegressionQueryHandler.class);
-    private final ModelRequest request;
-    private final StreamObserver<ModelResponse> responseObserver;
 
     public RegressionQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        this.request = request;
-        this.responseObserver = responseObserver;
+        super(request, responseObserver);
     }
 
-    private void logRequest() {
-        log.info("============== REQUEST ===============");
+    @Override
+    public void handleRequest() {
+        if (isValidModelRequest(this.request)) {
+            logRequest(this.request);
+            LinearRegressionRequest req = this.request.getLinearRegressionRequest();
+            for (String gisJoin: req.getGisJoinsList()) {
+                LinearRegressionResponse modelResults = buildModel(this.request, gisJoin);
+                ModelResponse response = ModelResponse.newBuilder()
+                        .setLinearRegressionResponse(modelResults)
+                        .build();
 
-        log.info("Collections:");
-        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
-            Collection col = this.request.getCollections(i);
-            log.info("\tName: {}", col.getName());
-            log.info("\tLabel: {}", col.getLabel());
-            log.info("\tFeatures:");
-            for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t{}", col.getFeatures(j));
+                logResponse(response);
+                this.responseObserver.onNext(response);
             }
+        } else {
+            log.warn("Invalid Model Request!");
         }
-
-        log.info("LinearRegressionRequest:");
-        LinearRegressionRequest req = this.request.getLinearRegressionRequest();
-        log.info("\tGISJoins:");
-        for (int i = 0; i < req.getGisJoinsCount(); i++) {
-            log.info("\t\t{}", req.getGisJoins(i));
-        }
-
-        log.info("\tLoss: {}", req.getLoss());
-        log.info("\tSolver: {}", req.getSolver());
-        log.info("\tMaxIterations: {}", req.getMaxIterations());
-        log.info("\tAggregationDepth: {}", req.getAggregationDepth());
-        log.info("\tElasticNetParam: {}", req.getElasticNetParam());
-        log.info("\tEpsilon: {}", req.getEpsilon());
-        log.info("\tEpsilon: {}", req.getEpsilon());
-        log.info("\tConvergenceTolerance: {}", req.getConvergenceTolerance());
-        log.info("\tRegularizationParam: {}", req.getRegularizationParam());
-        log.info("\tSetStandardization: {}", req.getSetStandardization());
-        log.info("\tFitIntercept: {}", req.getFitIntercept());
-        log.info("=======================================");
     }
 
     private LinearRegressionResponse buildModel(ModelRequest modelRequest, String gisJoin) {
@@ -109,22 +98,5 @@ public class RegressionQueryHandler {
         }
 
         return false;
-    }
-
-    public void handleQuery() {
-        if (isValidModelRequest(this.request)) {
-            logRequest();
-            LinearRegressionRequest req = this.request.getLinearRegressionRequest();
-            for (String gisJoin: req.getGisJoinsList()) {
-                LinearRegressionResponse modelResults = buildModel(this.request, gisJoin);
-                ModelResponse response = ModelResponse.newBuilder()
-                        .setLinearRegressionResponse(modelResults)
-                        .build();
-
-                this.responseObserver.onNext(response);
-            }
-        } else {
-            log.warn("Invalid Model Request!");
-        }
     }
 }
