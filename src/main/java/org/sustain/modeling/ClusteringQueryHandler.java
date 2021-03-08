@@ -9,13 +9,14 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.Model;
 import org.apache.spark.ml.clustering.BisectingKMeans;
 import org.apache.spark.ml.clustering.BisectingKMeansModel;
 import org.apache.spark.ml.clustering.GaussianMixture;
 import org.apache.spark.ml.clustering.GaussianMixtureModel;
 import org.apache.spark.ml.clustering.KMeans;
 import org.apache.spark.ml.clustering.KMeansModel;
+import org.apache.spark.ml.clustering.LDA;
+import org.apache.spark.ml.clustering.LDAModel;
 import org.apache.spark.ml.feature.MinMaxScaler;
 import org.apache.spark.ml.feature.MinMaxScalerModel;
 import org.apache.spark.ml.feature.VectorAssembler;
@@ -30,6 +31,8 @@ import org.sustain.GaussianMixtureRequest;
 import org.sustain.GaussianMixtureResponse;
 import org.sustain.KMeansClusteringRequest;
 import org.sustain.KMeansClusteringResponse;
+import org.sustain.LatentDirichletAllocationRequest;
+import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.ModelType;
@@ -39,6 +42,7 @@ import scala.collection.Seq;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class ClusteringQueryHandler {
@@ -64,13 +68,19 @@ public class ClusteringQueryHandler {
             case GAUSSIAN_MIXTURE:
                 resolution = request.getGaussianMixtureRequest().getResolution().toString().toLowerCase();
                 break;
+            case LATENT_DIRICHLET_ALLOCATION:
+                resolution = request.getLatentDirichletAllocationRequest().getResolution().toString().toLowerCase();
+                break;
+            case UNRECOGNIZED:
+                log.warn("Invalid request type");
+                break;
         }
         log.info("resolution: " + resolution);
         String databaseUrl = "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT;
         String collection = resolution + "_stats";
         SparkSession sparkSession = SparkSession.builder()
                 .master(Constants.Spark.MASTER)
-                .appName("SUSTAIN Clustering")
+                .appName("SUSTAIN Clustering: " + new Date())
                 .config("spark.mongodb.input.uri", databaseUrl + "/" + Constants.DB.NAME + "." + collection)
                 .getOrCreate();
 
@@ -91,12 +101,52 @@ public class ClusteringQueryHandler {
             case GAUSSIAN_MIXTURE:
                 buildGaussianMixtureModel();
                 break;
-            case POWER_ITERATION_CLUSTERING:
-                break;
             case LATENT_DIRICHLET_ALLOCATION:
+                buildLatentDirichletAllocationModel();
                 break;
         }
         sparkContext.close();
+    }
+
+    private void buildLatentDirichletAllocationModel() {
+        int k = request.getLatentDirichletAllocationRequest().getClusterCount();
+        int maxIterations = request.getLatentDirichletAllocationRequest().getMaxIterations();
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF();
+
+        // LDA
+        LDA lda = new LDA().setK(k).setMaxIter(maxIterations);
+        LDAModel model = lda.fit(featureDF);
+
+        double ll = model.logLikelihood(featureDF);
+        double lp = model.logPerplexity(featureDF);
+        log.info("LDA: Lower bound on the log likelihood of the entire corpus: " + ll);
+        log.info("LDA: Upper bound on perplexity: " + lp);
+
+        // results
+        Dataset<Row> predictDF = model.transform(featureDF);
+        log.info("Predictions...");
+        predictDF.show(10);
+
+        Dataset<String> jsonResults = predictDF.toJSON();
+        String jsonString = jsonResults.collectAsList().toString();
+
+        Gson gson = new Gson();
+        Type type = new TypeToken<List<ClusteringResult>>() {
+        }.getType();
+        List<ClusteringResult> results = gson.fromJson(jsonString, type);
+        log.info("results.size(): " + results.size());
+
+        log.info("Writing LatentDirichletAllocationResponse to stream");
+        for (ClusteringResult result : results) {
+            responseObserver.onNext(ModelResponse.newBuilder()
+                    .setLatentDirichletAllocationResponse(
+                            LatentDirichletAllocationResponse.newBuilder()
+                                    .setGisJoin(result.getGisJoin())
+                                    .setPrediction(result.getPrediction())
+                                    .build()
+                    ).build()
+            );
+        }
     }
 
     private void buildKMeansModel() {
@@ -126,7 +176,6 @@ public class ClusteringQueryHandler {
 
         log.info("Writing KMeansClusteringResponses to stream");
         for (ClusteringResult result : results) {
-            //write results to gRPC response
             responseObserver.onNext(ModelResponse.newBuilder()
                     .setKMeansClusteringResponse(
                             KMeansClusteringResponse.newBuilder()
@@ -162,7 +211,6 @@ public class ClusteringQueryHandler {
 
         log.info("Writing BisectingKMeansResponses to stream");
         for (ClusteringResult result : results) {
-            //write results to gRPC response
             responseObserver.onNext(ModelResponse.newBuilder()
                     .setBisectingKMeansResponse(
                             BisectingKMeansResponse.newBuilder()
@@ -204,7 +252,6 @@ public class ClusteringQueryHandler {
 
         log.info("Writing GaussianMixtureResponses to stream");
         for (ClusteringResult result : results) {
-            //write results to gRPC response
             responseObserver.onNext(ModelResponse.newBuilder()
                     .setGaussianMixtureResponse(
                             GaussianMixtureResponse.newBuilder()
@@ -303,6 +350,12 @@ public class ClusteringQueryHandler {
                 GaussianMixtureRequest gaussianMixtureRequest = request.getGaussianMixtureRequest();
                 log.info("\tClusterCount: " + gaussianMixtureRequest.getClusterCount());
                 log.info("\tMaxIterations: " + gaussianMixtureRequest.getMaxIterations());
+                break;
+            case LATENT_DIRICHLET_ALLOCATION:
+                LatentDirichletAllocationRequest latentDirichletAllocationRequest =
+                        request.getLatentDirichletAllocationRequest();
+                log.info("\tClusterCount: " + latentDirichletAllocationRequest.getClusterCount());
+                log.info("\tMaxIterations: " + latentDirichletAllocationRequest.getMaxIterations());
                 break;
         }
         log.info("=======================================");
