@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+import "google/api/http.proto";
+
+option java_multiple_files = true;
+option java_package = "org.sustain";
+option java_outer_classname = "SustainQueryService";
+
+package sustain;
+
+// Used as a proxy service, allowing the front-end client to encapsulate a JSON-formatted
+// message into a gRPC message and send it to this JsonProxy service. This service then
+// takes that JSON-formatted message and converts it into an appropriate gRPC message,
+// as defined by the ModelRequest message type.
+service JsonProxy {
+    rpc ModelQuery(JsonModelRequest) returns (stream JsonModelResponse) {}
+}
+
+message JsonModelRequest {
+    string json = 1;
+}
+
+message JsonModelResponse {
+    string json = 1;
+}
+
+service Sustain {
+
+  // Query multiple collections and join the results together
+  rpc CompoundQuery (CompoundRequest) returns (stream CompoundResponse) {}
+
+  // Create a Spark Model on a collection
+  rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
+
+  rpc DirectQuery (DirectRequest) returns (stream DirectResponse) {}
+}
+
+enum ModelType {
+    K_MEANS_CLUSTERING = 0;
+    LINEAR_REGRESSION = 1;
+}
+
+message ModelRequest {
+  ModelType type = 1;
+  repeated Collection collections = 2;
+  KMeansClusteringRequest kMeansClusteringRequest = 3;
+  LinearRegressionRequest linearRegressionRequest = 4;
+}
+
+message Collection {
+  string name = 1;
+  string label = 2;
+  repeated string features = 3;
+}
+
+message ModelResponse {
+  KMeansClusteringResponse kMeansClusteringResponse = 1;
+  LinearRegressionResponse linearRegressionResponse = 2;
+}
+
+message KMeansClusteringRequest {
+  int32 clusterCount = 1;
+  int32 maxIterations = 2;
+  CensusResolution resolution = 3;
+}
+
+message KMeansClusteringResponse {
+  string gisJoin = 1;
+  int32 prediction = 2; // Which cluster the GISJoin belongs to
+}
+
+message LinearRegressionRequest {
+  repeated string gisJoins = 2;
+  string loss = 3;
+  string solver = 4;
+  int32 maxIterations = 5;
+  int32 aggregationDepth = 6;
+  double elasticNetParam = 7;
+  double epsilon = 8;
+  double convergenceTolerance = 9;
+  double regularizationParam = 10;
+  bool setStandardization = 11;
+  bool fitIntercept = 12;
+}
+
+message LinearRegressionResponse {
+  string gisJoin = 1;
+  double totalIterations = 2;
+  double rmseResidual = 3;
+  double r2Residual = 4;
+  double intercept = 5;
+  repeated double slopeCoefficients = 6;
+  repeated double objectiveHistory = 7;
+}
+
+enum SpatialOp {
+  GeoWithin = 0;
+  GeoIntersects = 1;
+}
+
+enum CensusResolution {
+  State = 0;
+  County = 1;
+  Tract = 2;
+  Block = 3;
+}
+
+enum JoinOperator {
+    INNER_JOIN = 0;
+    OUTER_JOIN = 1;
+    LEFT_JOIN = 2;
+    RIGHT_JOIN = 3;
+}
+
+enum ComparisonOperator {
+    EQUAL = 0;
+    GREATER_THAN = 1;
+    LESS_THAN = 2;
+    GREATER_THAN_OR_EQUAL = 3;
+    LESS_THAN_OR_EQUAL = 4;
+}
+
+message CompoundResponse {
+    string data = 1;
+    string geoJson = 2;
+}
+
+message CompoundRequest {
+    oneof FirstPredicate {
+        Query first_query = 1;
+        CompoundRequest first_compound_request = 2;
+    }
+
+    JoinOperator join = 3;
+
+    oneof SecondPredicate {
+        Query second_query = 4;
+        CompoundRequest second_compound_request = 5;
+    }
+}
+
+message Query {
+    string host = 1;          // MongoDB hostname
+    int32  port = 2;          // MongoDB port
+    string collection = 3;    // MongoDB collection
+    string query = 4;         // Json representation of a MongoDB query
+}
+
+message DirectRequest {
+    string collection = 1;
+    string query = 2; // JSON representation of a MongoDB query
+}
+
+message DirectResponse {
+    string data = 1;
+}

@@ -30,8 +30,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-
-
 public class SustainServer {
     private static final Logger log = LogManager.getLogger(SustainServer.class);
 
@@ -184,7 +182,7 @@ public class SustainServer {
 
         @Override
         public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
-            CompoundQueryHandler handler = new CompoundQueryHandler(request, responseObserver);
+            GrpcHandler<CompoundRequest, CompoundResponse> handler = new CompoundQueryHandler(request, responseObserver);
             handler.handleRequest();
         }
 

@@ -32,7 +32,7 @@ public class SpatialClient {
         JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub = spatialClient.getJsonProxyBlockingStub();
 
         exampleLRModelRequest(jsonProxyBlockingStub);
-        //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
+        exampleKMeansClusteringRequest(jsonProxyBlockingStub);
     }
 
     // Logs the environment variables that the server was started with.
@@ -82,8 +82,8 @@ public class SpatialClient {
                 "    }\n" +
                 "}";
 
-        log.info("Sending JSON request:\n{}", request);
-
+        log.info("Example Linear Regression Request: \n{}", request);
+        /*
         JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
                 .setJson(request)
                 .build();
@@ -93,6 +93,8 @@ public class SpatialClient {
             JsonModelResponse jsonResponse = jsonResponseIterator.next();
             log.info("JSON Model Response: {}", jsonResponse.getJson());
         }
+        */
+
 
     }
 
@@ -116,6 +118,10 @@ public class SpatialClient {
                 "}\n" +
                 "\n";
 
+        log.info("Example K-Means Clustering Request: \n{}", request);
+
+
+        /*
         JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
                 .setJson(request)
                 .build();
@@ -124,6 +130,8 @@ public class SpatialClient {
             JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
             log.info("JSON Model Response: {}", jsonResponse.getJson());
         }
+        */
+
     }
 
     public SustainGrpc.SustainBlockingStub getSustainBlockingStub() {
