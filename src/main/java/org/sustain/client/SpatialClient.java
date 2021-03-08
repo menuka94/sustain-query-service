@@ -4,7 +4,21 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.*;
+import org.sustain.CensusFeature;
+import org.sustain.CensusRequest;
+import org.sustain.CensusResolution;
+import org.sustain.CensusResponse;
+import org.sustain.DatasetRequest;
+import org.sustain.DatasetResponse;
+import org.sustain.JsonModelRequest;
+import org.sustain.JsonModelResponse;
+import org.sustain.JsonProxyGrpc;
+import org.sustain.OsmRequest;
+import org.sustain.OsmResponse;
+import org.sustain.SpatialOp;
+import org.sustain.SustainGrpc;
+import org.sustain.SviRequest;
+import org.sustain.SviResponse;
 import org.sustain.util.Constants;
 
 import java.util.Iterator;
@@ -34,7 +48,8 @@ public class SpatialClient {
         //exampleLRModelRequest(jsonProxyBlockingStub);
         //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
         //exampleBisectingKMeansQuery(jsonProxyBlockingStub);
-        exampleGaussianMixtureQuery(jsonProxyBlockingStub);
+        //exampleGaussianMixtureQuery(jsonProxyBlockingStub);
+        exampleLatentDirichletAllocationQuery(jsonProxyBlockingStub);
         //exampleSpatialQuery(sustainBlockingStub, geoJson);
         //exampleTargetedQuery(sustainBlockingStub, geoJson);
         //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
@@ -43,7 +58,6 @@ public class SpatialClient {
         //        SampleGeoJson.COLORADO);
         //exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoIntersects, sustainBlockingStub);
     }
-
 
     // Logs the environment variables that the server was started with.
     public static void logEnvironment() {
@@ -231,6 +245,36 @@ public class SpatialClient {
                 "    }\n" +
                 "  ],\n" +
                 "  \"bisectingKMeansRequest\": {\n" +
+                "    \"clusterCount\": 10,\n" +
+                "    \"maxIterations\": 100,\n" +
+                "    \"resolution\": \"County\"\n" +
+                "  }\n" +
+                "}\n" +
+                "\n";
+
+        JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                .setJson(request)
+                .build();
+        Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+        while (jsonModelResponseIterator.hasNext()) {
+            JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+            log.info("JSON Model Response: {}", jsonResponse.getJson());
+        }
+    }
+
+    private static void exampleLatentDirichletAllocationQuery(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "  \"type\": \"LATENT_DIRICHLET_ALLOCATION\",\n" +
+                "  \"collections\": [\n" +
+                "    {\n" +
+                "      \"name\": \"county_stats\",\n" +
+                "      \"features\": [\n" +
+                "        \"total_population\",\n" +
+                "        \"median_household_income\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"latentDirichletAllocationRequest\": {\n" +
                 "    \"clusterCount\": 10,\n" +
                 "    \"maxIterations\": 100,\n" +
                 "    \"resolution\": \"County\"\n" +
