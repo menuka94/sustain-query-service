@@ -5,7 +5,7 @@ plugins {
     id 'com.google.protobuf' version '0.8.8'
     // Generate IntelliJ IDEA's .idea & .iml project files
     id 'idea'
-
+    // Adds 'test' task
     id 'java'
 }
 
@@ -26,7 +26,6 @@ def protocVersion = '3.11.0'
 
 dependencies {
     implementation "com.google.protobuf:protobuf-java-util:${protocVersion}"
-
     implementation "io.grpc:grpc-netty:${grpcVersion}"
     implementation "io.grpc:grpc-protobuf:${grpcVersion}"
     implementation "io.grpc:grpc-stub:${grpcVersion}"
@@ -46,17 +45,9 @@ dependencies {
 
     testCompile "io.grpc:grpc-testing:${grpcVersion}"
     testCompile "org.mockito:mockito-core:1.9.5"
-
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.3.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.3.1'
-
-    // spark dependencies
-    implementation "org.apache.spark:spark-core_2.12:3.0.1"
-    implementation "org.apache.spark:spark-sql_2.12:3.0.1"
-    implementation 'org.apache.spark:spark-mllib_2.12:3.0.1'
-    implementation 'org.mongodb.spark:mongo-spark-connector_2.12:3.0.1'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 }
-
 
 task copyDependencies(type: Copy) {
     from configurations.runtimeClasspath
@@ -79,10 +70,24 @@ protobuf {
 sourceSets {
     main {
         java {
-            srcDirs 'build/generated/source/proto/main/grpc'
-            srcDirs 'build/generated/source/proto/main/java'
+            srcDirs = ['src/main/java/org/sustain', 'build/generated/source/proto/main/grpc', 'build/generated/source/proto/main/java']
         }
     }
+
+    test {
+        java {
+            srcDir 'src/test'
+        }
+    }
+}
+
+test {
+    useJUnitPlatform()
+
+    include '*/**'
+
+    testLogging.showStandardStreams = true
+
 }
 
 startScripts.enabled = false

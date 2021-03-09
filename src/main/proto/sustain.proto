@@ -32,7 +32,11 @@ service Sustain {
   // Create a Spark Model on a collection
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
 
+  // Issue a query directly from the gRPC client to MongoDB
   rpc DirectQuery (DirectRequest) returns (stream DirectResponse) {}
+
+  // Echos the request body back as the response. Used for testing a gRPC route.
+  rpc EchoQuery (DirectRequest) returns (stream DirectResponse) {}
 }
 
 enum ModelType {

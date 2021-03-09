@@ -6,6 +6,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.CompoundRequest;
@@ -190,6 +191,21 @@ public class SustainServer {
         public void directQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
             GrpcHandler<DirectRequest, DirectResponse> handler = new DirectQueryHandler(request, responseObserver);
             handler.handleRequest();
+        }
+
+        /**
+         * An example RPC method used to sanity-test the gRPC server manually, or unit-test it with JUnit.
+         * @param request DirectRequest object containing a collection and query request.
+         * @param responseObserver Response Stream for streaming back results.
+         */
+        @Override
+        public void echoQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
+            log.info("RPC method echoQuery() invoked; returning request query body");
+            DirectResponse echoResponse = DirectResponse.newBuilder()
+                    .setData(StringEscapeUtils.unescapeJavaScript(request.getQuery()))
+                    .build();
+            responseObserver.onNext(echoResponse);
+            responseObserver.onCompleted();
         }
     }
 }
