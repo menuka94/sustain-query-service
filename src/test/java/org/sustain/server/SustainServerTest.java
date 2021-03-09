@@ -135,6 +135,98 @@ public class SustainServerTest {
         }
     }
 
+    /**
+     * Tests the end-to-end Bisecting K-Means Clustering Model Request functionality.
+     * Due to the long-running nature of this test, it should not be included as a unit test, but rather manually
+     * invoked and verified on an as-need basis.
+     */
+    @Tag("slow")
+    @Test
+    public void testBisectingKMeansClusteringModel() {
+        try {
+            InputStream ioStream = getClass().getClassLoader().getResourceAsStream(
+                    "requests/bisecting_kmeans_clustering_county_stats_request.json");
+            if (ioStream != null) {
+                String testingResource = new String(ioStream.readAllBytes());
+                JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                        .setJson(testingResource)
+                        .build();
+
+                Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+                while (jsonModelResponseIterator.hasNext()) {
+                    JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+                    log.info("JSON Model Response: {}", jsonResponse.getJson());
+                }
+            }
+
+        } catch (NullPointerException e) {
+            log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
+        } catch (IOException e) {
+            log.error("Failed to read testing resource file: ", e.getCause());
+        }
+    }
+
+    /**
+     * Tests the end-to-end Latent Dirichlet Allocation Clustering Model Request functionality.
+     * Due to the long-running nature of this test, it should not be included as a unit test, but rather manually
+     * invoked and verified on an as-need basis.
+     */
+    @Tag("slow")
+    @Test
+    public void testLRAClusteringModel() {
+        try {
+            InputStream ioStream = getClass().getClassLoader().getResourceAsStream(
+                    "requests/lra_clustering_county_stats_request.json");
+            if (ioStream != null) {
+                String testingResource = new String(ioStream.readAllBytes());
+                JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                        .setJson(testingResource)
+                        .build();
+
+                Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+                while (jsonModelResponseIterator.hasNext()) {
+                    JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+                    log.info("JSON Model Response: {}", jsonResponse.getJson());
+                }
+            }
+
+        } catch (NullPointerException e) {
+            log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
+        } catch (IOException e) {
+            log.error("Failed to read testing resource file: ", e.getCause());
+        }
+    }
+
+    /**
+     * Tests the end-to-end K-Means Clustering Model Request functionality.
+     * Due to the long-running nature of this test, it should not be included as a unit test, but rather manually
+     * invoked and verified on an as-need basis.
+     */
+    @Tag("slow")
+    @Test
+    public void testGaussianMixtureClusteringModel() {
+        try {
+            InputStream ioStream = getClass().getClassLoader().getResourceAsStream(
+                    "requests/gaussian_mixture_clustering_county_stats_request.json");
+            if (ioStream != null) {
+                String testingResource = new String(ioStream.readAllBytes());
+                JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                        .setJson(testingResource)
+                        .build();
+
+                Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+                while (jsonModelResponseIterator.hasNext()) {
+                    JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+                    log.info("JSON Model Response: {}", jsonResponse.getJson());
+                }
+            }
+
+        } catch (NullPointerException e) {
+            log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
+        } catch (IOException e) {
+            log.error("Failed to read testing resource file: ", e.getCause());
+        }
+    }
 
     /**
      * Establishes a Managed gRPC Channel to the gRPC server running at the TARGET
