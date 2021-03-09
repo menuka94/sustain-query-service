@@ -4,7 +4,10 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.*;
+import org.sustain.JsonModelRequest;
+import org.sustain.JsonModelResponse;
+import org.sustain.JsonProxyGrpc;
+import org.sustain.SustainGrpc;
 import org.sustain.util.Constants;
 
 import java.util.Iterator;
@@ -31,8 +34,11 @@ public class SpatialClient {
         SustainGrpc.SustainBlockingStub sustainBlockingStub = spatialClient.getSustainBlockingStub();
         JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub = spatialClient.getJsonProxyBlockingStub();
 
-        exampleLRModelRequest(jsonProxyBlockingStub);
+        //exampleLRModelRequest(jsonProxyBlockingStub);
         //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
+        exampleBisectingKMeansQuery(jsonProxyBlockingStub);
+        //exampleGaussianMixtureQuery(jsonProxyBlockingStub);
+        //exampleLatentDirichletAllocationQuery(jsonProxyBlockingStub);
     }
 
     // Logs the environment variables that the server was started with.
@@ -109,6 +115,96 @@ public class SpatialClient {
                 "    }\n" +
                 "  ],\n" +
                 "  \"kMeansClusteringRequest\": {\n" +
+                "    \"clusterCount\": 10,\n" +
+                "    \"maxIterations\": 100,\n" +
+                "    \"resolution\": \"County\"\n" +
+                "  }\n" +
+                "}\n" +
+                "\n";
+
+        JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                .setJson(request)
+                .build();
+        Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+        while (jsonModelResponseIterator.hasNext()) {
+            JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+            log.info("JSON Model Response: {}", jsonResponse.getJson());
+        }
+    }
+
+    public static void exampleBisectingKMeansQuery(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "  \"type\": \"BISECTING_K_MEANS\",\n" +
+                "  \"collections\": [\n" +
+                "    {\n" +
+                "      \"name\": \"county_stats\",\n" +
+                "      \"features\": [\n" +
+                "        \"total_population\",\n" +
+                "        \"median_household_income\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"bisectingKMeansRequest\": {\n" +
+                "    \"clusterCount\": 10,\n" +
+                "    \"maxIterations\": 100,\n" +
+                "    \"resolution\": \"County\"\n" +
+                "  }\n" +
+                "}\n" +
+                "\n";
+
+        JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                .setJson(request)
+                .build();
+        Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+        while (jsonModelResponseIterator.hasNext()) {
+            JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+            log.info("JSON Model Response: {}", jsonResponse.getJson());
+        }
+    }
+
+    private static void exampleLatentDirichletAllocationQuery(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "  \"type\": \"LATENT_DIRICHLET_ALLOCATION\",\n" +
+                "  \"collections\": [\n" +
+                "    {\n" +
+                "      \"name\": \"county_stats\",\n" +
+                "      \"features\": [\n" +
+                "        \"total_population\",\n" +
+                "        \"median_household_income\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"latentDirichletAllocationRequest\": {\n" +
+                "    \"clusterCount\": 10,\n" +
+                "    \"maxIterations\": 100,\n" +
+                "    \"resolution\": \"County\"\n" +
+                "  }\n" +
+                "}\n" +
+                "\n";
+
+        JsonModelRequest modelRequest = JsonModelRequest.newBuilder()
+                .setJson(request)
+                .build();
+        Iterator<JsonModelResponse> jsonModelResponseIterator = jsonProxyBlockingStub.modelQuery(modelRequest);
+        while (jsonModelResponseIterator.hasNext()) {
+            JsonModelResponse jsonResponse = jsonModelResponseIterator.next();
+            log.info("JSON Model Response: {}", jsonResponse.getJson());
+        }
+    }
+
+    private static void exampleGaussianMixtureQuery(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "  \"type\": \"GAUSSIAN_MIXTURE\",\n" +
+                "  \"collections\": [\n" +
+                "    {\n" +
+                "      \"name\": \"county_stats\",\n" +
+                "      \"features\": [\n" +
+                "        \"total_population\",\n" +
+                "        \"median_household_income\"\n" +
+                "      ]\n" +
+                "    }\n" +
+                "  ],\n" +
+                "  \"gaussianMixtureRequest\": {\n" +
                 "    \"clusterCount\": 10,\n" +
                 "    \"maxIterations\": 100,\n" +
                 "    \"resolution\": \"County\"\n" +
