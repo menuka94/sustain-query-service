@@ -72,6 +72,7 @@ public class SustainServerTest {
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
+            inProcessServer.blockUntilShutdown();
             shutdown();
         }
     }
@@ -105,6 +106,7 @@ public class SustainServerTest {
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
+            inProcessServer.blockUntilShutdown();
             shutdown();
         }
     }
@@ -138,12 +140,13 @@ public class SustainServerTest {
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
+            inProcessServer.blockUntilShutdown();
             shutdown();
         }
     }
 
-    @BeforeAll
-    public void beforeAll() throws IOException {
+    @BeforeEach
+    public void beforeEachTest() throws IOException {
         inProcessServer = new InProcessServer();
         inProcessServer.start();
         channel = InProcessChannelBuilder
@@ -156,8 +159,8 @@ public class SustainServerTest {
         jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
     }
 
-    @AfterAll
-    public void afterAll(){
+    @AfterEach
+    public void afterEachTest(){
         channel.shutdownNow();
         inProcessServer.stop();
     }
