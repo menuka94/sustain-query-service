@@ -47,14 +47,15 @@ service Sustain {
 }
 
 message SlidingWindowRequest {
-  repeated string gisJoin = 1;
+  repeated string gisJoins = 1;
   string collection = 2;
   string feature = 3;
   int32 days = 4;
 }
 
 message SlidingWindowResponse {
-  string response = 1;
+  string gisJoin = 1;
+  repeated string movingAverages = 2;
 }
 
 enum ModelType {

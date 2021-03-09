@@ -7,6 +7,8 @@ import org.apache.logging.log4j.Logger;
 import org.sustain.JsonModelRequest;
 import org.sustain.JsonModelResponse;
 import org.sustain.JsonProxyGrpc;
+import org.sustain.JsonSlidingWindowRequest;
+import org.sustain.JsonSlidingWindowResponse;
 import org.sustain.SustainGrpc;
 import org.sustain.util.Constants;
 
@@ -36,7 +38,8 @@ public class SpatialClient {
 
         //exampleLRModelRequest(jsonProxyBlockingStub);
         //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
-        exampleBisectingKMeansQuery(jsonProxyBlockingStub);
+        //exampleBisectingKMeansQuery(jsonProxyBlockingStub);
+        exampleSlidingWindowQuery(jsonProxyBlockingStub);
         //exampleGaussianMixtureQuery(jsonProxyBlockingStub);
         //exampleLatentDirichletAllocationQuery(jsonProxyBlockingStub);
     }
@@ -53,6 +56,40 @@ public class SpatialClient {
                         "DB_USERNAME: {}\n" +
                         "DB_PASSWORD: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
                 Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
+    }
+
+    private static void exampleSlidingWindowQuery(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
+        String request = "{\n" +
+                "   \"gisJoins\":[\n" +
+                "      \"G1700310\",\n" +
+                "      \"G5300610\",\n" +
+                "      \"G0600590\",\n" +
+                "      \"G5300610\",\n" +
+                "      \"G1700310\",\n" +
+                "      \"G5300610\",\n" +
+                "      \"G0400130\",\n" +
+                "      \"G5300610\",\n" +
+                "      \"G5300610\",\n" +
+                "      \"G5300610\",\n" +
+                "      \"G1700310\",\n" +
+                "      \"G0600370\",\n" +
+                "      \"G0400130\",\n" +
+                "      \"G0600590\"\n" +
+                "   ],\n" +
+                "   \"collection\":\"covid_county_formatted\",\n" +
+                "   \"feature\":\"cases\",\n" +
+                "   \"days\":7\n" +
+                "}";
+        log.info("JSON request: {}", request);
+        JsonSlidingWindowRequest  slidingWindowRequest = JsonSlidingWindowRequest.newBuilder()
+                .setJson(request)
+                .build();
+
+        Iterator<JsonSlidingWindowResponse> responseIterator =
+                jsonProxyBlockingStub.slidingWindowQuery(slidingWindowRequest);
+        while (responseIterator.hasNext()) {
+            log.info(responseIterator.next().getJson());
+        }
     }
 
 

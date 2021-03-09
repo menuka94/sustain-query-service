@@ -10,6 +10,7 @@ import org.bson.Document;
 import org.sustain.SlidingWindowRequest;
 import org.sustain.SlidingWindowResponse;
 import org.sustain.db.mongodb.DBConnection;
+import org.sustain.util.Constants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,28 +25,37 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
 
     @Override
     public void handleRequest() {
+        logRequest(request);
         MongoDatabase db = DBConnection.getConnection();
-        MongoCollection<Document> covidCounty = db.getCollection("covid_county_formatted");
+        MongoCollection<Document> collection = db.getCollection(request.getCollection());
 
         int days = request.getDays();
-        ArrayList<String> gisJoins = new ArrayList<>(request.getGisJoinList());
+        String feature = request.getFeature();
+        ArrayList<String> gisJoins = new ArrayList<>(request.getGisJoinsList());
         for (String gisJoin : gisJoins) {
-            AggregateIterable<Document> documents = processSingleGisJoin(gisJoin, days, covidCounty);
+            AggregateIterable<Document> documents = processSingleGisJoin(gisJoin, feature, days, collection);
+            SlidingWindowResponse.Builder responseBuilder = SlidingWindowResponse.newBuilder();
+            responseBuilder.setGisJoin(gisJoin);
+            ArrayList<String> movingAverages = new ArrayList<>();
             for (Document document : documents) {
-                System.out.println(document);
+                movingAverages.add(document.toString());
             }
+            responseBuilder.addAllMovingAverages(movingAverages);
+            responseObserver.onNext(responseBuilder.build());
         }
+
+        responseObserver.onCompleted();
     }
 
-    private AggregateIterable<Document> processSingleGisJoin(String gisJoin, int days,
+    private AggregateIterable<Document> processSingleGisJoin(String gisJoin, String feature, int days,
                                                              MongoCollection<Document> mongoCollection) {
-        log.info("Processing GISJOIN: {}", gisJoin);
+        log.info("Processing GISJOIN: " + gisJoin);
         AggregateIterable<Document> aggregateIterable = mongoCollection.aggregate(Arrays.asList(
-                new Document("$match", new Document("GISJOIN", gisJoin)),
+                new Document("$match", new Document(Constants.GIS_JOIN, gisJoin)),
                 new Document("$sort", new Document("formatted_date", 1)),
-                new Document("$group", new Document("_id", "$GISJOIN")
+                new Document("$group", new Document("_id", "$" + Constants.GIS_JOIN)
                         .append("prx", new Document("$push",
-                                new Document("v", "$cases")
+                                new Document("v", "$" + feature)
                                         .append("date", "$formatted_date")
                         ))),
                 new Document(

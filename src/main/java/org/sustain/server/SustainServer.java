@@ -159,12 +159,70 @@ public class SustainServer {
                 }
             }
         }
+
+        @Override
+        public void slidingWindowQuery(JsonSlidingWindowRequest request,
+                                       StreamObserver<JsonSlidingWindowResponse> responseObserver) {
+            ManagedChannel channel = null;
+
+            try {
+                // open grpc channel
+                channel = ManagedChannelBuilder
+                        .forAddress(Constants.Server.HOST,
+                                Constants.Server.PORT)
+                        .usePlaintext()
+                        .build();
+
+                // convert json to protobuf and service request
+                JsonFormat.Parser parser = JsonFormat.parser();
+                JsonFormat.Printer printer = JsonFormat.printer()
+                        .includingDefaultValueFields()
+                        .omittingInsignificantWhitespace();
+
+                // create model request
+                SlidingWindowRequest.Builder requestBuilder =
+                        SlidingWindowRequest.newBuilder();
+                parser.merge(request.getJson(), requestBuilder);
+
+                // issue model request
+                SustainGrpc.SustainBlockingStub blockingStub =
+                        SustainGrpc.newBlockingStub(channel);
+
+                Iterator<SlidingWindowResponse> iterator =
+                        blockingStub.slidingWindowQuery(requestBuilder.build());
+
+                // iterate over results
+                while (iterator.hasNext()) {
+                    SlidingWindowResponse response = iterator.next();
+
+                    // build JsonModelRequest
+                    String json = printer.print(response);
+                    JsonSlidingWindowResponse jsonResponse =
+                            JsonSlidingWindowResponse.newBuilder()
+                                    .setJson(json)
+                                    .build();
+
+                    responseObserver.onNext(jsonResponse);
+                }
+
+                // send response
+                responseObserver.onCompleted();
+            } catch (Exception e) {
+                log.error("failed to evaluate", e);
+                responseObserver.onError(e);
+            } finally {
+                if (channel != null) {
+                    channel.shutdownNow();
+                }
+            }
+        }
     }
 
     // SUSTAIN gRPC Server Implementation
     static class SustainService extends SustainGrpc.SustainImplBase {
         @Override
-        public void slidingWindowQuery(SlidingWindowRequest request, StreamObserver<SlidingWindowResponse> responseObserver) {
+        public void slidingWindowQuery(SlidingWindowRequest request,
+                                       StreamObserver<SlidingWindowResponse> responseObserver) {
             SlidingWindowQueryHandler handler = new SlidingWindowQueryHandler(request, responseObserver);
             log.info("Received a Sliding Window Query Request");
             handler.handleRequest();
