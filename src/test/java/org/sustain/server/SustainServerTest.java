@@ -10,6 +10,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,8 +142,8 @@ public class SustainServerTest {
         }
     }
 
-    @BeforeEach
-    public void beforeEachTest() throws IOException {
+    @BeforeAll
+    public void beforeAll() throws IOException {
         inProcessServer = new InProcessServer();
         inProcessServer.start();
         channel = InProcessChannelBuilder
@@ -153,8 +156,8 @@ public class SustainServerTest {
         jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
     }
 
-    @AfterEach
-    public void afterEachTest(){
+    @AfterAll
+    public void afterAll(){
         channel.shutdownNow();
         inProcessServer.stop();
     }
