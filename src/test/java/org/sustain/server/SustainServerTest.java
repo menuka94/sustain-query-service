@@ -69,6 +69,7 @@ public class SustainServerTest {
                 Iterator<DirectResponse> responses = sustainBlockingStub.echoQuery(testRequest);
                 while (responses.hasNext()) {
                     DirectResponse response = responses.next();
+                    log.info(response.getData());
                     assertEquals(response.getData(), testingResource);
                 }
             }
