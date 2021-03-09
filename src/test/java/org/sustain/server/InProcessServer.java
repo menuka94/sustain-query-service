@@ -22,8 +22,8 @@ public class InProcessServer {
 
     public void start() throws IOException {
         server = InProcessServerBuilder
-                .forName("test")
                 .forPort(50051)
+                .forName("test")
                 .addService(new SustainServer.SustainService())
                 .addService(new SustainServer.JsonProxyService())
                 .build()
