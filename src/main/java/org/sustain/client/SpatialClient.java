@@ -36,9 +36,9 @@ public class SpatialClient {
 
         //exampleLRModelRequest(jsonProxyBlockingStub);
         //exampleKMeansClusteringRequest(jsonProxyBlockingStub);
-        //exampleBisectingKMeansQuery(jsonProxyBlockingStub);
+        exampleBisectingKMeansQuery(jsonProxyBlockingStub);
         //exampleGaussianMixtureQuery(jsonProxyBlockingStub);
-        exampleLatentDirichletAllocationQuery(jsonProxyBlockingStub);
+        //exampleLatentDirichletAllocationQuery(jsonProxyBlockingStub);
     }
 
     // Logs the environment variables that the server was started with.

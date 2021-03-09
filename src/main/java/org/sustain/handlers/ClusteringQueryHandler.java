@@ -24,14 +24,9 @@ import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.sustain.BisectingKMeansRequest;
 import org.sustain.BisectingKMeansResponse;
-import org.sustain.Collection;
-import org.sustain.GaussianMixtureRequest;
 import org.sustain.GaussianMixtureResponse;
-import org.sustain.KMeansClusteringRequest;
 import org.sustain.KMeansClusteringResponse;
-import org.sustain.LatentDirichletAllocationRequest;
 import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
@@ -47,14 +42,10 @@ import java.util.List;
 
 public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelResponse> {
     private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
-    private final ModelRequest request;
-    private final StreamObserver<ModelResponse> responseObserver;
     private JavaSparkContext sparkContext;
 
     public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
         super(request, responseObserver);
-        this.request = request;
-        this.responseObserver = responseObserver;
     }
 
     public void initSparkSession(ModelType modelType) {
@@ -92,7 +83,7 @@ public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
     @Override
     public void handleRequest() {
         ModelType modelType = request.getType();
-        logRequest(modelType);
+        this.logRequest(request);
         initSparkSession(modelType);
         switch (modelType) {
             case K_MEANS_CLUSTERING:
@@ -322,44 +313,6 @@ public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
         for (String jar : jarPaths) {
             log.info("Adding dependency JAR to the Spark Context: " + jar);
             sparkContext.addJar(jar);
-        }
-    }
-
-    private void logRequest(ModelType modelType) {
-        log.info("Logging " + modelType.toString());
-        log.info("============== REQUEST ===============");
-        log.info("Collections:");
-        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
-            Collection col = this.request.getCollections(i);
-            log.info("\tName: " + col.getName());
-            log.info("\tLabel: " + col.getLabel());
-            log.info("\tFeatures:");
-            for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t" + col.getFeatures(j));
-            }
-        }
-        switch (modelType) {
-            case K_MEANS_CLUSTERING:
-                KMeansClusteringRequest kMeansClusteringRequest = request.getKMeansClusteringRequest();
-                log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
-                log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
-                break;
-            case BISECTING_K_MEANS:
-                BisectingKMeansRequest bisectingKMeansRequest = request.getBisectingKMeansRequest();
-                log.info("\tClusterCount: " + bisectingKMeansRequest.getClusterCount());
-                log.info("\tMaxIterations: " + bisectingKMeansRequest.getMaxIterations());
-                break;
-            case GAUSSIAN_MIXTURE:
-                GaussianMixtureRequest gaussianMixtureRequest = request.getGaussianMixtureRequest();
-                log.info("\tClusterCount: " + gaussianMixtureRequest.getClusterCount());
-                log.info("\tMaxIterations: " + gaussianMixtureRequest.getMaxIterations());
-                break;
-            case LATENT_DIRICHLET_ALLOCATION:
-                LatentDirichletAllocationRequest latentDirichletAllocationRequest =
-                        request.getLatentDirichletAllocationRequest();
-                log.info("\tClusterCount: " + latentDirichletAllocationRequest.getClusterCount());
-                log.info("\tMaxIterations: " + latentDirichletAllocationRequest.getMaxIterations());
-                break;
         }
     }
 
