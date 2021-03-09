@@ -2,7 +2,6 @@ package org.sustain.server;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.inprocess.InProcessChannelBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
@@ -16,15 +15,12 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 
 import org.sustain.*;
 
 import org.sustain.SustainGrpc;
 import org.sustain.SustainGrpc.SustainBlockingStub;
 import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
-
 
 /**
  * Tests gRPC calls and responses to the Sustain Server, as if a client were invoking them.
@@ -37,7 +33,6 @@ public class SustainServerTest {
     private static final Logger log = LogManager.getLogger(SustainServerTest.class);
     private static final String TARGET = "localhost:50051";
 
-    private InProcessServer inProcessServer;
     private static ManagedChannel channel;
     private static SustainBlockingStub sustainBlockingStub;
     private static JsonProxyBlockingStub jsonProxyBlockingStub;
@@ -49,17 +44,11 @@ public class SustainServerTest {
     /**
      * Example test template to test the echoQuery() RPC method.
      * Further tests should be implemented similar to this example structure.
-     * @throws InterruptedException In case shutdown() is interrupted
      */
     @Tag("fast")
     @Test
-    public void testExampleEchoQuery() throws InterruptedException {
+    public void testExampleEchoQuery() {
         try {
-            //String target = "lattice-165" + ":" + 50051;
-            //ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-            //SustainBlockingStub sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
-            //JsonProxyBlockingStub jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
-
             InputStream ioStream = getClass().getClassLoader().getResourceAsStream(
                     "requests/linear_regression_maca_v2_request.json");
             if (ioStream != null) {
@@ -81,9 +70,6 @@ public class SustainServerTest {
             log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
-        } finally {
-            //inProcessServer.blockUntilShutdown();
-
         }
     }
 
@@ -91,13 +77,10 @@ public class SustainServerTest {
      * Tests the end-to-end Linear Model Request functionality.
      * Due to the long-running nature of this test, it should not be included as a unit test, but rather manually
      * invoked and verified on an as-need basis.
-     * @throws InterruptedException In case shutdown() is interrupted
      */
     @Tag("slow")
     @Test
-    public void testLinearRegressionModel() throws InterruptedException {
-
-        /*
+    public void testLinearRegressionModel() {
         try {
             InputStream ioStream = getClass().getClassLoader().getResourceAsStream(
                     "requests/linear_regression_maca_v2_request.json");
@@ -118,25 +101,17 @@ public class SustainServerTest {
             log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
-        } finally {
-            //inProcessServer.blockUntilShutdown();
-            shutdown();
         }
-        */
-
     }
 
     /**
      * Tests the end-to-end K-Means Clustering Model Request functionality.
      * Due to the long-running nature of this test, it should not be included as a unit test, but rather manually
      * invoked and verified on an as-need basis.
-     * @throws InterruptedException In case shutdown() is interrupted
      */
     @Tag("slow")
     @Test
-    public void testKMeansClusteringModel() throws InterruptedException {
-
-        /*
+    public void testKMeansClusteringModel() {
         try {
             InputStream ioStream = getClass().getClassLoader().getResourceAsStream(
                     "requests/kmeans_clustering_county_stats_request.json");
@@ -157,46 +132,15 @@ public class SustainServerTest {
             log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
-        } finally {
-            //inProcessServer.blockUntilShutdown();
-            shutdown();
         }
-        */
-
     }
 
-    @BeforeEach
-    public void beforeEachTest() throws IOException {
 
-        /*
-        try {
-            inProcessServer = new InProcessServer();
-            inProcessServer.start();
-            channel = InProcessChannelBuilder
-                    .forName("test")
-                    // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
-                    // needing certificates.
-                    .usePlaintext()
-                    .build();
-
-            channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-            sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
-            jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
-        } catch (IOException e) {
-            log.error("Failed operation: " + e.getMessage());
-            throw e;
-        }
-        */
-    }
-
-    @AfterEach
-    public void afterEachTest() {
-        /*
-        channel.shutdownNow();
-        //inProcessServer.stop();
-        */
-    }
-
+    /**
+     * Establishes a Managed gRPC Channel to the gRPC server running at the TARGET
+     * specified location, and creates blocking stubs for both the Sustain and JsonProxy
+     * Services.
+     */
     @BeforeAll
     public static void beforeAllTests() {
         channel = ManagedChannelBuilder.forTarget(TARGET).usePlaintext().build();
@@ -206,10 +150,18 @@ public class SustainServerTest {
 
     @AfterAll
     public static void afterAllTests() {
-        channel.shutdown();
+        shutdown();
     }
 
-    public void shutdown() throws InterruptedException {
-        channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+    /**
+     * Shuts down the Managed gRPC Channel for this testing class.
+     */
+    public static void shutdown() {
+        try {
+            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.error("Caught InterruptedException: " + e.getMessage());
+            channel.shutdownNow();
+        }
     }
 }
