@@ -76,7 +76,7 @@ sourceSets {
 
     test {
         java {
-            srcDir 'src/test'
+            srcDir 'src/test/java/org/sustain/server'
         }
     }
 }
@@ -84,7 +84,7 @@ sourceSets {
 test {
     useJUnitPlatform()
 
-    include '*/**'
+    //include '*/**'
 
     environment "TESTING", "true"
 
