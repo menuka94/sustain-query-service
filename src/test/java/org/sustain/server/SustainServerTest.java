@@ -149,32 +149,26 @@ public class SustainServerTest {
 
     @BeforeEach
     public void beforeEachTest() throws IOException {
-        /*
-        try {
 
+        try {
+            String target = "lattice-165" + ":" + 50051;
             inProcessServer = new InProcessServer();
             inProcessServer.start();
             channel = InProcessChannelBuilder
+                    .forTarget(target)
                     .forName("test")
                     // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
                     // needing certificates.
                     .usePlaintext()
                     .build();
-            String target = Constants.Server.HOST + ":" + Constants.Server.PORT;
-            ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+
+            channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
             sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
             jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
         } catch (IOException e) {
             log.error("Failed operation: " + e.getMessage());
             throw e;
         }
-
-        */
-
-        String target = "lattice-165" + ":" + 50051;
-        channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-        sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
-        jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
     }
 
     @AfterEach

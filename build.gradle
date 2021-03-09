@@ -86,6 +86,8 @@ test {
 
     include '*/**'
 
+    environment "TESTING", "true"
+
     testLogging.showStandardStreams = true
 
 }

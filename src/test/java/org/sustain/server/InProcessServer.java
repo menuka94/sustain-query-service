@@ -21,6 +21,7 @@ public class InProcessServer {
     }
 
     public void start() throws IOException {
+        log.info("SYSTEM ENV TESTING: {}", System.getenv("TESTING"));
         server = InProcessServerBuilder
                 .forPort(50051)
                 .forName("test")
