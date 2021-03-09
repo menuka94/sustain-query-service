@@ -12,8 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +22,6 @@ import org.sustain.*;
 import org.sustain.SustainGrpc;
 import org.sustain.SustainGrpc.SustainBlockingStub;
 import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
-import org.sustain.util.Constants;
 
 
 /**
@@ -50,6 +48,7 @@ public class SustainServerTest {
      * Further tests should be implemented similar to this example structure.
      * @throws InterruptedException In case shutdown() is interrupted
      */
+    @Tag("fast")
     @Test
     public void testExampleEchoQuery() throws InterruptedException {
         try {
@@ -75,7 +74,7 @@ public class SustainServerTest {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
             //inProcessServer.blockUntilShutdown();
-            //shutdown();
+            shutdown();
         }
     }
 
@@ -85,6 +84,7 @@ public class SustainServerTest {
      * invoked and verified on an as-need basis.
      * @throws InterruptedException In case shutdown() is interrupted
      */
+    @Tag("slow")
     @Test
     public void testLinearRegressionModel() throws InterruptedException {
         try {
@@ -109,7 +109,7 @@ public class SustainServerTest {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
             //inProcessServer.blockUntilShutdown();
-            //shutdown();
+            shutdown();
         }
     }
 
@@ -119,6 +119,7 @@ public class SustainServerTest {
      * invoked and verified on an as-need basis.
      * @throws InterruptedException In case shutdown() is interrupted
      */
+    @Tag("slow")
     @Test
     public void testKMeansClusteringModel() throws InterruptedException {
         try {
@@ -143,7 +144,7 @@ public class SustainServerTest {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
             //inProcessServer.blockUntilShutdown();
-            //shutdown();
+            shutdown();
         }
     }
 
