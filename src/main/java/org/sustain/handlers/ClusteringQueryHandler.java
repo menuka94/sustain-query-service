@@ -1,4 +1,4 @@
-package org.sustain.modeling;
+package org.sustain.handlers;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -45,13 +45,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class ClusteringQueryHandler {
+public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelResponse> {
     private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
     private final ModelRequest request;
     private final StreamObserver<ModelResponse> responseObserver;
     private JavaSparkContext sparkContext;
 
     public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
+        super(request, responseObserver);
         this.request = request;
         this.responseObserver = responseObserver;
     }
@@ -88,7 +89,9 @@ public class ClusteringQueryHandler {
         addClusterDependencyJars(sparkContext);
     }
 
-    public void handleQuery(ModelType modelType) {
+    @Override
+    public void handleRequest() {
+        ModelType modelType = request.getType();
         logRequest(modelType);
         initSparkSession(modelType);
         switch (modelType) {

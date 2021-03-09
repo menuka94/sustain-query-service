@@ -4,21 +4,10 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.CensusFeature;
-import org.sustain.CensusRequest;
-import org.sustain.CensusResolution;
-import org.sustain.CensusResponse;
-import org.sustain.DatasetRequest;
-import org.sustain.DatasetResponse;
 import org.sustain.JsonModelRequest;
 import org.sustain.JsonModelResponse;
 import org.sustain.JsonProxyGrpc;
-import org.sustain.OsmRequest;
-import org.sustain.OsmResponse;
-import org.sustain.SpatialOp;
 import org.sustain.SustainGrpc;
-import org.sustain.SviRequest;
-import org.sustain.SviResponse;
 import org.sustain.util.Constants;
 
 import java.util.Iterator;
@@ -50,111 +39,22 @@ public class SpatialClient {
         //exampleBisectingKMeansQuery(jsonProxyBlockingStub);
         //exampleGaussianMixtureQuery(jsonProxyBlockingStub);
         exampleLatentDirichletAllocationQuery(jsonProxyBlockingStub);
-        //exampleSpatialQuery(sustainBlockingStub, geoJson);
-        //exampleTargetedQuery(sustainBlockingStub, geoJson);
-        //exampleOsmQuery(sustainBlockingStub, SampleGeoJson.FORT_COLLINS);
-        //exampleDatasetQuery(DatasetRequest.Dataset.FIRE_STATIONS, sustainBlockingStub, SampleGeoJson.MULTIPLE_STATES);
-        //exampleCensusQuery(CensusFeature.TotalPopulation, CensusResolution.County, sustainBlockingStub,
-        //        SampleGeoJson.COLORADO);
-        //exampleSviQuery(SampleGeoJson.COLORADO, SpatialOp.GeoIntersects, sustainBlockingStub);
     }
 
     // Logs the environment variables that the server was started with.
     public static void logEnvironment() {
-        log.info("--- Server Environment ---");
-        log.info("SERVER_HOST: " + Constants.Server.HOST);
-        log.info("SERVER_PORT: " + Constants.Server.PORT);
-        log.info("--- Database Environment ---");
-        log.info("DB_HOST: " + Constants.DB.HOST);
-        log.info("DB_PORT: " + Constants.DB.PORT);
-        log.info("DB_NAME: " + Constants.DB.NAME);
-        log.info("DB_USERNAME: " + Constants.DB.USERNAME);
-        log.info("DB_PASSWORD: " + Constants.DB.PASSWORD);
+        log.info("\n\n--- Server Environment ---\n" +
+                        "SERVER_HOST: {}\n" +
+                        "SERVER_PORT: {}\n" +
+                        "\n\n--- Database Environment ---\n" +
+                        "DB_HOST: {}\n" +
+                        "DB_PORT: {}\n" +
+                        "DB_NAME: {}\n" +
+                        "DB_USERNAME: {}\n" +
+                        "DB_PASSWORD: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
+                Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
     }
 
-
-    private static void exampleDatasetQuery(DatasetRequest.Dataset dataset,
-                                            SustainGrpc.SustainBlockingStub sustainBlockingStub, String geoJson) {
-        DatasetRequest request = DatasetRequest.newBuilder()
-                .setDataset(dataset)
-                .setSpatialOp(SpatialOp.GeoWithin)
-                .setRequestGeoJson(geoJson)
-                .build();
-        Iterator<DatasetResponse> datasetResponseIterator = sustainBlockingStub.datasetQuery(request);
-        int count = 0;
-        while (datasetResponseIterator.hasNext()) {
-            DatasetResponse response = datasetResponseIterator.next();
-            count++;
-            log.info(response.getResponse() + "\n");
-        }
-
-        log.info("Count: " + count);
-    }
-
-    private static void exampleSviQuery(String geoJson, SpatialOp spatialOp,
-                                        SustainGrpc.SustainBlockingStub sustainBlockingStub) {
-        SviRequest request = SviRequest.newBuilder()
-                .setRequestGeoJson(geoJson)
-                .setSpatialOp(spatialOp)
-                .build();
-
-        Iterator<SviResponse> responseIterator = sustainBlockingStub.sviQuery(request);
-        int count = 0;
-        while (responseIterator.hasNext()) {
-            SviResponse response = responseIterator.next();
-            count++;
-            log.info(response.getData());
-            //log.info(response.getResponseGeoJson());
-            System.out.println();
-        }
-        log.info("Count: " + count);
-    }
-
-    private static void exampleOsmQuery(SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
-        OsmRequest request = OsmRequest.newBuilder()
-                .setDataset(OsmRequest.Dataset.ALL)
-                .setSpatialOp(SpatialOp.GeoWithin)
-                // .addRequestParams(OsmRequest.OsmRequestParam.newBuilder()
-                //         .setKey("properties.highway")
-                //         .setValue("primary"))
-                // .addRequestParams(OsmRequest.OsmRequestParam.newBuilder()
-                //         .setKey("properties.highway")
-                //         .setValue("residential"))
-                .setRequestGeoJson(geoJson).build();
-
-        Iterator<OsmResponse> osmResponseIterator = censusBlockingStub.osmQuery(request);
-        int count = 0;
-        while (osmResponseIterator.hasNext()) {
-            OsmResponse response = osmResponseIterator.next();
-            count++;
-            log.info(response.getResponse() + "\n");
-        }
-
-        log.info("Count: " + count);
-    }
-
-    private static void exampleCensusQuery(CensusFeature censusFeature, CensusResolution censusResolution,
-                                           SustainGrpc.SustainBlockingStub censusBlockingStub, String geoJson) {
-        CensusRequest request = CensusRequest.newBuilder()
-                .setCensusFeature(censusFeature)
-                .setCensusResolution(censusResolution)
-                .setSpatialOp(SpatialOp.GeoWithin)
-                .setRequestGeoJson(geoJson)
-                .build();
-
-        int count = 0;
-        Iterator<CensusResponse> CensusResponseIterator = censusBlockingStub.censusQuery(request);
-        while (CensusResponseIterator.hasNext()) {
-            CensusResponse response = CensusResponseIterator.next();
-            String data = response.getData();
-            String responseGeoJson = response.getResponseGeoJson();
-            log.info("data: " + data);
-            log.info("geoJson: " + responseGeoJson);
-            System.out.println();
-            count++;
-        }
-        log.info("Count: " + count);
-    }
 
     private static void exampleLRModelRequest(JsonProxyGrpc.JsonProxyBlockingStub jsonProxyBlockingStub) {
         String request = "{\n" +
