@@ -50,6 +50,7 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
     private AggregateIterable<Document> processSingleGisJoin(String gisJoin, String feature, int days,
                                                              MongoCollection<Document> mongoCollection) {
         log.info("Processing GISJOIN: " + gisJoin);
+        // The following aggregation query is based on the raw MongoDB query found at https://pastebin.com/HUciUXZW
         AggregateIterable<Document> aggregateIterable = mongoCollection.aggregate(Arrays.asList(
                 new Document("$match", new Document(Constants.GIS_JOIN, gisJoin)),
                 new Document("$sort", new Document("formatted_date", 1)),
