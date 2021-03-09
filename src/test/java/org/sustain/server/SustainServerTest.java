@@ -74,8 +74,8 @@ public class SustainServerTest {
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
-            inProcessServer.blockUntilShutdown();
-            shutdown();
+            //inProcessServer.blockUntilShutdown();
+            //shutdown();
         }
     }
 
@@ -108,8 +108,8 @@ public class SustainServerTest {
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
-            inProcessServer.blockUntilShutdown();
-            shutdown();
+            //inProcessServer.blockUntilShutdown();
+            //shutdown();
         }
     }
 
@@ -142,8 +142,8 @@ public class SustainServerTest {
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
-            inProcessServer.blockUntilShutdown();
-            shutdown();
+            //inProcessServer.blockUntilShutdown();
+            //shutdown();
         }
     }
 
@@ -171,7 +171,7 @@ public class SustainServerTest {
 
         */
 
-        String target = Constants.Server.HOST + ":" + Constants.Server.PORT;
+        String target = "lattice-165" + ":" + 50051;
         channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
         jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
