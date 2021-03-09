@@ -34,10 +34,6 @@ test:
 	chmod +x ./gradlew
 	./gradlew test
 
-run-spatial-client:
-	chmod +x ./gradlew
-	./build/install/sustain-census-grpc/bin/spatial-client
-
 run-linear-model:
 	chmod +x ./gradlew
 	./build/install/sustain-census-grpc/bin/linear-model
