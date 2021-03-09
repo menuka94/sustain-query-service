@@ -150,7 +150,7 @@ public class SustainServerTest {
         inProcessServer = new InProcessServer();
         inProcessServer.start();
         channel = InProcessChannelBuilder
-                .forName("test")
+                .forAddress("localhost", 50051)
                 // Channels are secure by default (via SSL/TLS). For the example we disable TLS to avoid
                 // needing certificates.
                 .usePlaintext()
