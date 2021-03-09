@@ -38,9 +38,9 @@ public class SustainServerTest {
     private static final String TARGET = "localhost:50051";
 
     private InProcessServer inProcessServer;
-    private ManagedChannel channel;
-    private SustainBlockingStub sustainBlockingStub;
-    private JsonProxyBlockingStub jsonProxyBlockingStub;
+    private static ManagedChannel channel;
+    private static SustainBlockingStub sustainBlockingStub;
+    private static JsonProxyBlockingStub jsonProxyBlockingStub;
 
     public SustainServerTest() {
         super();
@@ -198,14 +198,14 @@ public class SustainServerTest {
     }
 
     @BeforeAll
-    public void beforeAllTests() {
+    public static void beforeAllTests() {
         channel = ManagedChannelBuilder.forTarget(TARGET).usePlaintext().build();
         sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
         jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
     }
 
     @AfterAll
-    public void afterAllTests() {
+    public static void afterAllTests() {
         channel.shutdown();
     }
 
