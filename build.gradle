@@ -66,7 +66,7 @@ protobuf {
     }
 }
 
-// Inform IDEs like IntelliJ IDEA, Eclipse or NetBeans about the generated code.
+// Inform Gradle about source/test code directories, including generated code.
 sourceSets {
     main {
         java {
@@ -81,15 +81,15 @@ sourceSets {
     }
 }
 
+// Configure Gradle's test task
 test {
+    // Use JUnit 5 for testing
     useJUnitPlatform()
 
-    environment "TESTING", "true"
-
+    // Show standard out/error from tests
     testLogging {
         showStandardStreams = true
     }
-
 }
 
 startScripts.enabled = false
@@ -101,13 +101,9 @@ task sustainServer(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
-task spatialClient(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.client.SpatialClient'
-    applicationName = 'spatial-client'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-}
-
+// To add additional entry-points to the generated JAR, for example, if you have a main()
+// function in a class you'd like to generate, then add an additional task here to generate
+// a binary to the build directory.
 task linearRegressionModel(type: CreateStartScripts) {
     mainClassName = 'org.sustain.modeling.SustainLinearRegression'
     applicationName = 'linear-model'
@@ -115,9 +111,9 @@ task linearRegressionModel(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
+// Distribute generated binaries from above tasks into the bin/ folder at project root.
 applicationDistribution.into('bin') {
     from(sustainServer)
-    from(spatialClient)
     from(linearRegressionModel)
-    fileMode = 0755
+    fileMode = 0755 // Make generated binaries executable
 }
