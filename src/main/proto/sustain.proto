@@ -14,6 +14,15 @@ package sustain;
 // as defined by the ModelRequest message type.
 service JsonProxy {
   rpc ModelQuery(JsonModelRequest) returns (stream JsonModelResponse) {}
+  rpc SlidingWindowQuery(JsonSlidingWindowRequest) returns (stream JsonSlidingWindowResponse) {}
+}
+
+message JsonSlidingWindowRequest {
+  string json = 1;
+}
+
+message JsonSlidingWindowResponse {
+  string json = 2;
 }
 
 message JsonModelRequest {
@@ -33,8 +42,20 @@ service Sustain {
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
 
   rpc DirectQuery (DirectRequest) returns (stream DirectResponse) {}
+
+  rpc SlidingWindowQuery (SlidingWindowRequest) returns (stream SlidingWindowResponse) {}
 }
 
+message SlidingWindowRequest {
+  repeated string gisJoin = 1;
+  string collection = 2;
+  string feature = 3;
+  int32 days = 4;
+}
+
+message SlidingWindowResponse {
+  string response = 1;
+}
 
 enum ModelType {
   K_MEANS_CLUSTERING = 0;

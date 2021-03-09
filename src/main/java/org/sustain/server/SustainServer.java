@@ -15,15 +15,20 @@ import org.sustain.DirectResponse;
 import org.sustain.JsonModelRequest;
 import org.sustain.JsonModelResponse;
 import org.sustain.JsonProxyGrpc;
+import org.sustain.JsonSlidingWindowRequest;
+import org.sustain.JsonSlidingWindowResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.ModelType;
+import org.sustain.SlidingWindowRequest;
+import org.sustain.SlidingWindowResponse;
 import org.sustain.SustainGrpc;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.CompoundQueryHandler;
 import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.RegressionQueryHandler;
+import org.sustain.handlers.SlidingWindowQueryHandler;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
@@ -158,6 +163,12 @@ public class SustainServer {
 
     // SUSTAIN gRPC Server Implementation
     static class SustainService extends SustainGrpc.SustainImplBase {
+        @Override
+        public void slidingWindowQuery(SlidingWindowRequest request, StreamObserver<SlidingWindowResponse> responseObserver) {
+            SlidingWindowQueryHandler handler = new SlidingWindowQueryHandler(request, responseObserver);
+            log.info("Received a Sliding Window Query Request");
+            handler.handleRequest();
+        }
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
