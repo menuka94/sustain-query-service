@@ -1,6 +1,7 @@
 package org.sustain.server;
 
 import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +23,7 @@ import org.sustain.*;
 import org.sustain.SustainGrpc;
 import org.sustain.SustainGrpc.SustainBlockingStub;
 import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
+import org.sustain.util.Constants;
 
 
 /**
@@ -147,7 +149,9 @@ public class SustainServerTest {
 
     @BeforeEach
     public void beforeEachTest() throws IOException {
+        /*
         try {
+
             inProcessServer = new InProcessServer();
             inProcessServer.start();
             channel = InProcessChannelBuilder
@@ -156,6 +160,8 @@ public class SustainServerTest {
                     // needing certificates.
                     .usePlaintext()
                     .build();
+            String target = Constants.Server.HOST + ":" + Constants.Server.PORT;
+            ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
             sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
             jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
         } catch (IOException e) {
@@ -163,12 +169,18 @@ public class SustainServerTest {
             throw e;
         }
 
+        */
+
+        String target = Constants.Server.HOST + ":" + Constants.Server.PORT;
+        channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+        sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
+        jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
     }
 
     @AfterEach
     public void afterEachTest(){
         channel.shutdownNow();
-        inProcessServer.stop();
+        //inProcessServer.stop();
     }
 
     public void shutdown() throws InterruptedException {
