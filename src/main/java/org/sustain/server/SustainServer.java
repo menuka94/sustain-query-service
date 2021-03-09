@@ -172,6 +172,18 @@ public class SustainServer {
                     log.info("Received a K-Means Clustering Model request");
                     handler = new ClusteringQueryHandler(request, responseObserver);
                     break;
+                case BISECTING_K_MEANS:
+                    log.info("Received a Bisecting K-Means Model Request");
+                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    break;
+                case GAUSSIAN_MIXTURE:
+                    log.info("Received a Gaussian Mixture Request");
+                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    break;
+                case LATENT_DIRICHLET_ALLOCATION:
+                    log.info("Received a Latent Dirichlet Allocation Request");
+                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    break;
                 default:
                     responseObserver.onError(new Exception("Invalid Model Type"));
                     return;
