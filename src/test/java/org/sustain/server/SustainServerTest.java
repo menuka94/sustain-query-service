@@ -12,6 +12,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
@@ -33,6 +35,7 @@ import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
 public class SustainServerTest {
 
     private static final Logger log = LogManager.getLogger(SustainServerTest.class);
+    private static final String TARGET = "localhost:50051";
 
     private InProcessServer inProcessServer;
     private ManagedChannel channel;
@@ -52,9 +55,9 @@ public class SustainServerTest {
     @Test
     public void testExampleEchoQuery() throws InterruptedException {
         try {
-            String target = "lattice-165" + ":" + 50051;
-            ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-            SustainBlockingStub sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
+            //String target = "lattice-165" + ":" + 50051;
+            //ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+            //SustainBlockingStub sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
             //JsonProxyBlockingStub jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
 
             InputStream ioStream = getClass().getClassLoader().getResourceAsStream(
@@ -74,7 +77,6 @@ public class SustainServerTest {
                 }
             }
 
-            channel.shutdown();
         } catch (NullPointerException e) {
             log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
         } catch (IOException e) {
@@ -188,11 +190,23 @@ public class SustainServerTest {
     }
 
     @AfterEach
-    public void afterEachTest(){
+    public void afterEachTest() {
         /*
         channel.shutdownNow();
         //inProcessServer.stop();
         */
+    }
+
+    @BeforeAll
+    public void beforeAllTests() {
+        channel = ManagedChannelBuilder.forTarget(TARGET).usePlaintext().build();
+        sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
+        jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
+    }
+
+    @AfterAll
+    public void afterAllTests() {
+        channel.shutdown();
     }
 
     public void shutdown() throws InterruptedException {
