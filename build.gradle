@@ -84,11 +84,11 @@ sourceSets {
 test {
     useJUnitPlatform()
 
-    //include '*/**'
-
     environment "TESTING", "true"
 
-    //testLogging.showStandardStreams = true
+    testLogging {
+        showStandardStreams = true
+    }
 
 }
 
