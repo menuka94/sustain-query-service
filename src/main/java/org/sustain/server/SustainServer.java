@@ -25,6 +25,7 @@ import org.sustain.handlers.CompoundQueryHandler;
 import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.RegressionQueryHandler;
 import org.sustain.handlers.DirectQueryHandler;
+import org.sustain.handlers.EnsembleQueryHandler;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
@@ -179,6 +180,14 @@ public class SustainServer {
                 case GAUSSIAN_MIXTURE:
                     log.info("Received a Gaussian Mixture Request");
                     handler = new ClusteringQueryHandler(request, responseObserver);
+                    break;
+                case R_FOREST_REGRESSION:
+                    log.info("Received a Random Forest Regression Model request");
+                    handler = new EnsembleQueryHandler(request, responseObserver);
+                    break;
+                case G_BOOST_REGRESSION:
+                    log.info("Received a Gradient Boost Regression Model request");
+                    handler = new EnsembleQueryHandler(request, responseObserver);
                     break;
                 case LATENT_DIRICHLET_ALLOCATION:
                     log.info("Received a Latent Dirichlet Allocation Request");

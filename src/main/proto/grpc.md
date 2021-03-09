@@ -120,7 +120,7 @@ Example:
 Example:
 ```
 {
-  "type": "R_FOREST",
+  "type": "R_FOREST_REGRESSION",
   "collections": [
     {
       "name": "macav2",
@@ -171,7 +171,7 @@ Example:
 Example:
 ```
 {
-  "type": "G_BOOST",
+  "type": "G_BOOST_REGRESSION",
   "collections": [
     {
       "name": "macav2",

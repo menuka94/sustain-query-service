@@ -21,80 +21,21 @@
  * specific language governing permissions and limitations
  * under the License.
  * ======================================================== */
-package org.sustain.modeling;
+package org.sustain.handlers;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.*;
+import org.sustain.modeling.GBoostRegressionModel;
+import org.sustain.modeling.RFRegressionModel;
 import org.sustain.util.Constants;
 
-public class EnsembleQueryHandler {
+public class EnsembleQueryHandler extends GrpcHandler<ModelRequest, ModelResponse> {
     private static final Logger log = LogManager.getLogger(EnsembleQueryHandler.class);
-    private final ModelRequest request;
-    private final StreamObserver<ModelResponse> responseObserver;
 
     public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        this.request = request;
-        this.responseObserver = responseObserver;
-    }
-
-    private void logRequest() {
-        log.info("============== REQUEST ===============");
-
-        log.info("Collections:");
-        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
-            Collection col = this.request.getCollections(i);
-            log.info("\tName: {}", col.getName());
-            log.info("\tLabel: {}", col.getLabel());
-            log.info("\tFeatures:");
-            for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t{}", col.getFeatures(j));
-            }
-        }
-
-        if (this.request.getType().equals(ModelType.R_FOREST)) {
-            log.info("RFRegressionRequest:");
-            RForestRegressionRequest req = this.request.getRForestRegressionRequest();
-            log.info("\tGISJoins:");
-            for (int i = 0; i < req.getGisJoinsCount(); i++) {
-                log.info("\t\t{}", req.getGisJoins(i));
-            }
-
-            log.info("\tIsBootstrap: {}", req.getIsBootstrap());
-            log.info("\tSubSamplingRate: {}", req.getSubsamplingRate());
-            log.info("\tNumTrees: {}", req.getNumTrees());
-            log.info("\tFeatureSubsetStrategy: {}", req.getFeatureSubsetStrategy());
-            log.info("\tImpurity: {}", req.getImpurity());
-            log.info("\tMaxDepth: {}", req.getMaxDepth());
-            log.info("\tMaxBins: {}", req.getMaxBins());
-            log.info("\tMinInfoGain: {}", req.getMinInfoGain());
-            log.info("\tMinInstancesPerNode: {}", req.getMinInstancesPerNode());
-            log.info("\tMinWeightFractionPerNode: {}", req.getMinWeightFractionPerNode());
-            log.info("\tTestTrainSplit: {}", req.getTrainSplit());
-
-        } else if(this.request.getType().equals(ModelType.G_BOOST)) {
-            log.info("GBoostRegressionRequest:");
-            GBoostRegressionRequest req = this.request.getGBoostRegressionRequest();
-            log.info("\tGISJoins:");
-            for (int i = 0; i < req.getGisJoinsCount(); i++) {
-                log.info("\t\t{}", req.getGisJoins(i));
-            }
-
-            log.info("\tLossType: {}", req.getLossType());
-            log.info("\tMaxIter: {}", req.getMaxIter());
-            log.info("\tSubSamplingRate: {}", req.getSubsamplingRate());
-            log.info("\tStepSize: {}", req.getStepSize());
-            log.info("\tFeatureSubsetStrategy: {}", req.getFeatureSubsetStrategy());
-            log.info("\tImpurity: {}", req.getImpurity());
-            log.info("\tMaxDepth: {}", req.getMaxDepth());
-            log.info("\tMaxBins: {}", req.getMaxBins());
-            log.info("\tMinInfoGain: {}", req.getMinInfoGain());
-            log.info("\tMinInstancesPerNode: {}", req.getMinInstancesPerNode());
-            log.info("\tMinWeightFractionPerNode: {}", req.getMinWeightFractionPerNode());
-            log.info("\tTestTrainSplit: {}", req.getTrainSplit());
-        }
-
+        super(request, responseObserver);
     }
 
     private RForestRegressionResponse buildRFModel(ModelRequest modelRequest, String gisJoin) {
@@ -212,7 +153,7 @@ public class EnsembleQueryHandler {
      * @return Boolean true if the model request is valid, false otherwise.
      */
     private boolean isValidModelRequest(ModelRequest modelRequest) {
-        if (modelRequest.getType().equals(ModelType.R_FOREST) || modelRequest.getType().equals(ModelType.G_BOOST)) {
+        if (modelRequest.getType().equals(ModelType.R_FOREST_REGRESSION) || modelRequest.getType().equals(ModelType.G_BOOST_REGRESSION)) {
             if (modelRequest.getCollectionsCount() == 1) {
                 if (modelRequest.getCollections(0).getFeaturesCount() > 0) {
                     return (modelRequest.hasRForestRegressionRequest() || modelRequest.hasGBoostRegressionRequest());
@@ -223,11 +164,10 @@ public class EnsembleQueryHandler {
         return false;
     }
 
-    public void handleQuery() {
+    @Override
+    public void handleRequest() {
         if (isValidModelRequest(this.request)) {
-            logRequest();
-
-            if (request.getType().equals(ModelType.R_FOREST)) {
+            if (request.getType().equals(ModelType.R_FOREST_REGRESSION)) {
                 RForestRegressionRequest req = this.request.getRForestRegressionRequest();
                 for (String gisJoin : req.getGisJoinsList()) {
                     RForestRegressionResponse modelResults = buildRFModel(this.request, gisJoin);
@@ -237,7 +177,7 @@ public class EnsembleQueryHandler {
 
                     this.responseObserver.onNext(response);
                 }
-            } else if(request.getType().equals(ModelType.G_BOOST)) {
+            } else if(request.getType().equals(ModelType.G_BOOST_REGRESSION)) {
                 GBoostRegressionRequest req = this.request.getGBoostRegressionRequest();
                 for (String gisJoin : req.getGisJoinsList()) {
                     GBoostRegressionResponse modelResults = buildGBModel(this.request, gisJoin);

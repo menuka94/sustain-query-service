@@ -1,5 +1,5 @@
 {
-  "type": "G_BOOST",
+  "type": "G_BOOST_REGRESSION",
   "collections": [
     {
       "name": "macav2",

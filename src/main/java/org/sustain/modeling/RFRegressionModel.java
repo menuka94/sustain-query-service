@@ -299,11 +299,13 @@ public class RFRegressionModel {
         return ((double)System.currentTimeMillis() - startTime)/1000;
     }
 
-    // CREATES SPARK CONTEXT USING INPUT PARAMETERS AND EXECUTES THE TRAINING
+    /**
+     * Creates Spark context and trains the distributed model
+     */
     public void buildAndRunModel() {
         double startTime = System.currentTimeMillis();
 
-        fancy_logging("Initiating Modelling...");
+        fancy_logging("Initiating Random Forest Modelling...");
         ReadConfig readConfig = ReadConfig.create(sparkContext);
 
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
@@ -347,10 +349,6 @@ public class RFRegressionModel {
 
         Dataset<Row> predictions = rmodel.transform(testrdd);
 
-        fancy_logging("Model Test completed in "+calc_interval(startTime));
-        startTime = System.currentTimeMillis();
-
-        //System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n"+Arrays.toString(predictions.columns())+"\n"+predictions.first());
         RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName(errorType);
 
         this.rmse = eval.evaluate(predictions);
@@ -358,13 +356,16 @@ public class RFRegressionModel {
         eval.setMetricName("r2");
 
         this.r2 = eval.evaluate(predictions);
-        fancy_logging("Model Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
+        fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
         sparkContext.close();
     }
 
-    // INJECTING USER-DEFINED PARAMETERS INTO MODEL
+    /**
+     * Injecting user-defined parameters into model
+     * @param rf - Random Forest Regression model Object
+     */
     private void ingestParameters(RandomForestRegressor rf) {
         if (this.isBootstrap != null) {
             rf.setBootstrap(this.isBootstrap);

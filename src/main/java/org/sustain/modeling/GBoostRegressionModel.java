@@ -1,6 +1,6 @@
 /* ========================================================
- * RFRegressionModel.java -
- *      Defines a generalized random forest regression model that can be
+ * GBoostRegressionModel.java -
+ *      Defines a generalized gradient boost regression model that can be
  *      built and executed over a set of MongoDB documents.
  *
  * Author: Saptashwa Mitra
@@ -47,7 +47,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Provides an interface for building generalized Random Forest Regression
+ * Provides an interface for building generalized Gradient Boost Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
 public class GBoostRegressionModel {
@@ -307,11 +307,14 @@ public class GBoostRegressionModel {
         return ((double)System.currentTimeMillis() - startTime)/1000;
     }
 
-    // CREATES SPARK CONTEXT USING INPUT PARAMETERS AND EXECUTES THE TRAINING
+    /**
+     * Creates Spark context and trains the distributed model
+     */
+
     public void buildAndRunModel() {
         double startTime = System.currentTimeMillis();
 
-        fancy_logging("Initiating Modelling...");
+        fancy_logging("Initiating Gradient Boost Modelling...");
         ReadConfig readConfig = ReadConfig.create(sparkContext);
 
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
@@ -355,10 +358,6 @@ public class GBoostRegressionModel {
 
         Dataset<Row> predictions = gbModel.transform(testrdd);
 
-        fancy_logging("Model Test completed in "+calc_interval(startTime));
-        startTime = System.currentTimeMillis();
-
-        //System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n"+Arrays.toString(predictions.columns())+"\n"+predictions.first());
         RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName("rmse");
 
         this.rmse = eval.evaluate(predictions);
@@ -366,13 +365,16 @@ public class GBoostRegressionModel {
         eval.setMetricName("r2");
 
         this.r2 = eval.evaluate(predictions);
-        fancy_logging("Model Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
+        fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
         sparkContext.close();
     }
 
-    // INJECTING USER-DEFINED PARAMETERS INTO MODEL
+    /**
+     * Injecting user-defined parameters into model
+     * @param gb - Gradient Boosting Regression model Object
+     */
     private void ingestParameters(GBTRegressor gb) {
         if (this.subsamplingRate != null) {
             gb.setSubsamplingRate(this.subsamplingRate);

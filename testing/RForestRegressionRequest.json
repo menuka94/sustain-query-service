@@ -1,5 +1,5 @@
 {
-  "type": "R_FOREST",
+  "type": "R_FOREST_REGRESSION",
   "collections": [
     {
       "name": "macav2",
