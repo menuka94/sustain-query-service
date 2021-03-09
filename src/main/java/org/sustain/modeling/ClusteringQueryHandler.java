@@ -358,7 +358,6 @@ public class ClusteringQueryHandler {
                 log.info("\tMaxIterations: " + latentDirichletAllocationRequest.getMaxIterations());
                 break;
         }
-        log.info("=======================================");
     }
 
     private static class ClusteringResult {
