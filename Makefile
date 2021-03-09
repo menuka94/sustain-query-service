@@ -5,13 +5,13 @@
 
 .EXPORT_ALL_VARIABLES:
 
-SERVER_HOST = lattice-165
+SERVER_HOST = localhost
 SERVER_PORT = 50051
-SPARK_MASTER = spark://lattice-165:8079
+SPARK_MASTER = spark://menuka-HP:7077
 DB_NAME = sustaindb
 DB_USERNAME = ""
 DB_PASSWORD = ""
-DB_HOST = lattice-46
+DB_HOST = localhost
 DB_PORT = 27017
 
 .PHONY: build

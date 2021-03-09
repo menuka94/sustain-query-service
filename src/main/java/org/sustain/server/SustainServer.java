@@ -30,11 +30,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import static org.sustain.ModelType.BISECTING_K_MEANS;
-import static org.sustain.ModelType.GAUSSIAN_MIXTURE;
-import static org.sustain.ModelType.K_MEANS_CLUSTERING;
-import static org.sustain.ModelType.LATENT_DIRICHLET_ALLOCATION;
-
 
 public class SustainServer {
     private static final Logger log = LogManager.getLogger(SustainServer.class);
