@@ -52,6 +52,11 @@ public class SustainServerTest {
     @Test
     public void testExampleEchoQuery() throws InterruptedException {
         try {
+            String target = "lattice-165" + ":" + 50051;
+            ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+            SustainBlockingStub sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
+            //JsonProxyBlockingStub jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
+
             InputStream ioStream = getClass().getClassLoader().getResourceAsStream(
                     "requests/linear_regression_maca_v2_request.json");
             if (ioStream != null) {
@@ -68,13 +73,14 @@ public class SustainServerTest {
                 }
             }
 
+            channel.shutdown();
         } catch (NullPointerException e) {
             log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
         } finally {
             //inProcessServer.blockUntilShutdown();
-            shutdown();
+
         }
     }
 
@@ -151,8 +157,8 @@ public class SustainServerTest {
     @BeforeEach
     public void beforeEachTest() throws IOException {
 
+        /*
         try {
-            String target = "lattice-165" + ":" + 50051;
             inProcessServer = new InProcessServer();
             inProcessServer.start();
             channel = InProcessChannelBuilder
@@ -169,12 +175,15 @@ public class SustainServerTest {
             log.error("Failed operation: " + e.getMessage());
             throw e;
         }
+        */
     }
 
     @AfterEach
     public void afterEachTest(){
+        /*
         channel.shutdownNow();
         //inProcessServer.stop();
+        */
     }
 
     public void shutdown() throws InterruptedException {
