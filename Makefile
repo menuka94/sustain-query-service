@@ -38,14 +38,6 @@ run-linear-model:
 	chmod +x ./gradlew
 	./build/install/sustain-census-grpc/bin/linear-model
 
-rforest:
-	chmod +x ./gradlew
-	./build/install/sustain-census-grpc/bin/rforest
-
-gboost:
-	chmod +x ./gradlew
-	./build/install/sustain-census-grpc/bin/gboost
-
 proto:
 	chmod +x ./gradlew
 	./gradlew generateProto
