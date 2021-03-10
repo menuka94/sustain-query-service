@@ -3,8 +3,10 @@
 ## Usage
 
 This approach uses JUnit 5 and Gradle's `test` task. This lets you explicitly specify a single test to run:
-- `./gradlew clean test --tests SustainServerTest.testExampleEchoQuery`
+- `./gradlew test --tests SustainServerTest.testExampleEchoQuery`
    - [Gradle Docs: Running a single JUnit class or method](https://docs.gradle.org/current/userguide/java_testing.html#simple_name_pattern)
+  
+> Note: Do *not* use `./gradlew clean test ...` as this removes required JARs from the build directory prior to running the tests.
 
 You must have an already-running sustain-query-service on port **50051**, on the same host you're running your tests on.
 This makes some of these tests *environment specific*.
