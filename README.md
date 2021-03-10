@@ -37,6 +37,3 @@ To build and run this project as a Kubernetes Deployment, connecting to a sharde
 
 * `$ kubectl apply -f deploy/deployment.yaml`
 
-## gRPC Client
-
-Use `org.sustain.client.SpatialClient` and `src/main/proto/census.proto` as references for implementing clients. An example Node.js client is available at `nodejs-client/census_client.js`.

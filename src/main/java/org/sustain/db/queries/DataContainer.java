@@ -1,9 +1,7 @@
-package org.sustain.querier;
+package org.sustain.db.queries;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import com.google.gson.JsonParser;
@@ -11,15 +9,15 @@ import org.json.JSONObject;
 import com.google.gson.Gson;
 
 import org.sustain.CompoundResponse;
-import org.sustain.CompoundRequest;
 
 import io.grpc.stub.StreamObserver;
 
 public class DataContainer {
+
 	private HashMap<String,HashMap<String,String>> documents;
 
 	public DataContainer() {
-		this.documents = new HashMap<String,HashMap<String,String>>();
+		this(new HashMap<>());
     }
 
 	public DataContainer(HashMap<String,HashMap<String,String>> documents) {
@@ -42,20 +40,15 @@ public class DataContainer {
 	}
 
 	public DataContainer innerJoin(DataContainer other){
-		//documents.entrySet().forEach(entry->{
-		//	System.out.println(entry.getKey() + " " + entry.getValue());  
-		//});
 
 		HashMap<String,HashMap<String,String>> results = new HashMap<String,HashMap<String,String>>();
 
 		for (Map.Entry<String, HashMap<String,String>> entry : other.getDocuments().entrySet()) {
 			String key = entry.getKey();
-                        //System.out.println(key);
 			HashMap<String,String> value = entry.getValue();
 
 			// Inner join - we only want GISJOINS in both queries
 			if (documents.containsKey(key)){
-                                //System.out.println(key);
 				value.putAll(documents.get(key));
 				results.put(key, value);
 			}

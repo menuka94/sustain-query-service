@@ -1,29 +1,20 @@
-package org.sustain.querier;
+package org.sustain.db.queries;
 
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
 import com.mongodb.BasicDBObject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import org.bson.Document;
-import org.bson.conversions.Bson;
 
 import org.json.JSONArray;
-import org.json.JSONObject;
-import com.google.gson.Gson;
 
-import org.sustain.JoinOperator;
-import org.sustain.ComparisonOperator;
-import org.sustain.CompoundResponse;
-import org.sustain.CompoundRequest;
 import org.sustain.Query;
-import org.sustain.util.Constants;
+import org.sustain.handlers.CompoundQueryHandler;
 
 import org.sustain.db.mongodb.DBConnection;
 
@@ -47,7 +38,7 @@ public class Querier extends Thread {
 
     @Override
 	public void run() {
-        MongoDatabase db = DBConnection.getConnection(request.getHost(), Integer.toString(request.getPort()));
+        MongoDatabase db = DBConnection.getConnection(request.getHost(), request.getPort());
         MongoCollection<Document> collection = db.getCollection(request.getCollection());
         ArrayList<BasicDBObject> query = new ArrayList<BasicDBObject>();
         JSONArray parsedQuery = new JSONArray(request.getQuery());

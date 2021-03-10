@@ -1,4 +1,4 @@
-package org.sustain.querier;
+package org.sustain.handlers;
 
 import org.sustain.db.mongodb.DBConnection;
 
@@ -18,42 +18,34 @@ import org.json.JSONArray;
 
 import org.sustain.DirectResponse;
 import org.sustain.DirectRequest;
-import org.sustain.Query;
-
-import org.sustain.util.Constants;
 
 import java.util.ArrayList;
 
-public class DirectQueryHandler {
-    public static final Logger log =
-        LogManager.getLogger(DirectQueryHandler.class);
+public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectResponse> {
 
-    private final StreamObserver<DirectResponse> responseObserver;
+    public static final Logger log = LogManager.getLogger(DirectQueryHandler.class);
 
-    public DirectQueryHandler(StreamObserver<DirectResponse> responseObserver) {
-        this.responseObserver = responseObserver;
+    public DirectQueryHandler(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
+        super(request, responseObserver);
     }
 
-    public void handleDirectQuery(DirectRequest request) {
-        log.debug("Received query for collection '"
-            + request.getCollection() + "'");
+    @Override
+    public void handleRequest() {
+        log.info("Received query for collection '{}'", request.getCollection());
         long startTime = System.currentTimeMillis();
 
         try {
-            // connect to mongodb
+            // Connect to MongoDB
             MongoDatabase mongoDatabase = DBConnection.getConnection();
-            MongoCollection mongoCollection = 
-                mongoDatabase.getCollection(request.getCollection());
+            MongoCollection<Document> mongoCollection = mongoDatabase.getCollection(request.getCollection());
 
-            // construct mongodb query object
-            ArrayList<BasicDBObject> query =
-                new ArrayList<BasicDBObject>();
+            // Construct MongoDB query object
+            ArrayList<BasicDBObject> query = new ArrayList<>();
 
+            // Build MongoDB
             JSONArray parsedQuery = new JSONArray(request.getQuery());
             for (int i = 0; i < parsedQuery.length(); i++) {
-                BasicDBObject queryComponent = new BasicDBObject()
-                    .parse(parsedQuery.getJSONObject(i).toString());
-
+                BasicDBObject queryComponent = BasicDBObject.parse(parsedQuery.getJSONObject(i).toString());
                 query.add(queryComponent);
             }
 
