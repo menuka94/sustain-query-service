@@ -6,6 +6,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.CompoundRequest;
@@ -21,20 +22,14 @@ import org.sustain.ModelType;
 import org.sustain.SustainGrpc;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.CompoundQueryHandler;
-import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.RegressionQueryHandler;
+import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
-
-import static org.sustain.ModelType.BISECTING_K_MEANS;
-import static org.sustain.ModelType.GAUSSIAN_MIXTURE;
-import static org.sustain.ModelType.K_MEANS_CLUSTERING;
-import static org.sustain.ModelType.LATENT_DIRICHLET_ALLOCATION;
-
 
 public class SustainServer {
     private static final Logger log = LogManager.getLogger(SustainServer.class);
@@ -72,13 +67,13 @@ public class SustainServer {
         log.info("Server started, listening on " + port);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
-            try {
-                SustainServer.this.stop();
-            } catch (InterruptedException e) {
-                log.error("Error in stopping the server");
-                e.printStackTrace();
-            }
-            log.warn("Server is shutting down");
+                try {
+                    SustainServer.this.stop();
+                } catch (InterruptedException e) {
+                    log.error("Error in stopping the server");
+                    e.printStackTrace();
+                }
+                log.warn("Server is shutting down");
 
         }));
     }
@@ -105,34 +100,34 @@ public class SustainServer {
     static class JsonProxyService extends JsonProxyGrpc.JsonProxyImplBase {
         @Override
         public void modelQuery(JsonModelRequest request,
-                               StreamObserver<JsonModelResponse> responseObserver) {
+                StreamObserver<JsonModelResponse> responseObserver) {
             ManagedChannel channel = null;
 
             try {
                 // open grpc channel
                 channel = ManagedChannelBuilder
-                        .forAddress(Constants.Server.HOST,
-                                Constants.Server.PORT)
-                        .usePlaintext()
-                        .build();
+                    .forAddress(Constants.Server.HOST,
+                        Constants.Server.PORT)
+                    .usePlaintext()
+                    .build();
 
                 // convert json to protobuf and service request
                 JsonFormat.Parser parser = JsonFormat.parser();
                 JsonFormat.Printer printer = JsonFormat.printer()
-                        .includingDefaultValueFields()
-                        .omittingInsignificantWhitespace();
+                    .includingDefaultValueFields()
+                    .omittingInsignificantWhitespace();
 
                 // create model request
                 ModelRequest.Builder requestBuilder =
-                        ModelRequest.newBuilder();
+                    ModelRequest.newBuilder();
                 parser.merge(request.getJson(), requestBuilder);
 
                 // issue model request
                 SustainGrpc.SustainBlockingStub blockingStub =
-                        SustainGrpc.newBlockingStub(channel);
+                    SustainGrpc.newBlockingStub(channel);
 
                 Iterator<ModelResponse> iterator =
-                        blockingStub.modelQuery(requestBuilder.build());
+                    blockingStub.modelQuery(requestBuilder.build());
 
                 // iterate over results
                 while (iterator.hasNext()) {
@@ -141,9 +136,9 @@ public class SustainServer {
                     // build JsonModelRequest
                     String json = printer.print(response);
                     JsonModelResponse jsonResponse =
-                            JsonModelResponse.newBuilder()
-                                    .setJson(json)
-                                    .build();
+                        JsonModelResponse.newBuilder()
+                            .setJson(json)
+                            .build();
 
                     responseObserver.onNext(jsonResponse);
                 }
@@ -166,7 +161,7 @@ public class SustainServer {
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-            GrpcHandler<ModelRequest, ModelResponse> handler = null;
+            GrpcHandler<ModelRequest, ModelResponse> handler;
             ModelType type = request.getType();
             switch (type) {
                 case LINEAR_REGRESSION:
@@ -193,13 +188,14 @@ public class SustainServer {
                     responseObserver.onError(new Exception("Invalid Model Type"));
                     return;
             }
+
             handler.handleRequest();
             responseObserver.onCompleted();
         }
 
         @Override
         public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
-            CompoundQueryHandler handler = new CompoundQueryHandler(request, responseObserver);
+            GrpcHandler<CompoundRequest, CompoundResponse> handler = new CompoundQueryHandler(request, responseObserver);
             handler.handleRequest();
         }
 
@@ -207,6 +203,21 @@ public class SustainServer {
         public void directQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
             GrpcHandler<DirectRequest, DirectResponse> handler = new DirectQueryHandler(request, responseObserver);
             handler.handleRequest();
+        }
+
+        /**
+         * An example RPC method used to sanity-test the gRPC server manually, or unit-test it with JUnit.
+         * @param request DirectRequest object containing a collection and query request.
+         * @param responseObserver Response Stream for streaming back results.
+         */
+        @Override
+        public void echoQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
+            log.info("RPC method echoQuery() invoked; returning request query body");
+            DirectResponse echoResponse = DirectResponse.newBuilder()
+                    .setData(StringEscapeUtils.unescapeJavaScript(request.getQuery()))
+                    .build();
+            responseObserver.onNext(echoResponse);
+            responseObserver.onCompleted();
         }
     }
 }
