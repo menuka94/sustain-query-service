@@ -20,9 +20,6 @@ import org.sustain.DirectResponse;
 import org.sustain.DirectRequest;
 
 import java.util.ArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectResponse> {
 
@@ -36,44 +33,6 @@ public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectRespons
     public void handleRequest() {
         log.info("Received query for collection '{}'", request.getCollection());
         long startTime = System.currentTimeMillis();
-
-        AtomicLong count = new AtomicLong(0);
-        LinkedBlockingQueue<Document> queue = new LinkedBlockingQueue<>();
-        ReentrantLock lock = new ReentrantLock();
-
-        // Start serialization thread
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        // Retrieve next document
-                        Document document = queue.take();
-
-                        // Initialize response
-                        DirectResponse response = DirectResponse.newBuilder()
-                                .setData(document.toJson())
-                                .build();
-
-                        // Send response
-                        lock.lock();
-                        try {
-                            responseObserver.onNext(response);
-                        } finally {
-                            lock.unlock();
-                        }
-
-                        // Decrement active count
-                        count.decrementAndGet();
-                    }
-                } catch (InterruptedException e) {
-                    log.info("Thread interrupted");
-                }
-            }
-        });
-
-        // Start the Thread to process/stream Document results back to the gRPC client
-        thread.start();
 
         try {
             // Connect to MongoDB
@@ -90,30 +49,47 @@ public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectRespons
                 query.add(queryComponent);
             }
 
-            // Iterate over query results
-            AggregateIterable<Document> documents = mongoCollection.aggregate(query);
-            long totalCount = 0;
+            // submit mongodb query
+            AggregateIterable<Document> documents =
+                mongoCollection.aggregate(query);
+
+            // initialize and start stream writer
+            DirectStreamWriter streamWriter =
+                new DirectStreamWriter(responseObserver, 1);
+            streamWriter.start();
+
+            // process results
+            long count = 0; 
             for (Document document : documents) {
-                queue.add(document);
-                count.incrementAndGet();
-                totalCount += 1;
+                streamWriter.add(document);
+                count += 1;
             }
 
-            // Wait for worker threads to complete
-            while (count.get() != 0) {
-                Thread.sleep(50);
-            }
-
-            // Stop worker thread and end gRPC stream
-            thread.interrupt();
+            // shutdown streamWriter and responseObserver
+            streamWriter.stop(false);
             this.responseObserver.onCompleted();
 
             long duration = System.currentTimeMillis() - startTime;
-            log.info("Processed {} document(s) from collection '{}' in {} ms", totalCount,
-                    request.getCollection(), duration);
+            log.info("Processed " + count + " document(s) from collection '"
+                + request.getCollection() + "' in " + duration + "ms");
         } catch (Exception e) {
             log.error("Failed to evaluate query", e);
             responseObserver.onError(e);
+        }
+    }
+
+    class DirectStreamWriter extends StreamWriter<Document, DirectResponse> {
+        public DirectStreamWriter(
+                StreamObserver<DirectResponse> responseObserver,
+                int threadCount) {
+            super(responseObserver, threadCount);
+        }
+
+        @Override
+        public DirectResponse convert(Document document) {
+            return DirectResponse.newBuilder()
+                .setData(document.toJson())
+                .build();
         }
     }
 }
