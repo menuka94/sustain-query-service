@@ -21,6 +21,7 @@ import org.sustain.*;
 import org.sustain.SustainGrpc;
 import org.sustain.SustainGrpc.SustainBlockingStub;
 import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
+import org.sustain.util.Constants;
 
 /**
  * Tests gRPC calls and responses to the Sustain Server, as if a client were invoking them.
@@ -31,7 +32,7 @@ import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
 public class SustainServerTest {
 
     private static final Logger log = LogManager.getLogger(SustainServerTest.class);
-    private static final String TARGET = "localhost:50051";
+    private static final String TARGET = String.format("%s:%d", Constants.Server.HOST, Constants.Server.PORT);
 
     private static ManagedChannel channel;
     private static SustainBlockingStub sustainBlockingStub;
