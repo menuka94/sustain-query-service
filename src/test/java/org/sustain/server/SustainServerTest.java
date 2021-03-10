@@ -104,6 +104,18 @@ public class SustainServerTest {
         executeJsonModelRequest("requests/gaussian_mixture_clustering_county_stats_request.json");
     }
 
+    @Tag("slow")
+    @Test
+    public void testGBoostRegressionModel() {
+        executeJsonModelRequest("requests/gboost_regression_maca_v2_request.json");
+    }
+
+    @Tag("slow")
+    @Test
+    public void testRForestRegressionModel() {
+        executeJsonModelRequest("requests/rforest_regression_maca_v2_request.json");
+    }
+
     /**
      * Tests the end-to-end Model Request functionality.
      * Due to the long-running nature of this test, it should not be included as a unit test, but rather manually
