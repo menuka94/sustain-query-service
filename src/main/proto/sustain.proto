@@ -41,9 +41,12 @@ service Sustain {
   // Create a Spark Model on a collection
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
 
+  // Issue a query directly from the gRPC client to MongoDB
   rpc DirectQuery (DirectRequest) returns (stream DirectResponse) {}
 
   rpc SlidingWindowQuery (SlidingWindowRequest) returns (stream SlidingWindowResponse) {}
+
+  rpc EchoQuery (DirectRequest) returns (stream DirectResponse) {}
 }
 
 message SlidingWindowRequest {
@@ -59,12 +62,14 @@ message SlidingWindowResponse {
 }
 
 enum ModelType {
-  K_MEANS_CLUSTERING = 0;
-  LINEAR_REGRESSION = 1;
-  BISECTING_K_MEANS = 2;
-  GAUSSIAN_MIXTURE = 3;
-  POWER_ITERATION_CLUSTERING = 4;
-  LATENT_DIRICHLET_ALLOCATION = 5;
+    K_MEANS_CLUSTERING = 0;
+    LINEAR_REGRESSION = 1;
+    BISECTING_K_MEANS = 2;
+    GAUSSIAN_MIXTURE = 3;
+    POWER_ITERATION_CLUSTERING = 4;
+    LATENT_DIRICHLET_ALLOCATION = 5;
+    R_FOREST_REGRESSION = 6;
+    G_BOOST_REGRESSION = 7;
 }
 
 message ModelRequest {
@@ -75,6 +80,8 @@ message ModelRequest {
   BisectingKMeansRequest bisectingKMeansRequest = 5;
   GaussianMixtureRequest gaussianMixtureRequest = 6;
   LatentDirichletAllocationRequest latentDirichletAllocationRequest = 7;
+  RForestRegressionRequest rForestRegressionRequest = 8;
+  GBoostRegressionRequest gBoostRegressionRequest = 9;
 }
 
 message Collection {
@@ -86,6 +93,8 @@ message Collection {
 message ModelResponse {
   KMeansClusteringResponse kMeansClusteringResponse = 1;
   LinearRegressionResponse linearRegressionResponse = 2;
+  RForestRegressionResponse rForestRegressionResponse= 3;
+  GBoostRegressionResponse gBoostRegressionResponse = 4;
   BisectingKMeansResponse bisectingKMeansResponse = 5;
   GaussianMixtureResponse gaussianMixtureResponse = 6;
   LatentDirichletAllocationResponse latentDirichletAllocationResponse = 7;
@@ -159,6 +168,49 @@ message LinearRegressionResponse {
   double intercept = 5;
   repeated double slopeCoefficients = 6;
   repeated double objectiveHistory = 7;
+}
+
+message RForestRegressionRequest {
+  repeated string gisJoins = 1;
+  bool isBootstrap = 2;
+  double subsamplingRate = 3;
+  int32 numTrees = 4;
+  string featureSubsetStrategy = 5;
+  string impurity = 6;
+  int32 maxDepth = 7;
+  int32 maxBins = 8;
+  double trainSplit = 9;
+  double minInfoGain = 10;
+  int32 minInstancesPerNode = 11;
+  double minWeightFractionPerNode = 12;
+}
+
+message RForestRegressionResponse {
+  string gisJoin = 1;
+  double rmse = 2;
+  double r2 = 3;
+}
+
+message GBoostRegressionRequest {
+  repeated string gisJoins = 1;
+  double subsamplingRate = 2;
+  double stepSize = 3;
+  string featureSubsetStrategy = 4;
+  string impurity = 5;
+  int32 maxDepth = 6;
+  int32 maxBins = 7;
+  double trainSplit = 8;
+  double minInfoGain = 9;
+  int32 minInstancesPerNode = 10;
+  double minWeightFractionPerNode = 11;
+  string lossType = 12;
+  int32 maxIter = 13;
+}
+
+message GBoostRegressionResponse {
+  string gisJoin = 1;
+  double rmse = 2;
+  double r2 = 3;
 }
 
 enum SpatialOp {

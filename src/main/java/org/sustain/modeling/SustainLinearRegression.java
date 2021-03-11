@@ -309,6 +309,7 @@ public class SustainLinearRegression {
      * @param args Usually not used.
      */
     public static void main(String[] args) {
+        /*
         String[] features = {"timestamp"};
         String label = "max_max_air_temperature";
 
@@ -324,6 +325,10 @@ public class SustainLinearRegression {
         lrModel.setEpsilon(1.35);
 
         lrModel.buildAndRunModel();
+
+         */
+
+        log.info("Executed SustainLinearRegression.main() successfully");
     }
 
 }
