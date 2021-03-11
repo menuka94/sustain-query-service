@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest, SlidingWindowResponse> {
-    private static final Logger log = LogManager.getFormatterLogger(SlidingWindowQueryHandler.class);
+    private static final Logger log = LogManager.getLogger(SlidingWindowQueryHandler.class);
 
     public SlidingWindowQueryHandler(SlidingWindowRequest request,
                                      StreamObserver<SlidingWindowResponse> responseObserver) {
@@ -49,13 +49,13 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
 
     private AggregateIterable<Document> processSingleGisJoin(String gisJoin, String feature, int days,
                                                              MongoCollection<Document> mongoCollection) {
-        log.info("Processing GISJOIN: " + gisJoin);
+        log.info("Processing GISJOIN: {}", gisJoin);
         // The following aggregation query is based on the raw MongoDB query found at https://pastebin.com/HUciUXZW
         AggregateIterable<Document> aggregateIterable = mongoCollection.aggregate(Arrays.asList(
                 new Document("$match", new Document(Constants.GIS_JOIN, gisJoin)),
                 new Document("$sort", new Document("formatted_date", 1)),
                 new Document("$group", new Document("_id", "$" + Constants.GIS_JOIN)
-                        .append("results", new Document("$push",
+                        .append("movingAverages", new Document("$push",
                                 new Document("v", "$" + feature)
                                         .append("date", "$formatted_date")
                         ))),
@@ -63,21 +63,21 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
                         "$addFields",
                         new Document("numDays", days)
                                 .append("startDate",
-                                        new Document("$arrayElemAt", Arrays.asList("$results.date", 0)))
+                                        new Document("$arrayElemAt", Arrays.asList("$movingAverages.date", 0)))
                 ),
-                new Document("$addFields", new Document("results",
+                new Document("$addFields", new Document("movingAverages",
                         new Document("$map",
                                 new Document("input", new Document("$range",
                                         Arrays.asList(0, new Document("$subtract",
-                                                Arrays.asList(new Document("$size", "$results"), days - 1)
+                                                Arrays.asList(new Document("$size", "$movingAverages"), days - 1)
                                         ))))
                                         .append("as", "z")
                                         .append("in", new Document("avg",
                                                 new Document("$avg",
-                                                        new Document("$slice", Arrays.asList("$results.v", "$$z", days))
+                                                        new Document("$slice", Arrays.asList("$movingAverages.v", "$$z", days))
                                                 ))
                                                 .append("date", new Document("$arrayElemAt",
-                                                        Arrays.asList("$results.date", new Document("$add",
+                                                        Arrays.asList("$movingAverages.date", new Document("$add",
                                                                 Arrays.asList("$$z", days - 1)))
                                                 ))
                                         )
