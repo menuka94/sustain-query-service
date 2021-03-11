@@ -54,9 +54,9 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
         AggregateIterable<Document> aggregateIterable = mongoCollection.aggregate(Arrays.asList(
                 new Document("$match", new Document(Constants.GIS_JOIN, gisJoin)),
                 new Document("$sort", new Document("formatted_date", 1)),
-                new Document("$group", new Document("_id", "$" + Constants.GIS_JOIN)
+                new Document("$group", new Document("_id", String.format("$%s", Constants.GIS_JOIN))
                         .append("movingAverages", new Document("$push",
-                                new Document("v", "$" + feature)
+                                new Document("value", String.format("$%s", feature))
                                         .append("date", "$formatted_date")
                         ))),
                 new Document(
@@ -71,14 +71,14 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
                                         Arrays.asList(0, new Document("$subtract",
                                                 Arrays.asList(new Document("$size", "$movingAverages"), days - 1)
                                         ))))
-                                        .append("as", "z")
+                                        .append("as", "computedValue")
                                         .append("in", new Document("avg",
                                                 new Document("$avg",
-                                                        new Document("$slice", Arrays.asList("$movingAverages.v", "$$z", days))
+                                                        new Document("$slice", Arrays.asList("$movingAverages.value", "$$computedValue", days))
                                                 ))
                                                 .append("date", new Document("$arrayElemAt",
                                                         Arrays.asList("$movingAverages.date", new Document("$add",
-                                                                Arrays.asList("$$z", days - 1)))
+                                                                Arrays.asList("$$computedValue", days - 1)))
                                                 ))
                                         )
                         )
