@@ -48,9 +48,7 @@ public abstract class StreamWriter<T, R> {
                         // decrement active count
                         activeCount.decrementAndGet();
                     }
-                } catch (InterruptedException e) {
-                    log.info("Caught InterruptedException: " + e.getMessage());
-                }
+                } catch (InterruptedException e) {}
             });
 
             this.threads.add(thread);
