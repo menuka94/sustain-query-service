@@ -43,7 +43,7 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
             responseBuilder.addAllMovingAverages(movingAverages);
             responseObserver.onNext(responseBuilder.build());
         }
-
+        log.info("Completed Sliding Window Query!");
         responseObserver.onCompleted();
     }
 
@@ -55,7 +55,7 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
                 new Document("$match", new Document(Constants.GIS_JOIN, gisJoin)),
                 new Document("$sort", new Document("formatted_date", 1)),
                 new Document("$group", new Document("_id", "$" + Constants.GIS_JOIN)
-                        .append("prx", new Document("$push",
+                        .append("results", new Document("$push",
                                 new Document("v", "$" + feature)
                                         .append("date", "$formatted_date")
                         ))),
@@ -63,21 +63,21 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
                         "$addFields",
                         new Document("numDays", days)
                                 .append("startDate",
-                                        new Document("$arrayElemAt", Arrays.asList("$prx.date", 0)))
+                                        new Document("$arrayElemAt", Arrays.asList("$results.date", 0)))
                 ),
-                new Document("$addFields", new Document("prx",
+                new Document("$addFields", new Document("results",
                         new Document("$map",
                                 new Document("input", new Document("$range",
                                         Arrays.asList(0, new Document("$subtract",
-                                                Arrays.asList(new Document("$size", "$prx"), days - 1)
+                                                Arrays.asList(new Document("$size", "$results"), days - 1)
                                         ))))
                                         .append("as", "z")
                                         .append("in", new Document("avg",
                                                 new Document("$avg",
-                                                        new Document("$slice", Arrays.asList("$prx.v", "$$z", days))
+                                                        new Document("$slice", Arrays.asList("$results.v", "$$z", days))
                                                 ))
                                                 .append("date", new Document("$arrayElemAt",
-                                                        Arrays.asList("$prx.date", new Document("$add",
+                                                        Arrays.asList("$results.date", new Document("$add",
                                                                 Arrays.asList("$$z", days - 1)))
                                                 ))
                                         )

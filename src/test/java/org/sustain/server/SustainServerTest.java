@@ -165,7 +165,7 @@ public class SustainServerTest {
                         jsonProxyBlockingStub.slidingWindowQuery(slidingWindowRequest);
                 while (jsonModelResponseIterator.hasNext()) {
                     JsonSlidingWindowResponse jsonResponse = jsonModelResponseIterator.next();
-                    log.info("JSON Sliding Window Response: {}", jsonResponse.getJson());
+                    log.info("JSON Sliding Window Response: {}\n", jsonResponse.getJson());
                 }
             }
 
