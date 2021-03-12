@@ -52,38 +52,38 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
         log.info("Processing GISJOIN: {}", gisJoin);
         // The following aggregation query is based on the raw MongoDB query found at https://pastebin.com/HUciUXZW
         AggregateIterable<Document> aggregateIterable = mongoCollection.aggregate(Arrays.asList(
-                new Document("$match", new Document(Constants.GIS_JOIN, gisJoin)),
-                new Document("$sort", new Document("formatted_date", 1)),
-                new Document("$group", new Document("_id", String.format("$%s", Constants.GIS_JOIN))
-                        .append("movingAverages", new Document("$push",
-                                new Document("value", String.format("$%s", feature))
-                                        .append("date", "$formatted_date")
-                        ))),
-                new Document(
-                        "$addFields",
-                        new Document("numDays", days)
-                                .append("startDate",
-                                        new Document("$arrayElemAt", Arrays.asList("$movingAverages.date", 0)))
-                ),
-                new Document("$addFields", new Document("movingAverages",
-                        new Document("$map",
-                                new Document("input", new Document("$range",
-                                        Arrays.asList(0, new Document("$subtract",
-                                                Arrays.asList(new Document("$size", "$movingAverages"), days - 1)
-                                        ))))
-                                        .append("as", "computedValue")
-                                        .append("in", new Document("avg",
-                                                new Document("$avg",
-                                                        new Document("$slice", Arrays.asList("$movingAverages.value", "$$computedValue", days))
-                                                ))
-                                                .append("date", new Document("$arrayElemAt",
-                                                        Arrays.asList("$movingAverages.date", new Document("$add",
-                                                                Arrays.asList("$$computedValue", days - 1)))
-                                                ))
-                                        )
+            new Document("$match", new Document(Constants.GIS_JOIN, gisJoin)),
+            new Document("$sort", new Document("formatted_date", 1)),
+            new Document("$group", new Document("_id", String.format("$%s", Constants.GIS_JOIN))
+                .append("movingAverages", new Document("$push",
+                    new Document("value", String.format("$%s", feature))
+                        .append("date", "$formatted_date")
+                ))),
+            new Document(
+                "$addFields",
+                new Document("numDays", days)
+                    .append("startDate",
+                        new Document("$arrayElemAt", Arrays.asList("$movingAverages.date", 0)))
+            ),
+            new Document("$addFields", new Document("movingAverages",
+                new Document("$map",
+                    new Document("input", new Document("$range",
+                        Arrays.asList(0, new Document("$subtract",
+                            Arrays.asList(new Document("$size", "$movingAverages"), days - 1)
+                        ))))
+                        .append("as", "computedValue")
+                        .append("in", new Document("avg",
+                            new Document("$avg",
+                                new Document("$slice", Arrays.asList("$movingAverages.value", "$$computedValue", days))
+                            ))
+                            .append("date", new Document("$arrayElemAt",
+                                Arrays.asList("$movingAverages.date", new Document("$add",
+                                    Arrays.asList("$$computedValue", days - 1)))
+                            ))
                         )
                 )
-                )
+            )
+            )
         ));
 
         return aggregateIterable;
