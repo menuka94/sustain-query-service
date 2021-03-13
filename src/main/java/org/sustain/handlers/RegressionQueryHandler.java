@@ -85,9 +85,6 @@ public class RegressionQueryHandler extends ModelHandler {
                 logResponse(response);
                 this.responseObserver.onNext(response);
             }
-
-            // Don't forget to close Spark Context!
-            sparkContext.close();
         } else {
             log.warn("Invalid Model Request!");
         }
