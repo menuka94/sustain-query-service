@@ -328,7 +328,7 @@ public class LinearRegressionModelImpl {
             model.convergenceTolerance = this.convergenceTolerance;
             model.fitIntercept = this.fitIntercept;
             model.setStandardization = this.setStandardization;
-            return null;
+            return model;
         }
     }
 
