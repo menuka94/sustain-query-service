@@ -40,12 +40,19 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelResponse> {
-    private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
-    private JavaSparkContext sparkContext;
+public class ClusteringQueryHandler extends ModelHandler {
 
-    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        super(request, responseObserver);
+    private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
+
+    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
+                                  JavaSparkContext sparkContext) {
+        super(request, responseObserver, sparkContext);
+    }
+
+    @Override
+    boolean isValid(ModelRequest modelRequest) {
+        // TODO: Implement
+        return true;
     }
 
     public void initSparkSession(ModelType modelType) {
@@ -76,7 +83,6 @@ public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
                 .config("spark.mongodb.input.uri", databaseUrl + "/" + Constants.DB.NAME + "." + collection)
                 .getOrCreate();
 
-        sparkContext = new JavaSparkContext(sparkSession.sparkContext());
         addClusterDependencyJars(sparkContext);
     }
 
@@ -101,6 +107,8 @@ public class ClusteringQueryHandler extends GrpcHandler<ModelRequest, ModelRespo
         }
         sparkContext.close();
     }
+
+
 
     private void buildLatentDirichletAllocationModel() {
         int k = request.getLatentDirichletAllocationRequest().getClusterCount();

@@ -9,6 +9,8 @@ import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.SparkSession;
 import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
 import org.sustain.DirectRequest;
@@ -23,6 +25,7 @@ import org.sustain.SustainGrpc;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.CompoundQueryHandler;
 import org.sustain.handlers.GrpcHandler;
+import org.sustain.handlers.ModelHandler;
 import org.sustain.handlers.RegressionQueryHandler;
 import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.handlers.EnsembleQueryHandler;
@@ -162,36 +165,47 @@ public class SustainServer {
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-            GrpcHandler<ModelRequest, ModelResponse> handler;
+            SparkSession sparkSession = SparkSession.builder()
+                    .master(Constants.Spark.MASTER)
+                    .appName("SUSTAIN Linear Regression Model")
+                    .config("spark.mongodb.input.uri", String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT))
+                    .config("spark.mongodb.input.database", Constants.DB.NAME)
+                    .getOrCreate();
+
+            // TODO: MILLER: this should somehow be pull out and exist across invocations of modelQuery()
+            JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+            addClusterDependencyJars(sparkContext); // TODO: Add dependency jars to spark cluster workers at startup time?
+
+            ModelHandler handler;
             ModelType type = request.getType();
             switch (type) {
                 case LINEAR_REGRESSION:
                     log.info("Received a Linear Regression Model request");
-                    handler = new RegressionQueryHandler(request, responseObserver);
+                    handler = new RegressionQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case K_MEANS_CLUSTERING:
                     log.info("Received a K-Means Clustering Model request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case BISECTING_K_MEANS:
                     log.info("Received a Bisecting K-Means Model Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case GAUSSIAN_MIXTURE:
                     log.info("Received a Gaussian Mixture Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case R_FOREST_REGRESSION:
                     log.info("Received a Random Forest Regression Model request");
-                    handler = new EnsembleQueryHandler(request, responseObserver);
+                    handler = new EnsembleQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case G_BOOST_REGRESSION:
                     log.info("Received a Gradient Boost Regression Model request");
-                    handler = new EnsembleQueryHandler(request, responseObserver);
+                    handler = new EnsembleQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case LATENT_DIRICHLET_ALLOCATION:
                     log.info("Received a Latent Dirichlet Allocation Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
                     break;
                 default:
                     responseObserver.onError(new Exception("Invalid Model Type"));
@@ -200,6 +214,7 @@ public class SustainServer {
 
             handler.handleRequest();
             responseObserver.onCompleted();
+            sparkContext.close(); // TODO: MILLER: Don't close this until shutdown() of gRPC server
         }
 
         @Override
@@ -227,6 +242,25 @@ public class SustainServer {
                     .build();
             responseObserver.onNext(echoResponse);
             responseObserver.onCompleted();
+        }
+
+        /**
+         * Adds required dependency jars to the Spark Context member.
+         */
+        private void addClusterDependencyJars(JavaSparkContext sparkContext) {
+            String[] jarPaths = {
+                    "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                    "build/libs/spark-core_2.12-3.0.1.jar",
+                    "build/libs/spark-mllib_2.12-3.0.1.jar",
+                    "build/libs/spark-sql_2.12-3.0.1.jar",
+                    "build/libs/bson-4.0.5.jar",
+                    "build/libs/mongo-java-driver-3.12.5.jar"
+            };
+
+            for (String jar: jarPaths) {
+                log.info("Adding dependency JAR to the Spark Context: {}", jar);
+                sparkContext.addJar(jar);
+            }
         }
     }
 }

@@ -13,8 +13,8 @@ public abstract class GrpcHandler<T, E> {
 
     private static final Logger log = LogManager.getLogger(GrpcHandler.class);
 
-    final T request;
-    final StreamObserver<E> responseObserver;
+    protected final T request;
+    protected final StreamObserver<E> responseObserver;
 
     public GrpcHandler(T request, StreamObserver<E> responseObserver) {
         this.request = request;

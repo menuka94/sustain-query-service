@@ -26,16 +26,25 @@ package org.sustain.handlers;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.sustain.*;
 import org.sustain.modeling.GBoostRegressionModel;
 import org.sustain.modeling.RFRegressionModel;
 import org.sustain.util.Constants;
 
-public class EnsembleQueryHandler extends GrpcHandler<ModelRequest, ModelResponse> {
+public class EnsembleQueryHandler extends ModelHandler {
+
     private static final Logger log = LogManager.getLogger(EnsembleQueryHandler.class);
 
-    public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        super(request, responseObserver);
+    public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
+                                JavaSparkContext sparkContext) {
+        super(request, responseObserver, sparkContext);
+    }
+
+    @Override
+    boolean isValid(ModelRequest modelRequest) {
+        // TODO: Saptashwa: Implement
+        return false;
     }
 
     private RForestRegressionResponse buildRFModel(ModelRequest modelRequest, String gisJoin) {
