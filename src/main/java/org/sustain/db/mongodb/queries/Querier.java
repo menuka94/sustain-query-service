@@ -1,4 +1,4 @@
-package org.sustain.db.queries;
+package org.sustain.db.mongodb.queries;
 
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
@@ -21,15 +21,16 @@ import org.sustain.db.mongodb.DBConnection;
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 
+// TODO: Either rework or remove this
 public class Querier extends Thread {
 	private static final Logger log = LogManager.getLogger(Querier.class);
 
     private final CompoundQueryHandler handler;
     private final Query request;
     private LinkedBlockingQueue<String> queue;
-    private CompoundQueryHandler.StreamWriter sw;
+    private CompoundQueryHandler.XStreamWriter sw;
 
-    public Querier(CompoundQueryHandler handler, Query request, LinkedBlockingQueue<String> queue, CompoundQueryHandler.StreamWriter sw) {
+    public Querier(CompoundQueryHandler handler, Query request, LinkedBlockingQueue<String> queue, CompoundQueryHandler.XStreamWriter sw) {
         this.handler = handler;
         this.request = request;
         this.queue = queue;

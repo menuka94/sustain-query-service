@@ -1,4 +1,4 @@
-package org.sustain.db.queries;
+package org.sustain.db.mongodb.queries;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -12,6 +12,7 @@ import org.sustain.CompoundResponse;
 
 import io.grpc.stub.StreamObserver;
 
+// TODO: Either rework or remove this
 public class DataContainer {
 
 	private HashMap<String,HashMap<String,String>> documents;
@@ -59,7 +60,7 @@ public class DataContainer {
 
 	public void writeToClient(StreamObserver<CompoundResponse> responseObserver){
 		for (HashMap<String,String> value : documents.values()) {
-			responseObserver.onNext(CompoundResponse.newBuilder().setData(new JSONObject(value).toString()).setGeoJson("").build());
+			responseObserver.onNext(CompoundResponse.newBuilder().setData(new JSONObject(value).toString()).build());
 		}
 	}
 }
