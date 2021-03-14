@@ -36,18 +36,25 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 public class SustainServer {
+
     private static final Logger log = LogManager.getLogger(SustainServer.class);
+    private static JavaSparkContext sparkContext;
 
     private Server server;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         logEnvironment();
+        initializeSparkContext();
+        addClusterDependencyJars(sparkContext);
+
         final SustainServer server = new SustainServer();
         server.start();
         server.blockUntilShutdown();
     }
 
-    // Logs the environment variables that the server was started with.
+    /**
+     * Logs the environment variables that the server was started with.
+     */
     public static void logEnvironment() {
         log.info("\n\n--- Server Environment ---\n" +
                         "SERVER_HOST: {}\n" +
@@ -61,6 +68,41 @@ public class SustainServer {
                 Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
     }
 
+    /**
+     * Initializes the Spark Context that will be used for all incoming queries to launch jobs on.
+     * Configured to point at a MongoS instance for retrieving data.
+     */
+    private static void initializeSparkContext() {
+        SparkSession sparkSession = SparkSession.builder()
+                .master(Constants.Spark.MASTER)
+                .appName("Sustain Query Service")
+                .config("spark.mongodb.input.uri", String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT))
+                .config("spark.mongodb.input.database", Constants.DB.NAME)
+                .getOrCreate();
+
+        sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+    }
+
+    /**
+     * Adds required dependency jars to the Spark Context member.
+     * TODO: Add dependency jars to spark cluster workers at startup time
+     */
+    private static void addClusterDependencyJars(JavaSparkContext sparkContext) {
+        String[] jarPaths = {
+                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                "build/libs/spark-core_2.12-3.0.1.jar",
+                "build/libs/spark-mllib_2.12-3.0.1.jar",
+                "build/libs/spark-sql_2.12-3.0.1.jar",
+                "build/libs/bson-4.0.5.jar",
+                "build/libs/mongo-java-driver-3.12.5.jar"
+        };
+
+        for (String jar: jarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkContext.addJar(jar);
+        }
+    }
+
 
     public void start() throws IOException {
         final int port = Constants.Server.PORT;
@@ -69,9 +111,12 @@ public class SustainServer {
                 .addService(new SustainService())
                 .build().start();
         log.info("Server started, listening on " + port);
+
+        // Shutdown hook called when Ctrl+C is pressed
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
                 try {
+                    sparkContext.close();
                     SustainServer.this.stop();
                 } catch (InterruptedException e) {
                     log.error("Error in stopping the server");
@@ -165,16 +210,6 @@ public class SustainServer {
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-            SparkSession sparkSession = SparkSession.builder()
-                    .master(Constants.Spark.MASTER)
-                    .appName("SUSTAIN Linear Regression Model")
-                    .config("spark.mongodb.input.uri", String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT))
-                    .config("spark.mongodb.input.database", Constants.DB.NAME)
-                    .getOrCreate();
-
-            // TODO: MILLER: this should somehow be pull out and exist across invocations of modelQuery()
-            JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
-            addClusterDependencyJars(sparkContext); // TODO: Add dependency jars to spark cluster workers at startup time?
 
             ModelHandler handler;
             ModelType type = request.getType();
@@ -214,7 +249,6 @@ public class SustainServer {
 
             handler.handleRequest();
             responseObserver.onCompleted();
-            sparkContext.close(); // TODO: MILLER: Don't close this until shutdown() of gRPC server
         }
 
         @Override
@@ -242,25 +276,6 @@ public class SustainServer {
                     .build();
             responseObserver.onNext(echoResponse);
             responseObserver.onCompleted();
-        }
-
-        /**
-         * Adds required dependency jars to the Spark Context member.
-         */
-        private void addClusterDependencyJars(JavaSparkContext sparkContext) {
-            String[] jarPaths = {
-                    "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
-                    "build/libs/spark-core_2.12-3.0.1.jar",
-                    "build/libs/spark-mllib_2.12-3.0.1.jar",
-                    "build/libs/spark-sql_2.12-3.0.1.jar",
-                    "build/libs/bson-4.0.5.jar",
-                    "build/libs/mongo-java-driver-3.12.5.jar"
-            };
-
-            for (String jar: jarPaths) {
-                log.info("Adding dependency JAR to the Spark Context: {}", jar);
-                sparkContext.addJar(jar);
-            }
         }
     }
 }
