@@ -1,11 +1,11 @@
-package org.sustain.db.mongodb.queries;
+package org.sustain.mongodb.queries;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import org.bson.Document;
-import org.sustain.db.mongodb.DBConnection;
+import org.sustain.mongodb.DBConnection;
 
 /**
  * Query object for MongoDB find() queries

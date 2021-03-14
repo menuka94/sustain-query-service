@@ -1,4 +1,4 @@
-package org.sustain.db.mongodb.queries;
+package org.sustain.mongodb.queries;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.sustain.DirectResponse;
 import org.sustain.DirectRequest;
-import org.sustain.db.mongodb.queries.AggregateQuery;
+import org.sustain.mongodb.queries.AggregateQuery;
 
 public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectResponse> {
 

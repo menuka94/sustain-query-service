@@ -1,4 +1,4 @@
-package org.sustain.db.mongodb;
+package org.sustain.mongodb;
 
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;

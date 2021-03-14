@@ -9,8 +9,8 @@ import org.sustain.CompoundResponse;
 import org.sustain.CompoundRequest;
 import org.sustain.Query;
 
-import org.sustain.db.mongodb.queries.DataContainer;
-import org.sustain.db.mongodb.queries.Querier;
+import org.sustain.mongodb.queries.DataContainer;
+import org.sustain.mongodb.queries.Querier;
 
 import java.util.concurrent.LinkedBlockingQueue;
 

@@ -1,4 +1,4 @@
-package org.sustain.db.mongodb.queries;
+package org.sustain.mongodb.queries;
 
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
@@ -16,7 +16,7 @@ import org.json.JSONArray;
 import org.sustain.Query;
 import org.sustain.handlers.CompoundQueryHandler;
 
-import org.sustain.db.mongodb.DBConnection;
+import org.sustain.mongodb.DBConnection;
 
 import java.util.ArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
