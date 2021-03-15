@@ -27,8 +27,8 @@ public class RegressionQueryHandler extends ModelHandler {
     private static final Logger log = LogManager.getLogger(RegressionQueryHandler.class);
 
     public RegressionQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
-                                  SparkSession sparkSession) {
-        super(request, responseObserver, sparkSession);
+                                  JavaSparkContext sparkContext) {
+        super(request, responseObserver, sparkContext);
     }
 
     @Override
@@ -42,13 +42,12 @@ public class RegressionQueryHandler extends ModelHandler {
 
             String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
 
-            JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+            /*
             sparkContext.getConf()
                     .set("spark.mongodb.input.uri", mongoUri)
                     .set("spark.mongodb.input.database", Constants.DB.NAME)
                     .set("spark.mongodb.input.collection", requestCollection.getName());
-
-            addClusterDependencyJars(sparkContext);
+            */
 
 
             // Create a custom ReadConfig
@@ -57,7 +56,8 @@ public class RegressionQueryHandler extends ModelHandler {
             readOverrides.put("uri", mongoUri);
             readOverrides.put("database", Constants.DB.NAME);
             readOverrides.put("collection", requestCollection.getName());
-            ReadConfig readConfig = ReadConfig.create(sparkContext).withOptions(readOverrides);
+            ReadConfig readConfig = ReadConfig.create(this.sparkContext.getConf(), readOverrides);
+            //ReadConfig readConfig = ReadConfig.create(sparkContext).withOptions(readOverrides);
 
             // Lazy-load the collection in as a DF
             Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
@@ -107,25 +107,6 @@ public class RegressionQueryHandler extends ModelHandler {
         }
     }
 
-    /**
-     * Adds required dependency jars to the Spark Context member.
-     * TODO: Add dependency jars to spark cluster workers at startup time
-     */
-    private void addClusterDependencyJars(JavaSparkContext sparkContext) {
-        String[] jarPaths = {
-                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
-                "build/libs/spark-core_2.12-3.0.1.jar",
-                "build/libs/spark-mllib_2.12-3.0.1.jar",
-                "build/libs/spark-sql_2.12-3.0.1.jar",
-                "build/libs/bson-4.0.5.jar",
-                "build/libs/mongo-java-driver-3.12.5.jar"
-        };
-
-        for (String jar: jarPaths) {
-            log.info("Adding dependency JAR to the Spark Context: {}", jar);
-            sparkContext.addJar(jar);
-        }
-    }
 
     @Override
     boolean isValid(ModelRequest modelRequest) {
