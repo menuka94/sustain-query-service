@@ -45,8 +45,8 @@ public class ClusteringQueryHandler extends ModelHandler {
     private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
 
     public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
-                                  JavaSparkContext sparkContext) {
-        super(request, responseObserver, sparkContext);
+                                  SparkSession sparkSession) {
+        super(request, responseObserver, sparkSession);
     }
 
     @Override
@@ -83,7 +83,6 @@ public class ClusteringQueryHandler extends ModelHandler {
                 .config("spark.mongodb.input.uri", databaseUrl + "/" + Constants.DB.NAME + "." + collection)
                 .getOrCreate();
 
-        addClusterDependencyJars(sparkContext);
     }
 
     @Override
@@ -105,7 +104,7 @@ public class ClusteringQueryHandler extends ModelHandler {
                 buildLatentDirichletAllocationModel();
                 break;
         }
-        sparkContext.close();
+
     }
 
 
@@ -267,6 +266,7 @@ public class ClusteringQueryHandler extends ModelHandler {
 
     private Dataset<Row> preprocessAndGetFeatureDF() {
         log.info("Preprocessing data");
+        JavaSparkContext sparkContext = new JavaSparkContext();
         ReadConfig readConfig = ReadConfig.create(sparkContext);
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
         List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());

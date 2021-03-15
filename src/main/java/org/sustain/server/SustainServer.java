@@ -39,6 +39,7 @@ public class SustainServer {
 
     private static final Logger log = LogManager.getLogger(SustainServer.class);
     private static JavaSparkContext sparkContext;
+    private static SparkSession sparkSession;
 
     private Server server;
 
@@ -73,12 +74,12 @@ public class SustainServer {
      * Configured to point at a MongoS instance for retrieving data.
      */
     private static void initializeSparkContext() {
-        SparkSession sparkSession = SparkSession.builder()
+        sparkSession = SparkSession.builder()
                 .master(Constants.Spark.MASTER)
                 .appName("Sustain Query Service")
                 .getOrCreate();
 
-        sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+        //sparkContext = new JavaSparkContext(sparkSession.sparkContext());
     }
 
     /**
@@ -214,31 +215,31 @@ public class SustainServer {
             switch (type) {
                 case LINEAR_REGRESSION:
                     log.info("Received a Linear Regression Model request");
-                    handler = new RegressionQueryHandler(request, responseObserver, sparkContext);
+                    handler = new RegressionQueryHandler(request, responseObserver, sparkSession);
                     break;
                 case K_MEANS_CLUSTERING:
                     log.info("Received a K-Means Clustering Model request");
-                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkSession);
                     break;
                 case BISECTING_K_MEANS:
                     log.info("Received a Bisecting K-Means Model Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkSession);
                     break;
                 case GAUSSIAN_MIXTURE:
                     log.info("Received a Gaussian Mixture Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkSession);
                     break;
                 case R_FOREST_REGRESSION:
                     log.info("Received a Random Forest Regression Model request");
-                    handler = new EnsembleQueryHandler(request, responseObserver, sparkContext);
+                    handler = new EnsembleQueryHandler(request, responseObserver, sparkSession);
                     break;
                 case G_BOOST_REGRESSION:
                     log.info("Received a Gradient Boost Regression Model request");
-                    handler = new EnsembleQueryHandler(request, responseObserver, sparkContext);
+                    handler = new EnsembleQueryHandler(request, responseObserver, sparkSession);
                     break;
                 case LATENT_DIRICHLET_ALLOCATION:
                     log.info("Received a Latent Dirichlet Allocation Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkSession);
                     break;
                 default:
                     responseObserver.onError(new Exception("Invalid Model Type"));

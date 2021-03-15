@@ -2,6 +2,7 @@ package org.sustain.handlers;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.SparkSession;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 
@@ -10,11 +11,12 @@ import org.sustain.ModelResponse;
  */
 public abstract class ModelHandler extends GrpcHandler<ModelRequest, ModelResponse> {
 
-    protected final JavaSparkContext sparkContext;
+    //protected final JavaSparkContext sparkContext;
+    protected final SparkSession sparkSession;
 
-    public ModelHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, JavaSparkContext sparkContext) {
+    public ModelHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkSession sparkSession) {
         super(request, responseObserver);
-        this.sparkContext = sparkContext;
+        this.sparkSession = sparkSession;
     }
 
     /**

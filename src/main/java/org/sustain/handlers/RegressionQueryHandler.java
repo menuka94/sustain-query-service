@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 import org.sustain.Collection;
 import org.sustain.LinearRegressionRequest;
 import org.sustain.LinearRegressionResponse;
@@ -26,8 +27,8 @@ public class RegressionQueryHandler extends ModelHandler {
     private static final Logger log = LogManager.getLogger(RegressionQueryHandler.class);
 
     public RegressionQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
-                                  JavaSparkContext sparkContext) {
-        super(request, responseObserver, sparkContext);
+                                  SparkSession sparkSession) {
+        super(request, responseObserver, sparkSession);
     }
 
     @Override
@@ -41,8 +42,8 @@ public class RegressionQueryHandler extends ModelHandler {
 
             String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
 
-
-            this.sparkContext.getConf()
+            JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+            sparkContext.getConf()
                     .set("spark.mongodb.input.uri", mongoUri)
                     .set("spark.mongodb.input.database", Constants.DB.NAME)
                     .set("spark.mongodb.input.collection", requestCollection.getName());
@@ -51,13 +52,13 @@ public class RegressionQueryHandler extends ModelHandler {
             // Create a custom ReadConfig
             Map<String, String> readOverrides = new HashMap<String, String>();
 
-            readOverrides.put("spark.mongodb.input.uri", mongoUri);
-            readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
-            readOverrides.put("spark.mongodb.input.collection", requestCollection.getName());
-            ReadConfig readConfig = ReadConfig.create(this.sparkContext).withOptions(readOverrides);
+            readOverrides.put("uri", mongoUri);
+            readOverrides.put("database", Constants.DB.NAME);
+            readOverrides.put("collection", requestCollection.getName());
+            ReadConfig readConfig = ReadConfig.create(sparkContext).withOptions(readOverrides);
 
             // Lazy-load the collection in as a DF
-            Dataset<Row> mongoCollection = MongoSpark.load(this.sparkContext, readConfig).toDF();
+            Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
 
             // Build and run a model for each GISJoin in the request
             for (String gisJoin: lrRequest.getGisJoinsList()) {
@@ -98,6 +99,7 @@ public class RegressionQueryHandler extends ModelHandler {
                 logResponse(response);
                 this.responseObserver.onNext(response);
             }
+            sparkContext.close();
         } else {
             log.warn("Invalid Model Request!");
         }

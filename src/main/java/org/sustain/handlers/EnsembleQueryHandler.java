@@ -27,6 +27,7 @@ import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.SparkSession;
 import org.sustain.*;
 import org.sustain.modeling.GBoostRegressionModel;
 import org.sustain.modeling.RFRegressionModel;
@@ -37,8 +38,8 @@ public class EnsembleQueryHandler extends ModelHandler {
     private static final Logger log = LogManager.getLogger(EnsembleQueryHandler.class);
 
     public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
-                                JavaSparkContext sparkContext) {
-        super(request, responseObserver, sparkContext);
+                                SparkSession sparkSession) {
+        super(request, responseObserver, sparkSession);
     }
 
     @Override
