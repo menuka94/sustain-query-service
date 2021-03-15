@@ -19,6 +19,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.sustain.util.Constants;
+import org.sustain.util.Profiler;
 import scala.collection.JavaConverters;
 
 import org.apache.logging.log4j.LogManager;
@@ -102,17 +103,27 @@ public class LinearRegressionModelImpl {
     }
 
     public void buildAndRunModel() {
+        Profiler profiler = new Profiler();
 
         // Select just the columns we want, discard the rest
+        String selectTaskName = String.format("select columns [%s]", this.gisJoin);
+        profiler.addTask(selectTaskName);
         Dataset<Row> selected = this.mongoCollection.select("_id", desiredColumns());
+        profiler.completeTask(selectTaskName);
 
         log.info(">>> Building model for GISJoin {}", this.gisJoin);
 
         // Filter collection by our GISJoin
+        String filterTaskName = String.format("filter by gisJoin [%s]", this.gisJoin);
+        profiler.addTask(filterTaskName);
         Dataset<Row> gisDataset = selected.filter(selected.col("gis_join").$eq$eq$eq(this.gisJoin))
                 .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
+        profiler.completeTask(filterTaskName);
+
 
         // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
+        String vectorTransformTaskName = String.format("vector transform [%s]", this.gisJoin);
+        profiler.addTask(vectorTransformTaskName);
         VectorAssembler vectorAssembler = new VectorAssembler()
                 .setInputCols(this.features.toArray(new String[0]))
                 .setOutputCol("features");
@@ -120,8 +131,11 @@ public class LinearRegressionModelImpl {
         // Transform the gisDataset to have the new "features" column vector
         Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
         mergedDataset.show(5);
+        profiler.completeTask(vectorTransformTaskName);
 
         // Create an MLLib Linear Regression object using user-specified parameters
+        String lrCreateAndFitTaskName = String.format("LR create and fit [%s]", this.gisJoin);
+        profiler.addTask(lrCreateAndFitTaskName);
         LinearRegression linearRegression = new LinearRegression()
                 .setLoss(this.loss)
                 .setSolver(this.solver)
@@ -136,6 +150,7 @@ public class LinearRegressionModelImpl {
 
         // Fit the dataset with the "features" and "label" columns
         LinearRegressionModel lrModel = linearRegression.fit(mergedDataset);
+        profiler.completeTask(lrCreateAndFitTaskName);
 
         // Save training summary
         LinearRegressionTrainingSummary summary = lrModel.summary();
