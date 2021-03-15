@@ -28,13 +28,11 @@ import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.evaluation.RegressionEvaluator;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.regression.RandomForestRegressionModel;
 import org.apache.spark.ml.regression.RandomForestRegressor;
-import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -46,7 +44,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import scala.Tuple2;
 /**
  * Provides an interface for building generalized Random Forest Regression
  * models on data pulled in using Mongo's Spark Connector.
@@ -435,5 +432,7 @@ public class RFRegressionModel {
 
         lrModel.buildAndRunModel();
     }
+
+
 
 }

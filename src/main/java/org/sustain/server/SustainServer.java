@@ -76,8 +76,6 @@ public class SustainServer {
         SparkSession sparkSession = SparkSession.builder()
                 .master(Constants.Spark.MASTER)
                 .appName("Sustain Query Service")
-                .config("spark.mongodb.input.uri", String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT))
-                .config("spark.mongodb.input.database", Constants.DB.NAME)
                 .getOrCreate();
 
         sparkContext = new JavaSparkContext(sparkSession.sparkContext());

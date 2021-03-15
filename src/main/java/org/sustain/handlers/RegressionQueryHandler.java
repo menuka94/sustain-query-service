@@ -16,6 +16,7 @@ import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.ModelType;
 import org.sustain.modeling.LinearRegressionModelImpl;
+import org.sustain.util.Constants;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +41,9 @@ public class RegressionQueryHandler extends ModelHandler {
 
             // Create a custom ReadConfig
             Map<String, String> readOverrides = new HashMap<String, String>();
-            readOverrides.put("collection", "spark");
+            readOverrides.put("uri", String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT));
+            readOverrides.put("database", Constants.DB.NAME);
+            readOverrides.put("collection", requestCollection.getName());
             ReadConfig readConfig = ReadConfig.create(this.sparkContext).withOptions(readOverrides);
 
             // Lazy-load the collection in as a DF
