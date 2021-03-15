@@ -105,6 +105,7 @@ public class RegressionQueryHandler extends ModelHandler {
                 profiler.unindent();
                 this.responseObserver.onNext(response);
             }
+            log.info(profiler.toString());
         } else {
             log.warn("Invalid Model Request!");
         }
