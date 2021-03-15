@@ -37,6 +37,7 @@ public class RegressionQueryHandler extends ModelHandler {
         if (isValid(this.request)) {
             logRequest(this.request);
             Profiler profiler = new Profiler();
+            profiler.addTask("LINEAR_REGRESSION_MODELS");
 
             // Set parameters of Linear Regression Model
             LinearRegressionRequest lrRequest = this.request.getLinearRegressionRequest();
@@ -105,6 +106,7 @@ public class RegressionQueryHandler extends ModelHandler {
                 profiler.unindent();
                 this.responseObserver.onNext(response);
             }
+            profiler.completeTask("LINEAR_REGRESSION_MODELS");
             log.info(profiler.toString());
         } else {
             log.warn("Invalid Model Request!");
