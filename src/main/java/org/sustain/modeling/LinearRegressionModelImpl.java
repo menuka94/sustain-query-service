@@ -18,6 +18,7 @@ import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.util.SizeEstimator;
 import org.sustain.util.Constants;
 import org.sustain.util.Profiler;
 import scala.collection.JavaConverters;
@@ -130,6 +131,9 @@ public class LinearRegressionModelImpl {
         // Transform the gisDataset to have the new "features" column vector
         Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
         mergedDataset.show(5);
+        log.info(">>> mergedDataset Size: {}", SizeEstimator.estimate(mergedDataset));
+        log.info(">>> mergedDataset explain():");
+        mergedDataset.explain();
         profiler.completeTask(vectorTransformTaskName);
 
         // Create an MLLib Linear Regression object using user-specified parameters

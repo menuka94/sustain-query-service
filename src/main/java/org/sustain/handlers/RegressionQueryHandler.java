@@ -9,7 +9,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import org.sustain.Collection;
 import org.sustain.LinearRegressionRequest;
 import org.sustain.LinearRegressionResponse;
@@ -19,6 +18,7 @@ import org.sustain.ModelType;
 import org.sustain.modeling.LinearRegressionModelImpl;
 import org.sustain.util.Constants;
 import org.sustain.util.Profiler;
+import org.apache.spark.util.SizeEstimator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +38,7 @@ public class RegressionQueryHandler extends ModelHandler {
             logRequest(this.request);
             Profiler profiler = new Profiler();
             profiler.addTask("LINEAR_REGRESSION_MODELS");
+            profiler.indent();
 
             // Set parameters of Linear Regression Model
             LinearRegressionRequest lrRequest = this.request.getLinearRegressionRequest();
@@ -57,6 +58,7 @@ public class RegressionQueryHandler extends ModelHandler {
             // Lazy-load the collection in as a DF
             profiler.addTask("LOAD_MONGO_COLLECTION");
             Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
+            log.info(">>> mongoCollection Size: {}", SizeEstimator.estimate(mongoCollection));
             profiler.completeTask("LOAD_MONGO_COLLECTION");
 
             // Build and run a model for each GISJoin in the request
@@ -107,6 +109,7 @@ public class RegressionQueryHandler extends ModelHandler {
                 this.responseObserver.onNext(response);
             }
             profiler.completeTask("LINEAR_REGRESSION_MODELS");
+            profiler.unindent();
             log.info(profiler.toString());
         } else {
             log.warn("Invalid Model Request!");
