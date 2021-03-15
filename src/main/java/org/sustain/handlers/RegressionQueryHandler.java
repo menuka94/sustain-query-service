@@ -41,17 +41,19 @@ public class RegressionQueryHandler extends ModelHandler {
 
             String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
 
-
-            // Create a custom ReadConfig
-            Map<String, String> readOverrides = new HashMap<String, String>();
+            /*
             this.sparkContext.getConf()
                     .set("spark.mongodb.input.uri", mongoUri)
                     .set("spark.mongodb.input.database", Constants.DB.NAME)
                     .set("spark.mongodb.input.collection", requestCollection.getName());
+            */
 
-            readOverrides.put("uri", mongoUri);
-            readOverrides.put("database", Constants.DB.NAME);
-            readOverrides.put("collection", requestCollection.getName());
+            // Create a custom ReadConfig
+            Map<String, String> readOverrides = new HashMap<String, String>();
+
+            readOverrides.put("spark.mongodb.input.uri", mongoUri);
+            readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
+            readOverrides.put("spark.mongodb.input.collection", requestCollection.getName());
             ReadConfig readConfig = ReadConfig.create(this.sparkContext).withOptions(readOverrides);
 
             // Lazy-load the collection in as a DF
