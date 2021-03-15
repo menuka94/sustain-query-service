@@ -102,28 +102,24 @@ public class LinearRegressionModelImpl {
         return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
     }
 
-    public void buildAndRunModel() {
-        Profiler profiler = new Profiler();
+    public void buildAndRunModel(Profiler profiler) {
 
         // Select just the columns we want, discard the rest
-        String selectTaskName = String.format("select columns [%s]", this.gisJoin);
-        profiler.addTask(selectTaskName);
+        profiler.addTask("SELECT_COLUMNS");
         Dataset<Row> selected = this.mongoCollection.select("_id", desiredColumns());
-        profiler.completeTask(selectTaskName);
+        profiler.completeTask("SELECT_COLUMNS");
 
         log.info(">>> Building model for GISJoin {}", this.gisJoin);
 
         // Filter collection by our GISJoin
-        String filterTaskName = String.format("filter by gisJoin [%s]", this.gisJoin);
-        profiler.addTask(filterTaskName);
+        profiler.addTask("FILTER_GISJOIN");
         Dataset<Row> gisDataset = selected.filter(selected.col("gis_join").$eq$eq$eq(this.gisJoin))
                 .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
-        profiler.completeTask(filterTaskName);
+        profiler.completeTask("FILTER_GISJOIN");
 
 
         // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
-        String vectorTransformTaskName = String.format("vector transform [%s]", this.gisJoin);
-        profiler.addTask(vectorTransformTaskName);
+        profiler.addTask("VECTOR_TRANSFORM");
         VectorAssembler vectorAssembler = new VectorAssembler()
                 .setInputCols(this.features.toArray(new String[0]))
                 .setOutputCol("features");
@@ -131,11 +127,10 @@ public class LinearRegressionModelImpl {
         // Transform the gisDataset to have the new "features" column vector
         Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
         mergedDataset.show(5);
-        profiler.completeTask(vectorTransformTaskName);
+        profiler.completeTask("VECTOR_TRANSFORM");
 
         // Create an MLLib Linear Regression object using user-specified parameters
-        String lrCreateAndFitTaskName = String.format("LR create and fit [%s]", this.gisJoin);
-        profiler.addTask(lrCreateAndFitTaskName);
+        profiler.addTask("LR_CREATE");
         LinearRegression linearRegression = new LinearRegression()
                 .setLoss(this.loss)
                 .setSolver(this.solver)
@@ -148,9 +143,12 @@ public class LinearRegressionModelImpl {
                 .setFitIntercept(this.fitIntercept)
                 .setStandardization(this.setStandardization);
 
+        profiler.completeTask("LR_CREATE");
+
         // Fit the dataset with the "features" and "label" columns
+        profiler.addTask("LR_FIT");
         LinearRegressionModel lrModel = linearRegression.fit(mergedDataset);
-        profiler.completeTask(lrCreateAndFitTaskName);
+        profiler.completeTask("LR_FIT");
 
         // Save training summary
         LinearRegressionTrainingSummary summary = lrModel.summary();
@@ -203,7 +201,7 @@ public class LinearRegressionModelImpl {
                 .build();
 
 
-        lrModel.buildAndRunModel();
+        lrModel.buildAndRunModel(new Profiler());
         log.info("Executed LinearRegressionModelImpl.main() successfully");
         sparkContext.close();
     }

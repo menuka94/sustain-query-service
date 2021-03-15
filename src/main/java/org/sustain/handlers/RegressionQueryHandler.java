@@ -45,22 +45,27 @@ public class RegressionQueryHandler extends ModelHandler {
             String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
 
             // Create a custom ReadConfig
-            profiler.addTask("Create ReadConfig");
+            profiler.addTask("CREATE_READ_CONFIG");
             Map<String, String> readOverrides = new HashMap<String, String>();
             readOverrides.put("uri", mongoUri);
             readOverrides.put("database", Constants.DB.NAME);
             readOverrides.put("collection", requestCollection.getName());
             ReadConfig readConfig = ReadConfig.create(this.sparkContext.getConf(), readOverrides);
-            profiler.completeTask("Create ReadConfig");
+            profiler.completeTask("CREATE_READ_CONFIG");
 
             // Lazy-load the collection in as a DF
-            profiler.addTask("Load mongoCollection");
+            profiler.addTask("LOAD_MONGO_COLLECTION");
             Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
-            profiler.completeTask("Load mongoCollection");
+            profiler.completeTask("LOAD_MONGO_COLLECTION");
 
             // Build and run a model for each GISJoin in the request
 
             for (String gisJoin: lrRequest.getGisJoinsList()) {
+
+                String modelTaskName = String.format("MODEL_GISJOIN_%s", gisJoin);
+
+                profiler.addTask(modelTaskName);
+                profiler.indent();
 
                 LinearRegressionModelImpl model = new LinearRegressionModelImpl.LinearRegressionModelBuilder()
                         .forMongoCollection(mongoCollection)
@@ -79,10 +84,7 @@ public class RegressionQueryHandler extends ModelHandler {
                         .withStandardization(lrRequest.getSetStandardization())
                         .build();
 
-                String buildAndRunModelTaskName = String.format("buildAndRunModel [%s]", gisJoin);
-                profiler.addTask(buildAndRunModelTaskName);
-                model.buildAndRunModel(); // Launches the Spark Model
-                profiler.completeTask(buildAndRunModelTaskName);
+                model.buildAndRunModel(profiler); // Launches the Spark Model
 
                 LinearRegressionResponse modelResults = LinearRegressionResponse.newBuilder()
                         .setGisJoin(model.getGisJoin())
@@ -99,6 +101,8 @@ public class RegressionQueryHandler extends ModelHandler {
                         .build();
 
                 logResponse(response);
+                profiler.completeTask(modelTaskName);
+                profiler.unindent();
                 this.responseObserver.onNext(response);
             }
         } else {

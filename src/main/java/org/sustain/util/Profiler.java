@@ -2,57 +2,51 @@ package org.sustain.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.handlers.DirectQueryHandler;
-
-import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public class Profiler {
 
     public static final Logger log = LogManager.getLogger(Profiler.class);
 
-    private Map<String, Task> tasks;
+    private final Map<String, Task> tasks;
+    private int indentation;
 
     public Profiler() {
         this.tasks = new HashMap<>();
     }
 
     public void addTask(String name) {
-        log.info("PROFILER: Starting task: {}", name);
-        addTask(new Task(name));
+        this.tasks.put(name, new Task(name, this.indentation));
     }
 
-    public void addTask(Task task) {
-        this.tasks.put(task.getName(), task);
+    public void indent() {
+        ++this.indentation;
     }
 
-    public Task getTask(String name) {
-        return tasks.get(name);
+    public void unindent() {
+        --this.indentation;
     }
 
     public void completeTask(String name) {
         this.tasks.get(name).finish();
-        log.info("PROFILER: {}", timeToEnglish(name));
-        this.tasks.remove(name);
     }
 
-    public Long timeTaken(Task task) {
-        return task.getEndTime() - task.getStartTime();
-    }
+    @Override
+    public String toString() {
+        List<Task> sortedTasks = new LinkedList<>(tasks.values());
+        Collections.sort(sortedTasks);
 
-    /**
-     * Solution taken from StackOverflow:
-     * https://stackoverflow.com/questions/17624335/converting-milliseconds-to-minutes-and-seconds
-     * @return English representation of time
-     */
-    public String timeToEnglish(String name) {
-        Duration d = Duration.ofMillis(timeTaken(tasks.get(name))) ;
-        int minutes = d.toMinutesPart();
-        int seconds = d.toSecondsPart();
-
-        return minutes == 0 ? String.format("%s: took %d seconds", name, seconds) :
-                String.format("%s: took %d minutes %d seconds", name, minutes, seconds);
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n============= JOB PROFILE ===============\n");
+        for (Task task: sortedTasks) {
+            sb.append(String.format("%s\n", task.toString()));
+        }
+        sb.append("=========================================\n");
+        return sb.toString();
     }
 
 
