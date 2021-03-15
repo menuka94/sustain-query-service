@@ -76,6 +76,7 @@ public class SustainServer {
     private static void initializeSparkContext() {
         sparkSession = SparkSession.builder()
                 .master(Constants.Spark.MASTER)
+                .config("spark.executor.memory", "4g")
                 .appName("Sustain Query Service")
                 .getOrCreate();
 
