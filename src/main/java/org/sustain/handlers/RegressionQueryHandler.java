@@ -48,6 +48,8 @@ public class RegressionQueryHandler extends ModelHandler {
                     .set("spark.mongodb.input.database", Constants.DB.NAME)
                     .set("spark.mongodb.input.collection", requestCollection.getName());
 
+            addClusterDependencyJars(sparkContext);
+
 
             // Create a custom ReadConfig
             Map<String, String> readOverrides = new HashMap<String, String>();
@@ -102,6 +104,26 @@ public class RegressionQueryHandler extends ModelHandler {
             sparkContext.close();
         } else {
             log.warn("Invalid Model Request!");
+        }
+    }
+
+    /**
+     * Adds required dependency jars to the Spark Context member.
+     * TODO: Add dependency jars to spark cluster workers at startup time
+     */
+    private void addClusterDependencyJars(JavaSparkContext sparkContext) {
+        String[] jarPaths = {
+                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                "build/libs/spark-core_2.12-3.0.1.jar",
+                "build/libs/spark-mllib_2.12-3.0.1.jar",
+                "build/libs/spark-sql_2.12-3.0.1.jar",
+                "build/libs/bson-4.0.5.jar",
+                "build/libs/mongo-java-driver-3.12.5.jar"
+        };
+
+        for (String jar: jarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkContext.addJar(jar);
         }
     }
 

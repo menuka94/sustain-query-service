@@ -46,7 +46,7 @@ public class SustainServer {
     public static void main(String[] args) throws IOException, InterruptedException {
         logEnvironment();
         initializeSparkContext();
-        addClusterDependencyJars(sparkContext);
+        //addClusterDependencyJars(sparkContext);
 
         final SustainServer server = new SustainServer();
         server.start();
