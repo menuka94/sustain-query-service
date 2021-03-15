@@ -41,12 +41,12 @@ public class RegressionQueryHandler extends ModelHandler {
 
             String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
 
-            /*
+
             this.sparkContext.getConf()
                     .set("spark.mongodb.input.uri", mongoUri)
                     .set("spark.mongodb.input.database", Constants.DB.NAME)
                     .set("spark.mongodb.input.collection", requestCollection.getName());
-            */
+
 
             // Create a custom ReadConfig
             Map<String, String> readOverrides = new HashMap<String, String>();
