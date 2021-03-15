@@ -64,10 +64,10 @@ public class Task implements Comparable<Task> {
     }
 
     @Override
-    public int compareTo(Task task) {
-        if (this.startTime < task.getStartTime()) {
+    public int compareTo(Task other) {
+        if (this.startTime < other.getStartTime()) {
             return -1;
-        } else if (this.startTime > task.getStartTime()) {
+        } else if (this.startTime > other.getStartTime()) {
             return 1;
         }
         return 0; // This would be weird if two tasks started at the same time
