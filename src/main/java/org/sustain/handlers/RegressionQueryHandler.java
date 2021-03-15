@@ -58,7 +58,8 @@ public class RegressionQueryHandler extends ModelHandler {
             // Lazy-load the collection in as a DF
             profiler.addTask("LOAD_MONGO_COLLECTION");
             Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
-            log.info(">>> mongoCollection Size: {}", SizeEstimator.estimate(mongoCollection));
+            Dataset<Row> checkPointed = mongoCollection.localCheckpoint(true);
+            log.info(">>> mongoCollection Size: {}", SizeEstimator.estimate(checkPointed));
             profiler.completeTask("LOAD_MONGO_COLLECTION");
 
             // Build and run a model for each GISJoin in the request
@@ -71,7 +72,7 @@ public class RegressionQueryHandler extends ModelHandler {
                 profiler.indent();
 
                 LinearRegressionModelImpl model = new LinearRegressionModelImpl.LinearRegressionModelBuilder()
-                        .forMongoCollection(mongoCollection)
+                        .forMongoCollection(checkPointed)
                         .forGISJoin(gisJoin)
                         .forFeatures(requestCollection.getFeaturesList())
                         .forLabel(requestCollection.getLabel())
