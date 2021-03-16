@@ -57,7 +57,6 @@ public class GBoostRegressionModel {
     private String[] features;
     private String label, gisJoin;
 
-
     private JavaSparkContext sparkContext;
 
     // MODEL PARAMETERS
