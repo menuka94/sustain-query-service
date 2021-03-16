@@ -101,35 +101,8 @@ task sustainServer(type: CreateStartScripts) {
     classpath = startScripts.classpath
 }
 
-// To add additional entry-points to the generated JAR, for example, if you have a main()
-// function in a class you'd like to generate, then add an additional task here to generate
-// a binary to the build directory.
-task linearRegressionModel(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.modeling.SustainLinearRegression'
-    applicationName = 'linear-model'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-}
-
-task rforest(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.modeling.RFRegressionModel'
-    applicationName = 'rforest'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-}
-
-task gboost(type: CreateStartScripts) {
-    mainClassName = 'org.sustain.modeling.GBoostRegressionModel'
-    applicationName = 'rforest'
-    outputDir = new File(project.buildDir, 'tmp')
-    classpath = startScripts.classpath
-}
-
-// Distribute generated binaries from above tasks into the bin/ folder at project root.
+// Distribute generated binaries from above tasks into the bin/ folder
 applicationDistribution.into('bin') {
     from(sustainServer)
-    from(linearRegressionModel)
-    from(rforest)
-    from(gboost)
     fileMode = 0755 // Make generated binaries executable
 }

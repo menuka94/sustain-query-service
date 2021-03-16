@@ -9,6 +9,8 @@ import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.sql.SparkSession;
 import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
 import org.sustain.DirectRequest;
@@ -26,6 +28,9 @@ import org.sustain.SlidingWindowResponse;
 import org.sustain.SustainGrpc;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.CompoundQueryHandler;
+import org.sustain.handlers.GrpcHandler;
+import org.sustain.handlers.ModelHandler;
+import org.sustain.handlers.RegressionQueryHandler;
 import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.handlers.EnsembleQueryHandler;
 import org.sustain.handlers.GrpcHandler;
@@ -39,18 +44,26 @@ import java.util.concurrent.TimeUnit;
 
 
 public class SustainServer {
+
     private static final Logger log = LogManager.getLogger(SustainServer.class);
+    private static JavaSparkContext sparkContext;
+    private static SparkSession sparkSession;
 
     private Server server;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         logEnvironment();
+        initializeSparkContext();
+        addClusterDependencyJars(sparkContext);
+
         final SustainServer server = new SustainServer();
         server.start();
         server.blockUntilShutdown();
     }
 
-    // Logs the environment variables that the server was started with.
+    /**
+     * Logs the environment variables that the server was started with.
+     */
     public static void logEnvironment() {
         log.info("\n\n--- Server Environment ---\n" +
                 "SERVER_HOST: {}\n" +
@@ -64,6 +77,40 @@ public class SustainServer {
             Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
     }
 
+    /**
+     * Initializes the Spark Context that will be used for all incoming queries to launch jobs on.
+     * Configured to point at a MongoS instance for retrieving data.
+     */
+    private static void initializeSparkContext() {
+        sparkSession = SparkSession.builder()
+                .master(Constants.Spark.MASTER)
+                .config("spark.executor.memory", "4g")
+                .appName("Sustain Query Service")
+                .getOrCreate();
+
+        sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+    }
+
+    /**
+     * Adds required dependency jars to the Spark Context member.
+     * TODO: Add dependency jars to spark cluster workers at startup time
+     */
+    private static void addClusterDependencyJars(JavaSparkContext sparkContext) {
+        String[] jarPaths = {
+                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                "build/libs/spark-core_2.12-3.0.1.jar",
+                "build/libs/spark-mllib_2.12-3.0.1.jar",
+                "build/libs/spark-sql_2.12-3.0.1.jar",
+                "build/libs/bson-4.0.5.jar",
+                "build/libs/mongo-java-driver-3.12.5.jar"
+        };
+
+        for (String jar: jarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkContext.addJar(jar);
+        }
+    }
+
 
     public void start() throws IOException {
         final int port = Constants.Server.PORT;
@@ -72,15 +119,18 @@ public class SustainServer {
             .addService(new SustainService())
             .build().start();
         log.info("Server started, listening on " + port);
+
+        // Shutdown hook called when Ctrl+C is pressed
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
-            try {
-                SustainServer.this.stop();
-            } catch (InterruptedException e) {
-                log.error("Error in stopping the server");
-                e.printStackTrace();
-            }
-            log.warn("Server is shutting down");
+                try {
+                    sparkContext.close();
+                    SustainServer.this.stop();
+                } catch (InterruptedException e) {
+                    log.error("Error in stopping the server");
+                    e.printStackTrace();
+                }
+                log.warn("Server is shutting down");
 
         }));
     }
@@ -232,36 +282,37 @@ public class SustainServer {
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-            GrpcHandler<ModelRequest, ModelResponse> handler;
+
+            ModelHandler handler;
             ModelType type = request.getType();
             switch (type) {
                 case LINEAR_REGRESSION:
                     log.info("Received a Linear Regression Model request");
-                    handler = new RegressionQueryHandler(request, responseObserver);
+                    handler = new RegressionQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case K_MEANS_CLUSTERING:
                     log.info("Received a K-Means Clustering Model request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case BISECTING_K_MEANS:
                     log.info("Received a Bisecting K-Means Model Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case GAUSSIAN_MIXTURE:
                     log.info("Received a Gaussian Mixture Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case R_FOREST_REGRESSION:
                     log.info("Received a Random Forest Regression Model request");
-                    handler = new EnsembleQueryHandler(request, responseObserver);
+                    handler = new EnsembleQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case G_BOOST_REGRESSION:
                     log.info("Received a Gradient Boost Regression Model request");
-                    handler = new EnsembleQueryHandler(request, responseObserver);
+                    handler = new EnsembleQueryHandler(request, responseObserver, sparkContext);
                     break;
                 case LATENT_DIRICHLET_ALLOCATION:
                     log.info("Received a Latent Dirichlet Allocation Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
+                    handler = new ClusteringQueryHandler(request, responseObserver, sparkContext);
                     break;
                 default:
                     responseObserver.onError(new Exception("Invalid Model Type"));

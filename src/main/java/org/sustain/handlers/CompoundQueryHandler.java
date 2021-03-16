@@ -4,15 +4,17 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import io.grpc.stub.StreamObserver;
+import org.bson.Document;
 import org.sustain.CompoundResponse;
 import org.sustain.CompoundRequest;
 import org.sustain.Query;
 
-import org.sustain.db.queries.DataContainer;
-import org.sustain.db.queries.Querier;
+import org.sustain.mongodb.queries.DataContainer;
+import org.sustain.mongodb.queries.Querier;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+// TODO: Either rework or remove this
 public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundResponse> {
 
     public static final Logger log = LogManager.getLogger(CompoundQueryHandler.class);
@@ -30,7 +32,7 @@ public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundR
 
     public DataContainer processCompoundQuery(CompoundRequest request, boolean topLevel) {
 
-        StreamWriter  sw1 = null, sw2 = null;
+        XStreamWriter  sw1 = null, sw2 = null;
         DataContainer dc1 = null, dc2 = null;
 
         // Evaluate first part of CompoundQuery
@@ -76,16 +78,32 @@ public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundR
         return dc;
     }
 
-    private StreamWriter startSingleQuery(Query q) {
+    private XStreamWriter startSingleQuery(Query q) {
         LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
-        CompoundQueryHandler.StreamWriter sw = new CompoundQueryHandler.StreamWriter(responseObserver, queue);
+        CompoundQueryHandler.XStreamWriter sw = new CompoundQueryHandler.XStreamWriter(responseObserver, queue);
         sw.start();
         new Querier(this, q, queue, sw).start();
         return sw;
     }
 
+    class CompoundStreamWriter extends StreamWriter<Document, CompoundResponse> {
 
-    public class StreamWriter extends Thread {
+        public CompoundStreamWriter(
+                StreamObserver<CompoundResponse> responseObserver,
+                int threadCount) {
+            super(responseObserver, threadCount);
+        }
+
+        @Override
+        public CompoundResponse convert(Document document) {
+            return CompoundResponse.newBuilder()
+                    .setData(document.toJson())
+                    .build();
+        }
+    }
+
+    // TODO: Either rework or remove this
+    public class XStreamWriter extends Thread {
         private final StreamObserver<CompoundResponse> responseObserver;
         private volatile LinkedBlockingQueue<String> data;
         private long start;
@@ -93,7 +111,7 @@ public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundR
         private DataContainer dc;
 
 
-        public StreamWriter(StreamObserver<CompoundResponse> responseObserver, LinkedBlockingQueue<String> data) {
+        public XStreamWriter(StreamObserver<CompoundResponse> responseObserver, LinkedBlockingQueue<String> data) {
             this.responseObserver = responseObserver;
             this.data = data;
             this.start = System.currentTimeMillis();

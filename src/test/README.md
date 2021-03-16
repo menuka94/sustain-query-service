@@ -3,7 +3,7 @@
 ## Usage
 
 This approach uses JUnit 5 and Gradle's `test` task. This lets you explicitly specify a single test to run:
-- `./gradlew test --tests SustainServerTest.testExampleEchoQuery`
+- `./gradlew test --rerun-tasks --tests SustainServerTest.testExampleEchoQuery`
    - [Gradle Docs: Running a single JUnit class or method](https://docs.gradle.org/current/userguide/java_testing.html#simple_name_pattern)
   
 > Note: Do *not* use `./gradlew clean test ...` as this removes required JARs from the build directory prior to running the tests.

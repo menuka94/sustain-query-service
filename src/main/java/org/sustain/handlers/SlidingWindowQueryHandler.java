@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.bson.Document;
 import org.sustain.SlidingWindowRequest;
 import org.sustain.SlidingWindowResponse;
-import org.sustain.db.mongodb.DBConnection;
+import org.sustain.mongodb.DBConnection;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;

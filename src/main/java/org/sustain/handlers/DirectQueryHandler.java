@@ -1,25 +1,15 @@
 package org.sustain.handlers;
 
-import org.sustain.db.mongodb.DBConnection;
-
-import com.mongodb.BasicDBObject;
 import com.mongodb.client.AggregateIterable;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.MongoCollection;
-
 import io.grpc.stub.StreamObserver;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import org.bson.Document;
-
-import org.json.JSONArray;
-
 import org.sustain.DirectResponse;
 import org.sustain.DirectRequest;
-
-import java.util.ArrayList;
+import org.sustain.mongodb.queries.AggregateQuery;
 
 public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectResponse> {
 
@@ -35,37 +25,22 @@ public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectRespons
         long startTime = System.currentTimeMillis();
 
         try {
-            // Connect to MongoDB
-            MongoDatabase mongoDatabase = DBConnection.getConnection();
-            MongoCollection<Document> mongoCollection = mongoDatabase.getCollection(request.getCollection());
+            // Submit MongoDB query
+            AggregateIterable<Document> documents = new AggregateQuery().execute(request.getCollection(),
+                    request.getQuery());
 
-            // Construct MongoDB query object
-            ArrayList<BasicDBObject> query = new ArrayList<>();
-
-            // Build MongoDB
-            JSONArray parsedQuery = new JSONArray(request.getQuery());
-            for (int i = 0; i < parsedQuery.length(); i++) {
-                BasicDBObject queryComponent = BasicDBObject.parse(parsedQuery.getJSONObject(i).toString());
-                query.add(queryComponent);
-            }
-
-            // submit mongodb query
-            AggregateIterable<Document> documents =
-                mongoCollection.aggregate(query);
-
-            // initialize and start stream writer
-            DirectStreamWriter streamWriter =
-                new DirectStreamWriter(responseObserver, 1);
+            // Initialize and start stream writer
+            DirectStreamWriter streamWriter = new DirectStreamWriter(responseObserver, 1);
             streamWriter.start();
 
-            // process results
+            // Process results
             long count = 0; 
             for (Document document : documents) {
                 streamWriter.add(document);
                 count += 1;
             }
 
-            // shutdown streamWriter and responseObserver
+            // Shutdown streamWriter and responseObserver
             streamWriter.stop(false);
             this.responseObserver.onCompleted();
 

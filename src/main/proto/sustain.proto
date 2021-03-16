@@ -240,11 +240,6 @@ enum ComparisonOperator {
   LESS_THAN_OR_EQUAL = 4;
 }
 
-message CompoundResponse {
-  string data = 1;
-  string geoJson = 2;
-}
-
 message CompoundRequest {
   oneof FirstPredicate {
     Query first_query = 1;
@@ -258,6 +253,11 @@ message CompoundRequest {
     CompoundRequest second_compound_request = 5;
   }
 }
+
+message CompoundResponse {
+  string data = 1;
+}
+
 
 message Query {
   string host = 1;          // MongoDB hostname
