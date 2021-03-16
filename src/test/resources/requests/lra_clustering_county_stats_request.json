@@ -9,7 +9,7 @@
       ]
     }
   ],
-  "kMeansClusteringRequest": {
+  "latentDirichletAllocationRequest": {
     "clusterCount": 10,
     "maxIterations": 100,
     "resolution": "County"

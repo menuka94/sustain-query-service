@@ -18,9 +18,13 @@ import org.sustain.DirectResponse;
 import org.sustain.JsonModelRequest;
 import org.sustain.JsonModelResponse;
 import org.sustain.JsonProxyGrpc;
+import org.sustain.JsonSlidingWindowRequest;
+import org.sustain.JsonSlidingWindowResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.ModelType;
+import org.sustain.SlidingWindowRequest;
+import org.sustain.SlidingWindowResponse;
 import org.sustain.SustainGrpc;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.CompoundQueryHandler;
@@ -29,11 +33,15 @@ import org.sustain.handlers.ModelHandler;
 import org.sustain.handlers.RegressionQueryHandler;
 import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.handlers.EnsembleQueryHandler;
+import org.sustain.handlers.GrpcHandler;
+import org.sustain.handlers.RegressionQueryHandler;
+import org.sustain.handlers.SlidingWindowQueryHandler;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+
 
 public class SustainServer {
 
@@ -58,15 +66,15 @@ public class SustainServer {
      */
     public static void logEnvironment() {
         log.info("\n\n--- Server Environment ---\n" +
-                        "SERVER_HOST: {}\n" +
-                        "SERVER_PORT: {}\n" +
-                        "\n\n--- Database Environment ---\n" +
-                        "DB_HOST: {}\n" +
-                        "DB_PORT: {}\n" +
-                        "DB_NAME: {}\n" +
-                        "DB_USERNAME: {}\n" +
-                        "DB_PASSWORD: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
-                Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
+                "SERVER_HOST: {}\n" +
+                "SERVER_PORT: {}\n" +
+                "\n\n--- Database Environment ---\n" +
+                "DB_HOST: {}\n" +
+                "DB_PORT: {}\n" +
+                "DB_NAME: {}\n" +
+                "DB_USERNAME: {}\n" +
+                "DB_PASSWORD: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
+            Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
     }
 
     /**
@@ -107,9 +115,9 @@ public class SustainServer {
     public void start() throws IOException {
         final int port = Constants.Server.PORT;
         server = ServerBuilder.forPort(port)
-                .addService(new JsonProxyService())
-                .addService(new SustainService())
-                .build().start();
+            .addService(new JsonProxyService())
+            .addService(new SustainService())
+            .build().start();
         log.info("Server started, listening on " + port);
 
         // Shutdown hook called when Ctrl+C is pressed
@@ -149,7 +157,7 @@ public class SustainServer {
     static class JsonProxyService extends JsonProxyGrpc.JsonProxyImplBase {
         @Override
         public void modelQuery(JsonModelRequest request,
-                StreamObserver<JsonModelResponse> responseObserver) {
+                               StreamObserver<JsonModelResponse> responseObserver) {
             ManagedChannel channel = null;
 
             try {
@@ -203,10 +211,74 @@ public class SustainServer {
                 }
             }
         }
+
+        @Override
+        public void slidingWindowQuery(JsonSlidingWindowRequest request,
+                                       StreamObserver<JsonSlidingWindowResponse> responseObserver) {
+            ManagedChannel channel = null;
+
+            try {
+                // open grpc channel
+                channel = ManagedChannelBuilder
+                    .forAddress(Constants.Server.HOST,
+                        Constants.Server.PORT)
+                    .usePlaintext()
+                    .build();
+
+                // convert json to protobuf and service request
+                JsonFormat.Parser parser = JsonFormat.parser();
+                JsonFormat.Printer printer = JsonFormat.printer()
+                    .includingDefaultValueFields()
+                    .omittingInsignificantWhitespace();
+
+                // create model request
+                SlidingWindowRequest.Builder requestBuilder =
+                    SlidingWindowRequest.newBuilder();
+                parser.merge(request.getJson(), requestBuilder);
+
+                // issue model request
+                SustainGrpc.SustainBlockingStub blockingStub =
+                    SustainGrpc.newBlockingStub(channel);
+
+                Iterator<SlidingWindowResponse> iterator =
+                    blockingStub.slidingWindowQuery(requestBuilder.build());
+
+                // iterate over results
+                while (iterator.hasNext()) {
+                    SlidingWindowResponse response = iterator.next();
+
+                    // build JsonModelRequest
+                    String json = printer.print(response);
+                    JsonSlidingWindowResponse jsonResponse =
+                        JsonSlidingWindowResponse.newBuilder()
+                            .setJson(json)
+                            .build();
+
+                    responseObserver.onNext(jsonResponse);
+                }
+
+                // send response
+                responseObserver.onCompleted();
+            } catch (Exception e) {
+                log.error("failed to evaluate", e);
+                responseObserver.onError(e);
+            } finally {
+                if (channel != null) {
+                    channel.shutdownNow();
+                }
+            }
+        }
     }
 
     // SUSTAIN gRPC Server Implementation
     static class SustainService extends SustainGrpc.SustainImplBase {
+        @Override
+        public void slidingWindowQuery(SlidingWindowRequest request,
+                                       StreamObserver<SlidingWindowResponse> responseObserver) {
+            SlidingWindowQueryHandler handler = new SlidingWindowQueryHandler(request, responseObserver);
+            log.info("Received a Sliding Window Query Request");
+            handler.handleRequest();
+        }
 
         @Override
         public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
@@ -253,7 +325,8 @@ public class SustainServer {
 
         @Override
         public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
-            GrpcHandler<CompoundRequest, CompoundResponse> handler = new CompoundQueryHandler(request, responseObserver);
+            GrpcHandler<CompoundRequest, CompoundResponse> handler = new CompoundQueryHandler(request,
+                responseObserver);
             handler.handleRequest();
         }
 
@@ -265,15 +338,16 @@ public class SustainServer {
 
         /**
          * An example RPC method used to sanity-test the gRPC server manually, or unit-test it with JUnit.
-         * @param request DirectRequest object containing a collection and query request.
+         *
+         * @param request          DirectRequest object containing a collection and query request.
          * @param responseObserver Response Stream for streaming back results.
          */
         @Override
         public void echoQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
             log.info("RPC method echoQuery() invoked; returning request query body");
             DirectResponse echoResponse = DirectResponse.newBuilder()
-                    .setData(StringEscapeUtils.unescapeJavaScript(request.getQuery()))
-                    .build();
+                .setData(StringEscapeUtils.unescapeJavaScript(request.getQuery()))
+                .build();
             responseObserver.onNext(echoResponse);
             responseObserver.onCompleted();
         }

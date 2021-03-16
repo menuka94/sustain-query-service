@@ -2,26 +2,30 @@ package org.sustain.server;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.sustain.DirectRequest;
+import org.sustain.DirectResponse;
+import org.sustain.JsonModelRequest;
+import org.sustain.JsonModelResponse;
+import org.sustain.JsonProxyGrpc;
+import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
+import org.sustain.JsonSlidingWindowRequest;
+import org.sustain.JsonSlidingWindowResponse;
+import org.sustain.SustainGrpc;
+import org.sustain.SustainGrpc.SustainBlockingStub;
+import org.sustain.util.Constants;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-
-import org.sustain.*;
-
-import org.sustain.SustainGrpc;
-import org.sustain.SustainGrpc.SustainBlockingStub;
-import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
-import org.sustain.util.Constants;
 
 /**
  * Tests gRPC calls and responses to the Sustain Server, as if a client were invoking them.
@@ -40,6 +44,35 @@ public class SustainServerTest {
 
     public SustainServerTest() {
         super();
+    }
+
+    /**
+     * Establishes a Managed gRPC Channel to the gRPC server running at the TARGET
+     * specified location, and creates blocking stubs for both the Sustain and JsonProxy
+     * Services.
+     */
+    @BeforeAll
+    public static void beforeAllTests() {
+        channel = ManagedChannelBuilder.forTarget(TARGET).usePlaintext().build();
+        sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
+        jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
+    }
+
+    @AfterAll
+    public static void afterAllTests() {
+        shutdown();
+    }
+
+    /**
+     * Shuts down the Managed gRPC Channel for this testing class.
+     */
+    public static void shutdown() {
+        try {
+            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            log.error("Caught InterruptedException: " + e.getMessage());
+            channel.shutdownNow();
+        }
     }
 
     /**
@@ -94,7 +127,7 @@ public class SustainServerTest {
 
     @Tag("slow")
     @Test
-    public void testLRAClusteringModel() {
+    public void testLDAClusteringModel() {
         executeJsonModelRequest("requests/lra_clustering_county_stats_request.json");
     }
 
@@ -114,6 +147,33 @@ public class SustainServerTest {
     @Test
     public void testRForestRegressionModel() {
         executeJsonModelRequest("requests/rforest_regression_maca_v2_request.json");
+    }
+
+    @Tag("slow")
+    @Test
+    public void testCovidSlidingWindowQuery() {
+        String resourceName = "requests/covid_sliding_window_request.json";
+        try {
+            InputStream ioStream = getClass().getClassLoader().getResourceAsStream(resourceName);
+            if (ioStream != null) {
+                String testingResource = new String(ioStream.readAllBytes());
+                JsonSlidingWindowRequest slidingWindowRequest = JsonSlidingWindowRequest.newBuilder()
+                        .setJson(testingResource)
+                        .build();
+
+                Iterator<JsonSlidingWindowResponse> jsonModelResponseIterator =
+                        jsonProxyBlockingStub.slidingWindowQuery(slidingWindowRequest);
+                while (jsonModelResponseIterator.hasNext()) {
+                    JsonSlidingWindowResponse jsonResponse = jsonModelResponseIterator.next();
+                    log.info("JSON Sliding Window Response: {}\n", jsonResponse.getJson());
+                }
+            }
+
+        } catch (NullPointerException e) {
+            log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
+        } catch (IOException e) {
+            log.error("Failed to read testing resource file: ", e.getCause());
+        }
     }
 
     /**
@@ -141,35 +201,6 @@ public class SustainServerTest {
             log.error("NullPtr: Failed to read testing resource file: ", e.getCause());
         } catch (IOException e) {
             log.error("Failed to read testing resource file: ", e.getCause());
-        }
-    }
-
-    /**
-     * Establishes a Managed gRPC Channel to the gRPC server running at the TARGET
-     * specified location, and creates blocking stubs for both the Sustain and JsonProxy
-     * Services.
-     */
-    @BeforeAll
-    public static void beforeAllTests() {
-        channel = ManagedChannelBuilder.forTarget(TARGET).usePlaintext().build();
-        sustainBlockingStub = SustainGrpc.newBlockingStub(channel);
-        jsonProxyBlockingStub = JsonProxyGrpc.newBlockingStub(channel);
-    }
-
-    @AfterAll
-    public static void afterAllTests() {
-        shutdown();
-    }
-
-    /**
-     * Shuts down the Managed gRPC Channel for this testing class.
-     */
-    public static void shutdown() {
-        try {
-            channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            log.error("Caught InterruptedException: " + e.getMessage());
-            channel.shutdownNow();
         }
     }
 }
