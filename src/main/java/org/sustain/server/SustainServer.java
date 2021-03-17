@@ -25,6 +25,7 @@ import org.sustain.ModelResponse;
 import org.sustain.ModelType;
 import org.sustain.SlidingWindowRequest;
 import org.sustain.SlidingWindowResponse;
+import org.sustain.SparkManager;
 import org.sustain.SustainGrpc;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.CompoundQueryHandler;
@@ -46,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 public class SustainServer {
 
     private static final Logger log = LogManager.getLogger(SustainServer.class);
+    private static SparkManager sparkManager;
     private static JavaSparkContext sparkContext;
     private static SparkSession sparkSession;
 
@@ -53,7 +55,11 @@ public class SustainServer {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         logEnvironment();
-        initializeSparkContext();
+
+        // initialize SparkManager - TODO parameterize threadCount
+        sparkManager = new SparkManager(Constants.Spark.MASTER, 4);
+        
+        initializeSparkContext(); // TODO - remove
         addClusterDependencyJars(sparkContext);
 
         final SustainServer server = new SustainServer();
