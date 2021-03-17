@@ -41,19 +41,26 @@ import org.apache.spark.sql.SparkSession;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
+import org.sustain.SparkManager;
+import org.sustain.SparkTask;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * Provides an interface for building generalized Gradient Boost Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class GBoostRegressionModel {
+public class GBoostRegressionModel implements SparkTask<Boolean> {
 
     // DATABASE PARAMETERS
     protected static final Logger log = LogManager.getLogger(GBoostRegressionModel.class);
+    private String database, collection, mongoUri;
     private String[] features;
     private String label, gisJoin;
 
@@ -151,11 +158,36 @@ public class GBoostRegressionModel {
         this.trainSplit = trainSplit;
     }
 
-    public GBoostRegressionModel(String master, String mongoUri, String database, String collection, String gisJoin) {
+    public GBoostRegressionModel(String mongoUri, String database, String collection, String gisJoin) {
         log.info("Gradient Boosting constructor invoked");
+        setMongoUri(mongoUri);
+        setDatabase(database);
+        setCollection(collection);
         setGisjoin(gisJoin);
-        initSparkSession(master, mongoUri, database, collection);
-        addClusterDependencyJars();
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    public String getCollection() {
+        return collection;
+    }
+
+    public void setCollection(String collection) {
+        this.collection = collection;
+    }
+
+    public String getMongoUri() {
+        return mongoUri;
+    }
+
+    public void setMongoUri(String mongoUri) {
+        this.mongoUri = mongoUri;
     }
 
     public void setFeatures(String[] features) {
@@ -230,52 +262,6 @@ public class GBoostRegressionModel {
         this.maxBins = maxBins;
     }
 
-    /**
-     * Configures and builds a SparkSession and JavaSparkContext, then adds required dependency JARs to the cluster.
-     * @param master URI of the Spark master. Format: spark://<hostname>:<port>
-     * @param mongoUri URI of the Mongo database router. Format: mongodb://<hostname>:<port>
-     * @param database Name of the Mongo database to use.
-     * @param collection Name of the Mongo collection to import from above database.
-     */
-    private void initSparkSession(String master, String mongoUri, String database, String collection) {
-
-        String appName = "SUSTAIN GBoost Regression Model";
-        log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
-                "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
-                master, appName, mongoUri, database, collection);
-
-        SparkSession sparkSession = SparkSession.builder()
-                .master(master)
-                .appName(appName)
-                .config("spark.mongodb.input.uri", mongoUri)
-                .config("spark.mongodb.input.database", database)
-                .config("spark.mongodb.input.collection", collection)
-                .getOrCreate();
-
-        sparkContext = new JavaSparkContext(sparkSession.sparkContext());
-        addClusterDependencyJars();
-    }
-
-    /**
-     * Adds required dependency jars to the Spark Context member.
-     */
-    private void addClusterDependencyJars() {
-        String[] jarPaths = {
-            "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
-            "build/libs/spark-core_2.12-3.0.1.jar",
-            "build/libs/spark-mllib_2.12-3.0.1.jar",
-            "build/libs/spark-sql_2.12-3.0.1.jar",
-            "build/libs/bson-4.0.5.jar",
-            "build/libs/mongo-java-driver-3.12.5.jar",
-            //"build/libs/mongodb-driver-core-4.0.5.jar"
-        };
-
-        for (String jar: jarPaths) {
-            log.info("Adding dependency JAR to the Spark Context: {}", jar);
-            sparkContext.addJar(jar);
-        }
-    }
-
     private Seq<String> desiredColumns() {
         List<String> cols = new ArrayList<>();
         cols.add(queryField);
@@ -309,12 +295,20 @@ public class GBoostRegressionModel {
     /**
      * Creates Spark context and trains the distributed model
      */
-
-    public void buildAndRunModel() {
+    @Override
+    public Boolean execute(JavaSparkContext sparkContext) {
         double startTime = System.currentTimeMillis();
 
         fancy_logging("Initiating Gradient Boost Modelling...");
-        ReadConfig readConfig = ReadConfig.create(sparkContext);
+
+		// Initailize ReadConfig
+        Map<String, String> readOverrides = new HashMap();
+        readOverrides.put("spark.mongodb.input.collection", getCollection());
+        readOverrides.put("spark.mongodb.input.database", getDatabase());
+        readOverrides.put("spark.mongodb.input.uri", getMongoUri());
+
+        ReadConfig readConfig = 
+            ReadConfig.create(sparkContext.getConf(), readOverrides);
 
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
 
@@ -367,7 +361,7 @@ public class GBoostRegressionModel {
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
-        sparkContext.close();
+		return true;
     }
 
     /**
@@ -437,7 +431,7 @@ public class GBoostRegressionModel {
         String gisJoins = "G0100290";
         String collection_name = "macav2";
 
-        GBoostRegressionModel lrModel = new GBoostRegressionModel("spark://lattice-1.cs.colostate.edu:32531",
+        GBoostRegressionModel lrModel = new GBoostRegressionModel(
                 "mongodb://lattice-46:27017", "sustaindb", collection_name, gisJoins);
 
         lrModel.populateTest();
@@ -445,7 +439,20 @@ public class GBoostRegressionModel {
         lrModel.setLabel(label);
         lrModel.setGisjoin(gisJoins);
 
-        lrModel.buildAndRunModel();
+		try {
+			// Initialize SparkManager
+			SparkManager sparkManager =
+				new SparkManager("spark://lattice-1.cs.colostate.edu:32531", 1);        
+
+			// Submit task to SparkManager
+        	Future<Boolean> future =
+				sparkManager.submit(lrModel, "gradient-boosting-test");
+
+			// Wait for task to complete
+			future.get();
+		} catch (Exception e) {
+            log.error("Failed to evaluate query", e);
+		}
     }
 
 }

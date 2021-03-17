@@ -22,6 +22,15 @@ public abstract class GrpcHandler<T, E> {
     }
 
     /**
+     * Checks the validity of a Request object
+     * @param request The request object populated by the gRPC endpoint.
+     * @return Boolean true if the model request is valid, false otherwise.
+     */
+    public boolean isValid(T request) {
+        return true;
+    }
+
+    /**
      * Logs the incoming gRPC request fields, as chosen by the implementer.
      * @param request The gRPC request object.
      */
