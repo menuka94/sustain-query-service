@@ -50,8 +50,8 @@ public class SustainServer {
     }
 
     public void start() throws IOException {
-        // initialize SparkManager - TODO parameterize threadCount
-        sparkManager = new SparkManager(Constants.Spark.MASTER, 4);
+        // initialize SparkManager
+        sparkManager = new SparkManager(Constants.Spark.MASTER, Constants.Spark.THREAD_COUNT);
 
         for (String jar: sparkJarPaths) {
             log.info("Adding dependency JAR to the Spark Context: {}", jar);
@@ -80,8 +80,6 @@ public class SustainServer {
     }
 
     public void stop() throws InterruptedException {
-		//sparkManager.close(); // TODO - add shutdown hook
-
         if (server != null) {
             server.awaitTermination(2, TimeUnit.SECONDS);
         }
