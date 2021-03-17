@@ -55,12 +55,10 @@ public class CountQueryHandler extends GrpcHandler<CountRequest, CountResponse>
         // initialize ReadConfig
         Map<String, String> readOverrides = new HashMap();
         readOverrides.put("spark.mongodb.input.collection",
-            request.getCollection());
-        readOverrides.put("spark.mongodb.input.database",
-            Constants.DB.NAME);
+			request.getCollection());
+        readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
         readOverrides.put("spark.mongodb.input.uri",
-            String.format("mongodb://%s:%s",
-                Constants.DB.HOST, Constants.DB.PORT));
+            "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT);
 
         ReadConfig readConfig = 
             ReadConfig.create(sparkContext.getConf(), readOverrides);
