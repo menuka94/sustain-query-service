@@ -15,9 +15,9 @@ import org.sustain.LinearRegressionResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.ModelType;
+import org.sustain.SparkManager;
 import org.sustain.SparkTask;
 import org.sustain.modeling.LinearRegressionModelImpl;
-import org.sustain.server.SustainServer;
 import org.sustain.util.Constants;
 import org.sustain.util.Profiler;
 import org.apache.spark.util.SizeEstimator;
@@ -26,12 +26,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-public class RegressionQueryHandler extends ModelHandler implements SparkTask<Boolean> {
+public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
 
     private static final Logger log = LogManager.getLogger(RegressionQueryHandler.class);
 
-    public RegressionQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        super(request, responseObserver);
+    public RegressionQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
+        super(request, responseObserver, sparkManager);
     }
 
     @Override
@@ -40,8 +40,8 @@ public class RegressionQueryHandler extends ModelHandler implements SparkTask<Bo
             logRequest(this.request);
 			try {
 				// Submit task to Spark Manager
-				Future<Boolean> future = SustainServer
-					.sparkManager.submit(this, "regression-query");
+				Future<Boolean> future =
+					this.sparkManager.submit(this, "regression-query");
 
 				// Wait for task to complete
 				future.get();
@@ -140,7 +140,7 @@ public class RegressionQueryHandler extends ModelHandler implements SparkTask<Bo
 
 
     @Override
-    boolean isValid(ModelRequest modelRequest) {
+    public boolean isValid(ModelRequest modelRequest) {
         if (modelRequest.getType().equals(ModelType.LINEAR_REGRESSION)) {
             if (modelRequest.getCollectionsCount() == 1) {
                 if (modelRequest.getCollections(0).getFeaturesCount() == 1) {

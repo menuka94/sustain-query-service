@@ -31,21 +31,20 @@ import org.apache.spark.sql.SparkSession;
 import org.sustain.*;
 import org.sustain.modeling.GBoostRegressionModel;
 import org.sustain.modeling.RFRegressionModel;
-import org.sustain.server.SustainServer;
 import org.sustain.util.Constants;
 
 import java.util.concurrent.Future;
 
-public class EnsembleQueryHandler extends ModelHandler {
+public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> {
 
     private static final Logger log = LogManager.getLogger(EnsembleQueryHandler.class);
 
-    public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        super(request, responseObserver);
+    public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
+        super(request, responseObserver, sparkManager);
     }
 
     @Override
-    boolean isValid(ModelRequest modelRequest) {
+    public boolean isValid(ModelRequest modelRequest) {
         // TODO: Saptashwa: Implement
         return false;
     }
@@ -95,8 +94,8 @@ public class EnsembleQueryHandler extends ModelHandler {
 
 		try {
 			// Submit task to Spark Manager
-			Future<Boolean> future = SustainServer
-				.sparkManager.submit(model, "random-forest-model");
+			Future<Boolean> future =
+				this.sparkManager.submit(model, "random-forest-model");
 
 			// Wait for task to complete
 			future.get();
@@ -160,8 +159,8 @@ public class EnsembleQueryHandler extends ModelHandler {
 
 		try {
 			// Submit task to Spark Manager
-			Future<Boolean> future = SustainServer
-				.sparkManager.submit(model, "gradient-boosting-model");
+			Future<Boolean> future = this.sparkManager
+                .submit(model, "gradient-boosting-model");
 
 			// Wait for task to complete
 			future.get();

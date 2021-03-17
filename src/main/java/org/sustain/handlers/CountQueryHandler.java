@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import org.sustain.CountResponse;
 import org.sustain.CountRequest;
+import org.sustain.SparkManager;
 import org.sustain.SparkTask;
 import org.sustain.server.SustainServer;
 import org.sustain.util.Constants;
@@ -23,14 +24,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-public class CountQueryHandler extends GrpcHandler<CountRequest, CountResponse>
+public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountResponse>
         implements SparkTask<Boolean> {
     protected static final Logger log =
         LoggerFactory.getLogger(CountQueryHandler.class);
 
     public CountQueryHandler(CountRequest request,
-            StreamObserver<CountResponse> responseObserver) {
-        super(request, responseObserver);
+            StreamObserver<CountResponse> responseObserver,
+            SparkManager sparkManager) {
+        super(request, responseObserver, sparkManager);
     }
 
     @Override
@@ -38,7 +40,7 @@ public class CountQueryHandler extends GrpcHandler<CountRequest, CountResponse>
         try {
             // Submit task to Spark Manager
             Future<Boolean> future =
-                SustainServer.sparkManager.submit(this, "count-query");
+                this.sparkManager.submit(this, "count-query");
 
             // Wait for task to complete
             future.get();

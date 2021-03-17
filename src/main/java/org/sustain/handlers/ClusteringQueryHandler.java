@@ -31,8 +31,8 @@ import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.ModelType;
+import org.sustain.SparkManager;
 import org.sustain.SparkTask;
-import org.sustain.server.SustainServer;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -45,16 +45,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-public class ClusteringQueryHandler extends ModelHandler implements SparkTask<Boolean> {
+public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
 
     private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
 
-    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        super(request, responseObserver);
+    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
+        super(request, responseObserver, sparkManager);
     }
 
     @Override
-    boolean isValid(ModelRequest modelRequest) {
+    public boolean isValid(ModelRequest modelRequest) {
         // TODO: Implement
         return true;
     }
@@ -65,8 +65,8 @@ public class ClusteringQueryHandler extends ModelHandler implements SparkTask<Bo
 
         try {
             // Submit task to Spark Manager
-            Future<Boolean> future = SustainServer
-				.sparkManager.submit(this, "clustering-query");
+            Future<Boolean> future =
+				this.sparkManager.submit(this, "clustering-query");
 
             // Wait for task to complete
             future.get();

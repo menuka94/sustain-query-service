@@ -1,54 +1,18 @@
 package org.sustain.server;
 
-import com.google.protobuf.util.JsonFormat;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.CompoundRequest;
-import org.sustain.CompoundResponse;
-import org.sustain.CountRequest;
-import org.sustain.CountResponse;
-import org.sustain.DirectRequest;
-import org.sustain.DirectResponse;
-import org.sustain.JsonModelRequest;
-import org.sustain.JsonModelResponse;
-import org.sustain.JsonProxyGrpc;
-import org.sustain.JsonSlidingWindowRequest;
-import org.sustain.JsonSlidingWindowResponse;
-import org.sustain.ModelRequest;
-import org.sustain.ModelResponse;
-import org.sustain.ModelType;
-import org.sustain.SlidingWindowRequest;
-import org.sustain.SlidingWindowResponse;
 import org.sustain.SparkManager;
-import org.sustain.SustainGrpc;
-import org.sustain.handlers.ClusteringQueryHandler;
-import org.sustain.handlers.CompoundQueryHandler;
-import org.sustain.handlers.CountQueryHandler;
-import org.sustain.handlers.GrpcHandler;
-import org.sustain.handlers.ModelHandler;
-import org.sustain.handlers.RegressionQueryHandler;
-import org.sustain.handlers.DirectQueryHandler;
-import org.sustain.handlers.EnsembleQueryHandler;
-import org.sustain.handlers.GrpcHandler;
-import org.sustain.handlers.RegressionQueryHandler;
-import org.sustain.handlers.SlidingWindowQueryHandler;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
-
 
 public class SustainServer {
 
     private static final Logger log = LogManager.getLogger(SustainServer.class);
-    public static SparkManager sparkManager; // TODO - should be private and passed to objects
     private static final String[] sparkJarPaths = {
         "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
         "build/libs/spark-core_2.12-3.0.1.jar",
@@ -59,17 +23,10 @@ public class SustainServer {
     };
 
     private Server server;
+    private SparkManager sparkManager;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         logEnvironment();
-
-        // initialize SparkManager - TODO parameterize threadCount
-        sparkManager = new SparkManager(Constants.Spark.MASTER, 4);
-
-        for (String jar: sparkJarPaths) {
-            log.info("Adding dependency JAR to the Spark Context: {}", jar);
-            sparkManager.addJar(jar);
-        }
 
         final SustainServer server = new SustainServer();
         server.start();
@@ -93,10 +50,18 @@ public class SustainServer {
     }
 
     public void start() throws IOException {
+        // initialize SparkManager - TODO parameterize threadCount
+        sparkManager = new SparkManager(Constants.Spark.MASTER, 4);
+
+        for (String jar: sparkJarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkManager.addJar(jar);
+        }
+
         final int port = Constants.Server.PORT;
         server = ServerBuilder.forPort(port)
-            .addService(new JsonProxyService())
-            .addService(new SustainService())
+            .addService(new JsonProxyService(sparkManager))
+            .addService(new SustainService(sparkManager))
             .build().start();
         log.info("Server started, listening on " + port);
 
@@ -104,7 +69,6 @@ public class SustainServer {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
                 try {
-					//SustainServer.sparkManager.stop(); // TODO - add shutdown hook for sparkManage
                     SustainServer.this.stop();
                 } catch (InterruptedException e) {
                     log.error("Error in stopping the server");
@@ -116,6 +80,8 @@ public class SustainServer {
     }
 
     public void stop() throws InterruptedException {
+		//sparkManager.close(); // TODO - add shutdown hook
+
         if (server != null) {
             server.awaitTermination(2, TimeUnit.SECONDS);
         }
@@ -130,213 +96,6 @@ public class SustainServer {
     public void shutdownNow() {
         if (server != null) {
             server.shutdownNow();
-        }
-    }
-
-    // JsonProxyService implementation
-    static class JsonProxyService extends JsonProxyGrpc.JsonProxyImplBase {
-        @Override
-        public void modelQuery(JsonModelRequest request,
-                               StreamObserver<JsonModelResponse> responseObserver) {
-            ManagedChannel channel = null;
-
-            try {
-                // open grpc channel
-                channel = ManagedChannelBuilder
-                    .forAddress(Constants.Server.HOST,
-                        Constants.Server.PORT)
-                    .usePlaintext()
-                    .build();
-
-                // convert json to protobuf and service request
-                JsonFormat.Parser parser = JsonFormat.parser();
-                JsonFormat.Printer printer = JsonFormat.printer()
-                    .includingDefaultValueFields()
-                    .omittingInsignificantWhitespace();
-
-                // create model request
-                ModelRequest.Builder requestBuilder =
-                    ModelRequest.newBuilder();
-                parser.merge(request.getJson(), requestBuilder);
-
-                // issue model request
-                SustainGrpc.SustainBlockingStub blockingStub =
-                    SustainGrpc.newBlockingStub(channel);
-
-                Iterator<ModelResponse> iterator =
-                    blockingStub.modelQuery(requestBuilder.build());
-
-                // iterate over results
-                while (iterator.hasNext()) {
-                    ModelResponse response = iterator.next();
-
-                    // build JsonModelRequest
-                    String json = printer.print(response);
-                    JsonModelResponse jsonResponse =
-                        JsonModelResponse.newBuilder()
-                            .setJson(json)
-                            .build();
-
-                    responseObserver.onNext(jsonResponse);
-                }
-
-                // send response
-                responseObserver.onCompleted();
-            } catch (Exception e) {
-                log.error("failed to evaluate", e);
-                responseObserver.onError(e);
-            } finally {
-                if (channel != null) {
-                    channel.shutdownNow();
-                }
-            }
-        }
-
-        @Override
-        public void slidingWindowQuery(JsonSlidingWindowRequest request,
-                                       StreamObserver<JsonSlidingWindowResponse> responseObserver) {
-            ManagedChannel channel = null;
-
-            try {
-                // open grpc channel
-                channel = ManagedChannelBuilder
-                    .forAddress(Constants.Server.HOST,
-                        Constants.Server.PORT)
-                    .usePlaintext()
-                    .build();
-
-                // convert json to protobuf and service request
-                JsonFormat.Parser parser = JsonFormat.parser();
-                JsonFormat.Printer printer = JsonFormat.printer()
-                    .includingDefaultValueFields()
-                    .omittingInsignificantWhitespace();
-
-                // create model request
-                SlidingWindowRequest.Builder requestBuilder =
-                    SlidingWindowRequest.newBuilder();
-                parser.merge(request.getJson(), requestBuilder);
-
-                // issue model request
-                SustainGrpc.SustainBlockingStub blockingStub =
-                    SustainGrpc.newBlockingStub(channel);
-
-                Iterator<SlidingWindowResponse> iterator =
-                    blockingStub.slidingWindowQuery(requestBuilder.build());
-
-                // iterate over results
-                while (iterator.hasNext()) {
-                    SlidingWindowResponse response = iterator.next();
-
-                    // build JsonModelRequest
-                    String json = printer.print(response);
-                    JsonSlidingWindowResponse jsonResponse =
-                        JsonSlidingWindowResponse.newBuilder()
-                            .setJson(json)
-                            .build();
-
-                    responseObserver.onNext(jsonResponse);
-                }
-
-                // send response
-                responseObserver.onCompleted();
-            } catch (Exception e) {
-                log.error("failed to evaluate", e);
-                responseObserver.onError(e);
-            } finally {
-                if (channel != null) {
-                    channel.shutdownNow();
-                }
-            }
-        }
-    }
-
-    // SUSTAIN gRPC Server Implementation
-    static class SustainService extends SustainGrpc.SustainImplBase {
-        @Override
-        public void slidingWindowQuery(SlidingWindowRequest request,
-                                       StreamObserver<SlidingWindowResponse> responseObserver) {
-            SlidingWindowQueryHandler handler = new SlidingWindowQueryHandler(request, responseObserver);
-            log.info("Received a Sliding Window Query Request");
-            handler.handleRequest();
-        }
-
-        @Override
-        public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-
-            ModelHandler handler;
-            ModelType type = request.getType();
-            switch (type) {
-                case LINEAR_REGRESSION:
-                    log.info("Received a Linear Regression Model request");
-                    handler = new RegressionQueryHandler(request, responseObserver);
-                    break;
-                case K_MEANS_CLUSTERING:
-                    log.info("Received a K-Means Clustering Model request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
-                    break;
-                case BISECTING_K_MEANS:
-                    log.info("Received a Bisecting K-Means Model Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
-                    break;
-                case GAUSSIAN_MIXTURE:
-                    log.info("Received a Gaussian Mixture Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
-                    break;
-                case R_FOREST_REGRESSION:
-                    log.info("Received a Random Forest Regression Model request");
-                    handler = new EnsembleQueryHandler(request, responseObserver);
-                    break;
-                case G_BOOST_REGRESSION:
-                    log.info("Received a Gradient Boost Regression Model request");
-                    handler = new EnsembleQueryHandler(request, responseObserver);
-                    break;
-                case LATENT_DIRICHLET_ALLOCATION:
-                    log.info("Received a Latent Dirichlet Allocation Request");
-                    handler = new ClusteringQueryHandler(request, responseObserver);
-                    break;
-                default:
-                    responseObserver.onError(new Exception("Invalid Model Type"));
-                    return;
-            }
-
-            handler.handleRequest();
-            responseObserver.onCompleted();
-        }
-
-        @Override
-        public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
-            GrpcHandler<CompoundRequest, CompoundResponse> handler = new CompoundQueryHandler(request,
-                responseObserver);
-            handler.handleRequest();
-        }
-
-        @Override
-        public void countQuery(CountRequest request, StreamObserver<CountResponse> responseObserver) {
-            GrpcHandler<CountRequest, CountResponse> handler =
-                new CountQueryHandler(request, responseObserver);
-            handler.handleRequest();
-        }
-
-        @Override
-        public void directQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
-            GrpcHandler<DirectRequest, DirectResponse> handler = new DirectQueryHandler(request, responseObserver);
-            handler.handleRequest();
-        }
-
-        /**
-         * An example RPC method used to sanity-test the gRPC server manually, or unit-test it with JUnit.
-         *
-         * @param request          DirectRequest object containing a collection and query request.
-         * @param responseObserver Response Stream for streaming back results.
-         */
-        @Override
-        public void echoQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
-            log.info("RPC method echoQuery() invoked; returning request query body");
-            DirectResponse echoResponse = DirectResponse.newBuilder()
-                .setData(StringEscapeUtils.unescapeJavaScript(request.getQuery()))
-                .build();
-            responseObserver.onNext(echoResponse);
-            responseObserver.onCompleted();
         }
     }
 }
