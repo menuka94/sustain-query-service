@@ -28,6 +28,9 @@ Once the project is compiled and the `build/` directory has been generated, you 
 
 * `$ make server`
 
+### Running a Single Test
+`./gradlew test --tests SustainServerTest.testExampleEchoQuery`
+
 ### Docker
 
 To build and run a Docker container of this project:
