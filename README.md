@@ -12,6 +12,10 @@ or a mongod instance in the case of an unsharded replica set. The connection con
 
 ## Usage
 
+### Set Environment Variables
+* Create a new file `env.sh` from `env.sh.example` and update values.
+* Execute `run.sh`
+
 To clean the project of any build-generated files:
 
 * `$ make clean`
@@ -22,7 +26,7 @@ To compile the project and generate the `build/` directory:
 
 Once the project is compiled and the `build/` directory has been generated, you can start the gRPC server:
 
-* `$ make run-spatial-server`
+* `$ make server`
 
 ### Docker
 
