@@ -39,24 +39,28 @@ import org.apache.spark.sql.SparkSession;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
+import org.sustain.SparkManager;
+import org.sustain.SparkTask;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * Provides an interface for building generalized Random Forest Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class RFRegressionModel {
+public class RFRegressionModel implements SparkTask<Boolean> {
 
     // DATABASE PARAMETERS
     protected static final Logger log = LogManager.getLogger(RFRegressionModel.class);
+    private String database, collection, mongoUri;
     private String[] features;
     private String label, gisJoin;
-
-
-    private JavaSparkContext sparkContext;
 
     // MODEL PARAMETERS
     //Minimum information gain for a split to be considered at a tree node. default 0.0
@@ -133,11 +137,36 @@ public class RFRegressionModel {
         this.trainSplit = trainSplit;
     }
 
-    public RFRegressionModel(String master, String mongoUri, String database, String collection, String gisJoin) {
+    public RFRegressionModel(String mongoUri, String database, String collection, String gisJoin) {
         log.info("Random Forest constructor invoked");
+        setMongoUri(mongoUri);
+        setDatabase(database);
+        setCollection(collection);
         setGisjoin(gisJoin);
-        initSparkSession(master, mongoUri, database, collection);
-        addClusterDependencyJars();
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    public String getCollection() {
+        return collection;
+    }
+
+    public void setCollection(String collection) {
+        this.collection = collection;
+    }
+
+    public String getMongoUri() {
+        return mongoUri;
+    }
+
+    public void setMongoUri(String mongoUri) {
+        this.mongoUri = mongoUri;
     }
 
     public void setFeatures(String[] features) {
@@ -227,7 +256,7 @@ public class RFRegressionModel {
      * @param database Name of the Mongo database to use.
      * @param collection Name of the Mongo collection to import from above database.
      */
-    private void initSparkSession(String master, String mongoUri, String database, String collection) {
+    /*private void initSparkSession(String master, String mongoUri, String database, String collection) {
 
         String appName = "SUSTAIN RandomForest Regression Model";
         log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
@@ -244,12 +273,12 @@ public class RFRegressionModel {
 
         sparkContext = new JavaSparkContext(sparkSession.sparkContext());
         addClusterDependencyJars();
-    }
+    }*/
 
     /**
      * Adds required dependency jars to the Spark Context member.
      */
-    private void addClusterDependencyJars() {
+    /*private void addClusterDependencyJars() {
         String[] jarPaths = {
             "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
             "build/libs/spark-core_2.12-3.0.1.jar",
@@ -264,7 +293,7 @@ public class RFRegressionModel {
             log.info("Adding dependency JAR to the Spark Context: {}", jar);
             sparkContext.addJar(jar);
         }
-    }
+    }*/
 
     private Seq<String> desiredColumns() {
         List<String> cols = new ArrayList<>();
@@ -299,11 +328,20 @@ public class RFRegressionModel {
     /**
      * Creates Spark context and trains the distributed model
      */
-    public void buildAndRunModel() {
+    @Override
+    public Boolean execute(JavaSparkContext sparkContext) {
         double startTime = System.currentTimeMillis();
 
         fancy_logging("Initiating Random Forest Modelling...");
-        ReadConfig readConfig = ReadConfig.create(sparkContext);
+
+		// Initailize ReadConfig
+        Map<String, String> readOverrides = new HashMap();
+        readOverrides.put("spark.mongodb.input.collection", getCollection());
+        readOverrides.put("spark.mongodb.input.database", getDatabase());
+        readOverrides.put("spark.mongodb.input.uri", getMongoUri());
+
+        ReadConfig readConfig = 
+            ReadConfig.create(sparkContext.getConf(), readOverrides);
 
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
 
@@ -356,7 +394,7 @@ public class RFRegressionModel {
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
-        sparkContext.close();
+        return true;
     }
 
     /**
@@ -422,7 +460,7 @@ public class RFRegressionModel {
         String gisJoins = "G0100290";
         String collection_name = "macav2";
 
-        RFRegressionModel lrModel = new RFRegressionModel("spark://lattice-1.cs.colostate.edu:32531",
+        RFRegressionModel lrModel = new RFRegressionModel(
                 "mongodb://lattice-46:27017", "sustaindb", collection_name, gisJoins);
 
         lrModel.populateTest();
@@ -430,7 +468,20 @@ public class RFRegressionModel {
         lrModel.setLabel(label);
         lrModel.setGisjoin(gisJoins);
 
-        lrModel.buildAndRunModel();
+		try {
+			// Initialize SparkManager
+			SparkManager sparkManager =
+				new SparkManager("spark://lattice-1.cs.colostate.edu:32531", 1);        
+
+			// Submit task to SparkManager
+        	Future<Boolean> future =
+				sparkManager.submit(lrModel, "random-forest-test");
+
+			// Wait for task to complete
+			future.get();
+		} catch (Exception e) {
+            log.error("Failed to evaluate query", e);
+		}
     }
 
 
