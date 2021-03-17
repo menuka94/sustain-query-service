@@ -38,6 +38,9 @@ service Sustain {
   // Query multiple collections and join the results together
   rpc CompoundQuery (CompoundRequest) returns (stream CompoundResponse) {}
 
+  // Counts the number of documents in a MongoDB collection
+  rpc CountQuery (CountRequest) returns (stream CountResponse) {}
+
   // Create a Spark Model on a collection
   rpc ModelQuery (ModelRequest) returns (stream ModelResponse) {}
 
@@ -264,6 +267,14 @@ message Query {
   int32  port = 2;          // MongoDB port
   string collection = 3;    // MongoDB collection
   string query = 4;         // Json representation of a MongoDB query
+}
+
+message CountRequest {
+  string collection = 1;
+}
+
+message CountResponse {
+  int64 count = 1;
 }
 
 message DirectRequest {

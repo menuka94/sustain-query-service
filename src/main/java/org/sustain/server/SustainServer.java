@@ -13,6 +13,8 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 import org.sustain.CompoundRequest;
 import org.sustain.CompoundResponse;
+import org.sustain.CountRequest;
+import org.sustain.CountResponse;
 import org.sustain.DirectRequest;
 import org.sustain.DirectResponse;
 import org.sustain.JsonModelRequest;
@@ -29,6 +31,7 @@ import org.sustain.SparkManager;
 import org.sustain.SustainGrpc;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.CompoundQueryHandler;
+import org.sustain.handlers.CountQueryHandler;
 import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.ModelHandler;
 import org.sustain.handlers.RegressionQueryHandler;
@@ -47,7 +50,16 @@ import java.util.concurrent.TimeUnit;
 public class SustainServer {
 
     private static final Logger log = LogManager.getLogger(SustainServer.class);
-    private static SparkManager sparkManager;
+    public static SparkManager sparkManager; // TODO - should be private and passed to objects
+    private static final String[] sparkJarPaths = {
+        "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+        "build/libs/spark-core_2.12-3.0.1.jar",
+        "build/libs/spark-mllib_2.12-3.0.1.jar",
+        "build/libs/spark-sql_2.12-3.0.1.jar",
+        "build/libs/bson-4.0.5.jar",
+        "build/libs/mongo-java-driver-3.12.5.jar"
+    };
+
     private static JavaSparkContext sparkContext;
     private static SparkSession sparkSession;
 
@@ -58,9 +70,15 @@ public class SustainServer {
 
         // initialize SparkManager - TODO parameterize threadCount
         sparkManager = new SparkManager(Constants.Spark.MASTER, 4);
+
+        for (String jar: sparkJarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkManager.addJar(jar);
+        }
+
         
-        initializeSparkContext(); // TODO - remove
-        addClusterDependencyJars(sparkContext);
+        //initializeSparkContext(); // TODO - remove
+        //addClusterDependencyJars(sparkContext);
 
         final SustainServer server = new SustainServer();
         server.start();
@@ -87,7 +105,7 @@ public class SustainServer {
      * Initializes the Spark Context that will be used for all incoming queries to launch jobs on.
      * Configured to point at a MongoS instance for retrieving data.
      */
-    private static void initializeSparkContext() {
+    /*private static void initializeSparkContext() {
         sparkSession = SparkSession.builder()
                 .master(Constants.Spark.MASTER)
                 .config("spark.executor.memory", "4g")
@@ -95,13 +113,13 @@ public class SustainServer {
                 .getOrCreate();
 
         sparkContext = new JavaSparkContext(sparkSession.sparkContext());
-    }
+    }*/
 
     /**
      * Adds required dependency jars to the Spark Context member.
      * TODO: Add dependency jars to spark cluster workers at startup time
      */
-    private static void addClusterDependencyJars(JavaSparkContext sparkContext) {
+    /*private static void addClusterDependencyJars(JavaSparkContext sparkContext) {
         String[] jarPaths = {
                 "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
                 "build/libs/spark-core_2.12-3.0.1.jar",
@@ -115,7 +133,7 @@ public class SustainServer {
             log.info("Adding dependency JAR to the Spark Context: {}", jar);
             sparkContext.addJar(jar);
         }
-    }
+    }*/
 
 
     public void start() throws IOException {
@@ -333,6 +351,13 @@ public class SustainServer {
         public void compoundQuery(CompoundRequest request, StreamObserver<CompoundResponse> responseObserver) {
             GrpcHandler<CompoundRequest, CompoundResponse> handler = new CompoundQueryHandler(request,
                 responseObserver);
+            handler.handleRequest();
+        }
+
+        @Override
+        public void countQuery(CountRequest request, StreamObserver<CountResponse> responseObserver) {
+            GrpcHandler<CountRequest, CountResponse> handler =
+                new CountQueryHandler(request, responseObserver);
             handler.handleRequest();
         }
 
