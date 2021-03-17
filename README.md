@@ -12,6 +12,10 @@ or a mongod instance in the case of an unsharded replica set. The connection con
 
 ## Usage
 
+### Set Environment Variables
+* Create a new file `env.sh` from `env.sh.example` and update values.
+* Execute `run.sh`
+
 To clean the project of any build-generated files:
 
 * `$ make clean`
@@ -22,7 +26,10 @@ To compile the project and generate the `build/` directory:
 
 Once the project is compiled and the `build/` directory has been generated, you can start the gRPC server:
 
-* `$ make run-spatial-server`
+* `$ make server`
+
+### Running a Single Test
+`./gradlew test --tests SustainServerTest.testExampleEchoQuery`
 
 ### Docker
 
@@ -37,6 +44,3 @@ To build and run this project as a Kubernetes Deployment, connecting to a sharde
 
 * `$ kubectl apply -f deploy/deployment.yaml`
 
-## gRPC Client
-
-Use `org.sustain.client.SpatialClient` and `src/main/proto/census.proto` as references for implementing clients. An example Node.js client is available at `nodejs-client/census_client.js`.
