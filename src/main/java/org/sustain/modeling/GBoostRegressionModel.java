@@ -35,6 +35,7 @@ import org.apache.spark.ml.regression.GBTRegressionModel;
 import org.apache.spark.ml.regression.GBTRegressor;
 import org.apache.spark.ml.regression.RandomForestRegressionModel;
 import org.apache.spark.ml.regression.RandomForestRegressor;
+import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -56,6 +57,7 @@ public class GBoostRegressionModel {
     protected static final Logger log = LogManager.getLogger(GBoostRegressionModel.class);
     private String[] features;
     private String label, gisJoin;
+
 
     private JavaSparkContext sparkContext;
 
@@ -241,7 +243,7 @@ public class GBoostRegressionModel {
 
         String appName = "SUSTAIN GBoost Regression Model";
         log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
-                "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
+                        "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
                 master, appName, mongoUri, database, collection);
 
         SparkSession sparkSession = SparkSession.builder()
@@ -261,13 +263,13 @@ public class GBoostRegressionModel {
      */
     private void addClusterDependencyJars() {
         String[] jarPaths = {
-            "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
-            "build/libs/spark-core_2.12-3.0.1.jar",
-            "build/libs/spark-mllib_2.12-3.0.1.jar",
-            "build/libs/spark-sql_2.12-3.0.1.jar",
-            "build/libs/bson-4.0.5.jar",
-            "build/libs/mongo-java-driver-3.12.5.jar",
-            //"build/libs/mongodb-driver-core-4.0.5.jar"
+                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                "build/libs/spark-core_2.12-3.0.1.jar",
+                "build/libs/spark-mllib_2.12-3.0.1.jar",
+                "build/libs/spark-sql_2.12-3.0.1.jar",
+                "build/libs/bson-4.0.5.jar",
+                "build/libs/mongo-java-driver-3.12.5.jar",
+                //"build/libs/mongodb-driver-core-4.0.5.jar"
         };
 
         for (String jar: jarPaths) {
@@ -339,7 +341,7 @@ public class GBoostRegressionModel {
 
 
         Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0];
+        Dataset<Row> trainrdd = rds[0].cache();
         Dataset<Row> testrdd = rds[1];
 
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
@@ -355,15 +357,12 @@ public class GBoostRegressionModel {
         fancy_logging("Model Training completed in "+calc_interval(startTime));
         startTime = System.currentTimeMillis();
 
-        Dataset<Row> predictions = gbModel.transform(testrdd);
+        Dataset<Row> pred_pair = gbModel.transform(testrdd).select("label", "prediction").cache();
 
-        RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName("rmse");
+        RegressionMetrics metrics = new RegressionMetrics(pred_pair);
 
-        this.rmse = eval.evaluate(predictions);
-
-        eval.setMetricName("r2");
-
-        this.r2 = eval.evaluate(predictions);
+        this.rmse = metrics.rootMeanSquaredError();
+        this.r2 = metrics.r2();
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
@@ -423,7 +422,7 @@ public class GBoostRegressionModel {
         log.info("Results for GISJoin {}\n" +
                         "RMSE: {}\n" +
                         "R2: {}\n"
-                        ,
+                ,
                 this.gisJoin, this.rmse, this.r2);
     }
 

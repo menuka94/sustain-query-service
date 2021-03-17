@@ -29,10 +29,10 @@ import com.mongodb.spark.config.ReadConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.evaluation.RegressionEvaluator;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.regression.RandomForestRegressionModel;
 import org.apache.spark.ml.regression.RandomForestRegressor;
+import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 /**
  * Provides an interface for building generalized Random Forest Regression
  * models on data pulled in using Mongo's Spark Connector.
@@ -231,7 +230,7 @@ public class RFRegressionModel {
 
         String appName = "SUSTAIN RandomForest Regression Model";
         log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
-                "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
+                        "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
                 master, appName, mongoUri, database, collection);
 
         SparkSession sparkSession = SparkSession.builder()
@@ -251,13 +250,13 @@ public class RFRegressionModel {
      */
     private void addClusterDependencyJars() {
         String[] jarPaths = {
-            "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
-            "build/libs/spark-core_2.12-3.0.1.jar",
-            "build/libs/spark-mllib_2.12-3.0.1.jar",
-            "build/libs/spark-sql_2.12-3.0.1.jar",
-            "build/libs/bson-4.0.5.jar",
-            "build/libs/mongo-java-driver-3.12.5.jar",
-            //"build/libs/mongodb-driver-core-4.0.5.jar"
+                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                "build/libs/spark-core_2.12-3.0.1.jar",
+                "build/libs/spark-mllib_2.12-3.0.1.jar",
+                "build/libs/spark-sql_2.12-3.0.1.jar",
+                "build/libs/bson-4.0.5.jar",
+                "build/libs/mongo-java-driver-3.12.5.jar",
+                //"build/libs/mongodb-driver-core-4.0.5.jar"
         };
 
         for (String jar: jarPaths) {
@@ -328,7 +327,7 @@ public class RFRegressionModel {
 
 
         Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0];
+        Dataset<Row> trainrdd = rds[0].cache();
         Dataset<Row> testrdd = rds[1];
 
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
@@ -342,17 +341,15 @@ public class RFRegressionModel {
         RandomForestRegressionModel rmodel = rf.fit(trainrdd);
 
         fancy_logging("Model Training completed in "+calc_interval(startTime));
+
         startTime = System.currentTimeMillis();
 
-        Dataset<Row> predictions = rmodel.transform(testrdd);
+        Dataset<Row> pred_pair = rmodel.transform(testrdd).select("label", "prediction").cache();
 
-        RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName(errorType);
+        RegressionMetrics metrics = new RegressionMetrics(pred_pair);
 
-        this.rmse = eval.evaluate(predictions);
-
-        eval.setMetricName("r2");
-
-        this.r2 = eval.evaluate(predictions);
+        this.rmse = metrics.rootMeanSquaredError();
+        this.r2 = metrics.r2();
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
@@ -408,7 +405,7 @@ public class RFRegressionModel {
         log.info("Results for GISJoin {}\n" +
                         "RMSE: {}\n" +
                         "R2: {}\n"
-                        ,
+                ,
                 this.gisJoin, this.rmse, this.r2);
     }
 
@@ -432,7 +429,5 @@ public class RFRegressionModel {
 
         lrModel.buildAndRunModel();
     }
-
-
 
 }
