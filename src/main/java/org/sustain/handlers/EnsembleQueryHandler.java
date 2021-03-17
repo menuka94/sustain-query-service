@@ -40,9 +40,8 @@ public class EnsembleQueryHandler extends ModelHandler {
 
     private static final Logger log = LogManager.getLogger(EnsembleQueryHandler.class);
 
-    public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
-                                JavaSparkContext sparkContext) {
-        super(request, responseObserver, sparkContext);
+    public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
+        super(request, responseObserver);
     }
 
     @Override

@@ -30,9 +30,8 @@ public class RegressionQueryHandler extends ModelHandler implements SparkTask<Bo
 
     private static final Logger log = LogManager.getLogger(RegressionQueryHandler.class);
 
-    public RegressionQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
-                                  JavaSparkContext sparkContext) {
-        super(request, responseObserver, sparkContext);
+    public RegressionQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
+        super(request, responseObserver);
     }
 
     @Override

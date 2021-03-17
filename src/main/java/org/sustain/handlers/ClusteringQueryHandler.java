@@ -49,9 +49,8 @@ public class ClusteringQueryHandler extends ModelHandler implements SparkTask<Bo
 
     private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
 
-    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
-                                  JavaSparkContext sparkContext) {
-        super(request, responseObserver, sparkContext);
+    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
+        super(request, responseObserver);
     }
 
     @Override

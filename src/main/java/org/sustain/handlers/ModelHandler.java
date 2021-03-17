@@ -11,11 +11,8 @@ import org.sustain.ModelResponse;
  */
 public abstract class ModelHandler extends GrpcHandler<ModelRequest, ModelResponse> {
 
-    protected final JavaSparkContext sparkContext;
-
-    public ModelHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, JavaSparkContext sparkContext) {
+    public ModelHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
         super(request, responseObserver);
-        this.sparkContext = sparkContext;
     }
 
     /**
