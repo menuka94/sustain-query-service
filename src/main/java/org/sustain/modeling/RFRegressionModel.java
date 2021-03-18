@@ -29,13 +29,12 @@ import com.mongodb.spark.config.ReadConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.evaluation.RegressionEvaluator;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.regression.RandomForestRegressionModel;
 import org.apache.spark.ml.regression.RandomForestRegressor;
+import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -330,6 +329,8 @@ public class RFRegressionModel implements SparkTask<Boolean> {
      */
     @Override
     public Boolean execute(JavaSparkContext sparkContext) {
+
+        //addClusterDependencyJars(sparkContext);
         double startTime = System.currentTimeMillis();
 
         fancy_logging("Initiating Random Forest Modelling...");
@@ -366,7 +367,7 @@ public class RFRegressionModel implements SparkTask<Boolean> {
 
 
         Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0];
+        Dataset<Row> trainrdd = rds[0].cache();
         Dataset<Row> testrdd = rds[1];
 
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
@@ -382,15 +383,12 @@ public class RFRegressionModel implements SparkTask<Boolean> {
         fancy_logging("Model Training completed in "+calc_interval(startTime));
         startTime = System.currentTimeMillis();
 
-        Dataset<Row> predictions = rmodel.transform(testrdd);
+        Dataset<Row> pred_pair = rmodel.transform(testrdd).select("label", "prediction").cache();
 
-        RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName(errorType);
+        RegressionMetrics metrics = new RegressionMetrics(pred_pair);
 
-        this.rmse = eval.evaluate(predictions);
-
-        eval.setMetricName("r2");
-
-        this.r2 = eval.evaluate(predictions);
+        this.rmse = metrics.rootMeanSquaredError();
+        this.r2 = metrics.r2();
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
@@ -438,6 +436,23 @@ public class RFRegressionModel implements SparkTask<Boolean> {
 
     }
 
+    private void addClusterDependencyJars(JavaSparkContext sparkContext) {
+        String[] jarPaths = {
+                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                "build/libs/spark-core_2.12-3.0.1.jar",
+                "build/libs/spark-mllib_2.12-3.0.1.jar",
+                "build/libs/spark-sql_2.12-3.0.1.jar",
+                "build/libs/bson-4.0.5.jar",
+                "build/libs/mongo-java-driver-3.12.5.jar",
+                //"build/libs/mongodb-driver-core-4.0.5.jar"
+        };
+
+        for (String jar: jarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkContext.addJar(jar);
+        }
+    }
+
     public void populateTest() {
         this.numTrees = 1;
     }
@@ -471,7 +486,7 @@ public class RFRegressionModel implements SparkTask<Boolean> {
 		try {
 			// Initialize SparkManager
 			SparkManager sparkManager =
-				new SparkManager("spark://lattice-1.cs.colostate.edu:32531", 1);        
+				new SparkManager("spark://lattice-1.cs.colostate.edu:8079", 1);
 
 			// Submit task to SparkManager
         	Future<Boolean> future =

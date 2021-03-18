@@ -138,7 +138,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
             model.setMaxIter(gbRequest.getMaxIter());
         if (gbRequest.getSubsamplingRate() > 0 && gbRequest.getSubsamplingRate() <= 1)
             model.setSubsamplingRate(gbRequest.getSubsamplingRate());
-        if (gbRequest.getSubsamplingRate() > 0 && gbRequest.getSubsamplingRate() <= 1)
+        if (gbRequest.getStepSize() > 0 && gbRequest.getStepSize() <= 1)
             model.setStepSize(gbRequest.getStepSize());
         if (gbRequest.getFeatureSubsetStrategy() != null && !gbRequest.getFeatureSubsetStrategy().isEmpty())
             model.setFeatureSubsetStrategy(gbRequest.getFeatureSubsetStrategy());

@@ -18,6 +18,14 @@ test: build
 proto: executable
 	./gradlew generateProto
 
+rforest: executable
+	chmod +x ./gradlew
+	./build/install/sustain-census-grpc/bin/rforest
+
+gboost:executable
+	chmod +x ./gradlew
+	./build/install/sustain-census-grpc/bin/gboost
+
 executable:
 	chmod +x ./gradlew
 
