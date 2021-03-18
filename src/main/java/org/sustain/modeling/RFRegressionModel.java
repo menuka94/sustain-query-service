@@ -329,6 +329,8 @@ public class RFRegressionModel implements SparkTask<Boolean> {
      */
     @Override
     public Boolean execute(JavaSparkContext sparkContext) {
+
+        //addClusterDependencyJars(sparkContext);
         double startTime = System.currentTimeMillis();
 
         fancy_logging("Initiating Random Forest Modelling...");
@@ -434,6 +436,23 @@ public class RFRegressionModel implements SparkTask<Boolean> {
 
     }
 
+    private void addClusterDependencyJars(JavaSparkContext sparkContext) {
+        String[] jarPaths = {
+                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                "build/libs/spark-core_2.12-3.0.1.jar",
+                "build/libs/spark-mllib_2.12-3.0.1.jar",
+                "build/libs/spark-sql_2.12-3.0.1.jar",
+                "build/libs/bson-4.0.5.jar",
+                "build/libs/mongo-java-driver-3.12.5.jar",
+                //"build/libs/mongodb-driver-core-4.0.5.jar"
+        };
+
+        for (String jar: jarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkContext.addJar(jar);
+        }
+    }
+
     public void populateTest() {
         this.numTrees = 1;
     }
@@ -467,7 +486,7 @@ public class RFRegressionModel implements SparkTask<Boolean> {
 		try {
 			// Initialize SparkManager
 			SparkManager sparkManager =
-				new SparkManager("spark://lattice-1.cs.colostate.edu:32531", 1);        
+				new SparkManager("spark://lattice-1.cs.colostate.edu:8079", 1);
 
 			// Submit task to SparkManager
         	Future<Boolean> future =

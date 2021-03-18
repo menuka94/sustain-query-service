@@ -294,6 +294,7 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
      */
     @Override
     public Boolean execute(JavaSparkContext sparkContext) {
+        //addClusterDependencyJars(sparkContext);
         double startTime = System.currentTimeMillis();
 
         fancy_logging("Initiating Gradient Boost Modelling...");
@@ -356,6 +357,23 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
 
         logModelResults();
 		return true;
+    }
+
+    private void addClusterDependencyJars(JavaSparkContext sparkContext) {
+        String[] jarPaths = {
+                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+                "build/libs/spark-core_2.12-3.0.1.jar",
+                "build/libs/spark-mllib_2.12-3.0.1.jar",
+                "build/libs/spark-sql_2.12-3.0.1.jar",
+                "build/libs/bson-4.0.5.jar",
+                "build/libs/mongo-java-driver-3.12.5.jar",
+                //"build/libs/mongodb-driver-core-4.0.5.jar"
+        };
+
+        for (String jar: jarPaths) {
+            log.info("Adding dependency JAR to the Spark Context: {}", jar);
+            sparkContext.addJar(jar);
+        }
     }
 
     /**
