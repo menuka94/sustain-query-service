@@ -5,6 +5,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 
+import org.sustain.util.Constants;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +44,16 @@ public class SparkManager {
         // get or create SparkSession
         SparkSession sparkSession = SparkSession.builder()
             .master(this.sparkMaster)
-            .appName("ConcurrentSpark")
+            .appName("sustain-query-service-" + Constants.Server.HOST)
+            .config("spark.executor.cores", "5")
+            .config("spark.executor.memory", "1G")
+            .config("spark.dynamicAllocation.enabled", "true")
+            .config("spark.dynamicAllocation.shuffleTracking.enabled", "true")
+            .config("spark.dynamicAllocation.initialExecutors", "1")
+            .config("spark.dynamicAllocation.minExecutors", "0")
+            .config("spark.dynamicAllocation.maxExecutors", "10")
+            .config("spark.dynamicAllocation.schedulerBacklogTimeout", "10s")
+            .config("spark.dynamicAllocation.executorIdleTimeout", "10s")
             .getOrCreate();
 
         // if they don't exist - add JARs to SparkContext
