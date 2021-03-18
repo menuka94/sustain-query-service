@@ -27,7 +27,6 @@ public class CompoundQueryHandler extends GrpcHandler<CompoundRequest, CompoundR
     public void handleRequest() {
         DataContainer compoundQueryResults = processCompoundQuery(this.request, true);
         compoundQueryResults.writeToClient(this.responseObserver);
-        responseObserver.onCompleted();
     }
 
     public DataContainer processCompoundQuery(CompoundRequest request, boolean topLevel) {
