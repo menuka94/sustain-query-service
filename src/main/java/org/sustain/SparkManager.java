@@ -45,15 +45,22 @@ public class SparkManager {
         SparkSession sparkSession = SparkSession.builder()
             .master(this.sparkMaster)
             .appName("sustain-query-service-" + Constants.Server.HOST)
-            .config("spark.executor.cores", "5")
-            .config("spark.executor.memory", "1G")
+            .config("spark.executor.cores",
+                Constants.Spark.EXECUTOR_CORES)
+            .config("spark.executor.memory",
+                Constants.Spark.EXECUTOR_MEMORY)
             .config("spark.dynamicAllocation.enabled", "true")
             .config("spark.dynamicAllocation.shuffleTracking.enabled", "true")
-            .config("spark.dynamicAllocation.initialExecutors", "1")
-            .config("spark.dynamicAllocation.minExecutors", "0")
-            .config("spark.dynamicAllocation.maxExecutors", "10")
-            .config("spark.dynamicAllocation.schedulerBacklogTimeout", "10s")
-            .config("spark.dynamicAllocation.executorIdleTimeout", "10s")
+            .config("spark.dynamicAllocation.initialExecutors",
+                Constants.Spark.INITIAL_EXECUTORS)
+            .config("spark.dynamicAllocation.minExecutors",
+                Constants.Spark.MIN_EXECUTORS)
+            .config("spark.dynamicAllocation.maxExecutors",
+                Constants.Spark.MAX_EXECUTORS)
+            .config("spark.dynamicAllocation.schedulerBacklogTimeout",
+                Constants.Spark.BACKLOG_TIMEOUT)
+            .config("spark.dynamicAllocation.executorIdleTimeout",
+                Constants.Spark.IDLE_TIMEOUT)
             .getOrCreate();
 
         // if they don't exist - add JARs to SparkContext
