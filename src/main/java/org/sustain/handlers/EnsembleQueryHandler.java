@@ -33,28 +33,28 @@ import org.sustain.modeling.GBoostRegressionModel;
 import org.sustain.modeling.RFRegressionModel;
 import org.sustain.util.Constants;
 
-public class EnsembleQueryHandler extends ModelHandler {
+import java.util.concurrent.Future;
+
+public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> {
 
     private static final Logger log = LogManager.getLogger(EnsembleQueryHandler.class);
 
-    public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
-                                JavaSparkContext sparkContext) {
-        super(request, responseObserver, sparkContext);
+    public EnsembleQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
+        super(request, responseObserver, sparkManager);
     }
 
     @Override
-    boolean isValid(ModelRequest modelRequest) {
+    public boolean isValid(ModelRequest modelRequest) {
         // TODO: Saptashwa: Implement
         return false;
     }
 
     private RForestRegressionResponse buildRFModel(ModelRequest modelRequest, String gisJoin) {
-        String sparkMaster = Constants.Spark.MASTER;
         String mongoUri = String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT);
         String dbName = Constants.DB.NAME;
 
         Collection collection = modelRequest.getCollections(0); // We only support 1 collection currently
-        RFRegressionModel model = new RFRegressionModel(sparkMaster, mongoUri, dbName, collection.getName(),
+        RFRegressionModel model = new RFRegressionModel(mongoUri, dbName, collection.getName(),
                 gisJoin);
 
         // Set parameters of Random Forest Regression Model
@@ -92,7 +92,17 @@ public class EnsembleQueryHandler extends ModelHandler {
         if (rfRequest.getMinWeightFractionPerNode() >= 0.0 && rfRequest.getMinWeightFractionPerNode() < 0.5)
             model.setMinWeightFractionPerNode(rfRequest.getMinWeightFractionPerNode());
 
-        model.buildAndRunModel();
+		try {
+			// Submit task to Spark Manager
+			Future<Boolean> future =
+				this.sparkManager.submit(model, "random-forest-model");
+
+			// Wait for task to complete
+			future.get();
+		} catch (Exception e) {
+            log.error("Failed to evaluate query", e);
+            responseObserver.onError(e);
+		}
 
         return RForestRegressionResponse.newBuilder()
                 .setGisJoin(model.getGisJoin())
@@ -103,12 +113,11 @@ public class EnsembleQueryHandler extends ModelHandler {
 
 
     private GBoostRegressionResponse buildGBModel(ModelRequest modelRequest, String gisJoin) {
-        String sparkMaster = Constants.Spark.MASTER;
         String mongoUri = String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT);
         String dbName = Constants.DB.NAME;
 
         Collection collection = modelRequest.getCollections(0); // We only support 1 collection currently
-        GBoostRegressionModel model = new GBoostRegressionModel(sparkMaster, mongoUri, dbName, collection.getName(),
+        GBoostRegressionModel model = new GBoostRegressionModel(mongoUri, dbName, collection.getName(),
                 gisJoin);
 
         // Set parameters of Random Forest Regression Model
@@ -148,7 +157,17 @@ public class EnsembleQueryHandler extends ModelHandler {
         if (gbRequest.getMinWeightFractionPerNode() >= 0.0 && gbRequest.getMinWeightFractionPerNode() < 0.5)
             model.setMinWeightFractionPerNode(gbRequest.getMinWeightFractionPerNode());
 
-        model.buildAndRunModel();
+		try {
+			// Submit task to Spark Manager
+			Future<Boolean> future = this.sparkManager
+                .submit(model, "gradient-boosting-model");
+
+			// Wait for task to complete
+			future.get();
+		} catch (Exception e) {
+            log.error("Failed to evaluate query", e);
+            responseObserver.onError(e);
+		}
 
         return GBoostRegressionResponse.newBuilder()
                 .setGisJoin(model.getGisJoin())

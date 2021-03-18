@@ -29,33 +29,38 @@ import com.mongodb.spark.config.ReadConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.ml.evaluation.RegressionEvaluator;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.regression.RandomForestRegressionModel;
 import org.apache.spark.ml.regression.RandomForestRegressor;
-import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
+import org.sustain.SparkManager;
+import org.sustain.SparkTask;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
+
 /**
  * Provides an interface for building generalized Random Forest Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class RFRegressionModel {
+public class RFRegressionModel implements SparkTask<Boolean> {
 
     // DATABASE PARAMETERS
     protected static final Logger log = LogManager.getLogger(RFRegressionModel.class);
+    private String database, collection, mongoUri;
     private String[] features;
     private String label, gisJoin;
-
-
-    private JavaSparkContext sparkContext;
 
     // MODEL PARAMETERS
     //Minimum information gain for a split to be considered at a tree node. default 0.0
@@ -132,11 +137,36 @@ public class RFRegressionModel {
         this.trainSplit = trainSplit;
     }
 
-    public RFRegressionModel(String master, String mongoUri, String database, String collection, String gisJoin) {
+    public RFRegressionModel(String mongoUri, String database, String collection, String gisJoin) {
         log.info("Random Forest constructor invoked");
+        setMongoUri(mongoUri);
+        setDatabase(database);
+        setCollection(collection);
         setGisjoin(gisJoin);
-        initSparkSession(master, mongoUri, database, collection);
-        addClusterDependencyJars();
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    public String getCollection() {
+        return collection;
+    }
+
+    public void setCollection(String collection) {
+        this.collection = collection;
+    }
+
+    public String getMongoUri() {
+        return mongoUri;
+    }
+
+    public void setMongoUri(String mongoUri) {
+        this.mongoUri = mongoUri;
     }
 
     public void setFeatures(String[] features) {
@@ -226,11 +256,11 @@ public class RFRegressionModel {
      * @param database Name of the Mongo database to use.
      * @param collection Name of the Mongo collection to import from above database.
      */
-    private void initSparkSession(String master, String mongoUri, String database, String collection) {
+    /*private void initSparkSession(String master, String mongoUri, String database, String collection) {
 
         String appName = "SUSTAIN RandomForest Regression Model";
         log.info("Initializing SparkSession using:\n\tmaster={}\n\tappName={}\n\tspark.mongodb.input.uri={}" +
-                        "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
+                "\n\tspark.mongodb.input.database={}\n\tspark.mongodb.input.collection={}",
                 master, appName, mongoUri, database, collection);
 
         SparkSession sparkSession = SparkSession.builder()
@@ -243,27 +273,27 @@ public class RFRegressionModel {
 
         sparkContext = new JavaSparkContext(sparkSession.sparkContext());
         addClusterDependencyJars();
-    }
+    }*/
 
     /**
      * Adds required dependency jars to the Spark Context member.
      */
-    private void addClusterDependencyJars() {
+    /*private void addClusterDependencyJars() {
         String[] jarPaths = {
-                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
-                "build/libs/spark-core_2.12-3.0.1.jar",
-                "build/libs/spark-mllib_2.12-3.0.1.jar",
-                "build/libs/spark-sql_2.12-3.0.1.jar",
-                "build/libs/bson-4.0.5.jar",
-                "build/libs/mongo-java-driver-3.12.5.jar",
-                //"build/libs/mongodb-driver-core-4.0.5.jar"
+            "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
+            "build/libs/spark-core_2.12-3.0.1.jar",
+            "build/libs/spark-mllib_2.12-3.0.1.jar",
+            "build/libs/spark-sql_2.12-3.0.1.jar",
+            "build/libs/bson-4.0.5.jar",
+            "build/libs/mongo-java-driver-3.12.5.jar",
+            //"build/libs/mongodb-driver-core-4.0.5.jar"
         };
 
         for (String jar: jarPaths) {
             log.info("Adding dependency JAR to the Spark Context: {}", jar);
             sparkContext.addJar(jar);
         }
-    }
+    }*/
 
     private Seq<String> desiredColumns() {
         List<String> cols = new ArrayList<>();
@@ -298,11 +328,20 @@ public class RFRegressionModel {
     /**
      * Creates Spark context and trains the distributed model
      */
-    public void buildAndRunModel() {
+    @Override
+    public Boolean execute(JavaSparkContext sparkContext) {
         double startTime = System.currentTimeMillis();
 
         fancy_logging("Initiating Random Forest Modelling...");
-        ReadConfig readConfig = ReadConfig.create(sparkContext);
+
+		// Initailize ReadConfig
+        Map<String, String> readOverrides = new HashMap();
+        readOverrides.put("spark.mongodb.input.collection", getCollection());
+        readOverrides.put("spark.mongodb.input.database", getDatabase());
+        readOverrides.put("spark.mongodb.input.uri", getMongoUri());
+
+        ReadConfig readConfig = 
+            ReadConfig.create(sparkContext.getConf(), readOverrides);
 
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
 
@@ -327,7 +366,7 @@ public class RFRegressionModel {
 
 
         Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0].cache();
+        Dataset<Row> trainrdd = rds[0];
         Dataset<Row> testrdd = rds[1];
 
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
@@ -341,19 +380,21 @@ public class RFRegressionModel {
         RandomForestRegressionModel rmodel = rf.fit(trainrdd);
 
         fancy_logging("Model Training completed in "+calc_interval(startTime));
-
         startTime = System.currentTimeMillis();
 
-        Dataset<Row> pred_pair = rmodel.transform(testrdd).select("label", "prediction").cache();
+        Dataset<Row> predictions = rmodel.transform(testrdd);
 
-        RegressionMetrics metrics = new RegressionMetrics(pred_pair);
+        RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName(errorType);
 
-        this.rmse = metrics.rootMeanSquaredError();
-        this.r2 = metrics.r2();
+        this.rmse = eval.evaluate(predictions);
+
+        eval.setMetricName("r2");
+
+        this.r2 = eval.evaluate(predictions);
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
-        sparkContext.close();
+        return true;
     }
 
     /**
@@ -405,7 +446,7 @@ public class RFRegressionModel {
         log.info("Results for GISJoin {}\n" +
                         "RMSE: {}\n" +
                         "R2: {}\n"
-                ,
+                        ,
                 this.gisJoin, this.rmse, this.r2);
     }
 
@@ -419,7 +460,7 @@ public class RFRegressionModel {
         String gisJoins = "G0100290";
         String collection_name = "macav2";
 
-        RFRegressionModel lrModel = new RFRegressionModel("spark://lattice-1.cs.colostate.edu:32531",
+        RFRegressionModel lrModel = new RFRegressionModel(
                 "mongodb://lattice-46:27017", "sustaindb", collection_name, gisJoins);
 
         lrModel.populateTest();
@@ -427,7 +468,22 @@ public class RFRegressionModel {
         lrModel.setLabel(label);
         lrModel.setGisjoin(gisJoins);
 
-        lrModel.buildAndRunModel();
+		try {
+			// Initialize SparkManager
+			SparkManager sparkManager =
+				new SparkManager("spark://lattice-1.cs.colostate.edu:32531", 1);        
+
+			// Submit task to SparkManager
+        	Future<Boolean> future =
+				sparkManager.submit(lrModel, "random-forest-test");
+
+			// Wait for task to complete
+			future.get();
+		} catch (Exception e) {
+            log.error("Failed to evaluate query", e);
+		}
     }
+
+
 
 }

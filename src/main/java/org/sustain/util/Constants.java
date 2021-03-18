@@ -18,5 +18,6 @@ public class Constants {
 
     public static class Spark {
         public static final String MASTER = System.getenv("SPARK_MASTER");
+        public static final Integer THREAD_COUNT = Integer.parseInt(System.getenv("SPARK_THREAD_COUNT"));
     }
 }
