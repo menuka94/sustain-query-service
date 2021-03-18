@@ -19,5 +19,12 @@ public class Constants {
     public static class Spark {
         public static final String MASTER = System.getenv("SPARK_MASTER");
         public static final Integer THREAD_COUNT = Integer.parseInt(System.getenv("SPARK_THREAD_COUNT"));
+        public static final String EXECUTOR_CORES = System.getenv("SPARK_EXECUTOR_CORES");
+        public static final String EXECUTOR_MEMORY = System.getenv("SPARK_EXECUTOR_MEMORY");
+        public static final String INITIAL_EXECUTORS = System.getenv("SPARK_INITIAL_EXECUTORS");
+        public static final String MIN_EXECUTORS = System.getenv("SPARK_MIN_EXECUTORS");
+        public static final String MAX_EXECUTORS = System.getenv("SPARK_MAX_EXECUTORS");
+        public static final String BACKLOG_TIMEOUT = System.getenv("SPARK_BACKLOG_TIMEOUT");
+        public static final String IDLE_TIMEOUT = System.getenv("SPARK_IDLE_TIMEOUT");
     }
 }
