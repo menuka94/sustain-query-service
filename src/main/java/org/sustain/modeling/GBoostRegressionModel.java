@@ -29,15 +29,12 @@ import com.mongodb.spark.config.ReadConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.evaluation.RegressionEvaluator;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.regression.GBTRegressionModel;
 import org.apache.spark.ml.regression.GBTRegressor;
-import org.apache.spark.ml.regression.RandomForestRegressionModel;
-import org.apache.spark.ml.regression.RandomForestRegressor;
+import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -333,7 +330,7 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
 
 
         Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0];
+        Dataset<Row> trainrdd = rds[0].cache();
         Dataset<Row> testrdd = rds[1];
 
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
@@ -349,15 +346,12 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
         fancy_logging("Model Training completed in "+calc_interval(startTime));
         startTime = System.currentTimeMillis();
 
-        Dataset<Row> predictions = gbModel.transform(testrdd);
+        Dataset<Row> pred_pair = gbModel.transform(testrdd).select("label", "prediction").cache();
 
-        RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName("rmse");
+        RegressionMetrics metrics = new RegressionMetrics(pred_pair);
 
-        this.rmse = eval.evaluate(predictions);
-
-        eval.setMetricName("r2");
-
-        this.r2 = eval.evaluate(predictions);
+        this.rmse = metrics.rootMeanSquaredError();
+        this.r2 = metrics.r2();
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
@@ -431,13 +425,13 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
         String gisJoins = "G0100290";
         String collection_name = "macav2";
 
-        GBoostRegressionModel lrModel = new GBoostRegressionModel(
+        GBoostRegressionModel gbModel = new GBoostRegressionModel(
                 "mongodb://lattice-46:27017", "sustaindb", collection_name, gisJoins);
 
-        lrModel.populateTest();
-        lrModel.setFeatures(features);
-        lrModel.setLabel(label);
-        lrModel.setGisjoin(gisJoins);
+        gbModel.populateTest();
+        gbModel.setFeatures(features);
+        gbModel.setLabel(label);
+        gbModel.setGisjoin(gisJoins);
 
 		try {
 			// Initialize SparkManager
@@ -446,7 +440,7 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
 
 			// Submit task to SparkManager
         	Future<Boolean> future =
-				sparkManager.submit(lrModel, "gradient-boosting-test");
+				sparkManager.submit(gbModel, "gradient-boosting-test");
 
 			// Wait for task to complete
 			future.get();

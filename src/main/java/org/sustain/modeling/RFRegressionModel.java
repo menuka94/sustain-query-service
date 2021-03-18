@@ -29,13 +29,12 @@ import com.mongodb.spark.config.ReadConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.evaluation.RegressionEvaluator;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.regression.RandomForestRegressionModel;
 import org.apache.spark.ml.regression.RandomForestRegressor;
+import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -366,7 +365,7 @@ public class RFRegressionModel implements SparkTask<Boolean> {
 
 
         Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0];
+        Dataset<Row> trainrdd = rds[0].cache();
         Dataset<Row> testrdd = rds[1];
 
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
@@ -382,15 +381,12 @@ public class RFRegressionModel implements SparkTask<Boolean> {
         fancy_logging("Model Training completed in "+calc_interval(startTime));
         startTime = System.currentTimeMillis();
 
-        Dataset<Row> predictions = rmodel.transform(testrdd);
+        Dataset<Row> pred_pair = rmodel.transform(testrdd).select("label", "prediction").cache();
 
-        RegressionEvaluator eval = new RegressionEvaluator().setLabelCol("label").setPredictionCol("prediction").setMetricName(errorType);
+        RegressionMetrics metrics = new RegressionMetrics(pred_pair);
 
-        this.rmse = eval.evaluate(predictions);
-
-        eval.setMetricName("r2");
-
-        this.r2 = eval.evaluate(predictions);
+        this.rmse = metrics.rootMeanSquaredError();
+        this.r2 = metrics.r2();
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
