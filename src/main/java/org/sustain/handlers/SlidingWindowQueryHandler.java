@@ -38,7 +38,7 @@ public class SlidingWindowQueryHandler extends GrpcHandler<SlidingWindowRequest,
             responseBuilder.setGisJoin(gisJoin);
             ArrayList<String> movingAverages = new ArrayList<>();
             for (Document document : documents) {
-                movingAverages.add(document.toString());
+                movingAverages.add(document.toJson());
             }
             responseBuilder.addAllMovingAverages(movingAverages);
             responseObserver.onNext(responseBuilder.build());
