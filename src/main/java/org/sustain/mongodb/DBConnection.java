@@ -23,4 +23,13 @@ public class DBConnection {
         log.info("Connecting to MongoDB instance: mongodb://{}:{}", host, port);
         return mongoClient.getDatabase(Constants.DB.NAME);
     }
+
+    public static MongoDatabase getConnection(String host, Integer port, String database) {
+        if (mongoClient == null) {
+            log.info("Creating new connection to MongoDB");
+            mongoClient = new MongoClient(host, port);
+        }
+        log.info("Connecting to MongoDB instance: mongodb://{}:{}", host, port);
+        return mongoClient.getDatabase(database);
+    }
 }
