@@ -151,6 +151,12 @@ public class SustainServerTest {
 
     @Tag("slow")
     @Test
+    public void testPCAHandler() {
+        executeJsonModelRequest("requests/pca.json");
+    }
+
+    @Tag("slow")
+    @Test
     public void testCovidSlidingWindowQuery() {
         String resourceName = "requests/covid_sliding_window_request.json";
         try {
