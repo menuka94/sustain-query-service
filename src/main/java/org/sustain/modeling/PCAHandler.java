@@ -5,7 +5,15 @@ import com.mongodb.spark.config.ReadConfig;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.ml.feature.StandardScaler;
+import org.apache.spark.ml.feature.StandardScalerModel;
+import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.mllib.linalg.Matrix;
+import org.apache.spark.mllib.linalg.Vector;
+import org.apache.spark.mllib.linalg.distributed.RowMatrix;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.sustain.DummyResponse;
@@ -59,8 +67,40 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         // Dropping rows with null values
         selectedFeatures = selectedFeatures.na().drop();
 
-        selectedFeatures.show(10);
+        //selectedFeatures.show(10);
 
+        // Assembling
+        VectorAssembler assembler =
+            new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
+        Dataset<Row> featureDF = assembler.transform(selectedFeatures);
+        featureDF.show(10);
+
+        // Scaling
+        log.info("Normalizing features");
+        StandardScaler scaler = new StandardScaler()
+            .setInputCol("features")
+            .setOutputCol("normalized_features");
+        StandardScalerModel scalerModel = scaler.fit(featureDF);
+
+        featureDF = scalerModel.transform(featureDF);
+        featureDF = featureDF.drop("features");
+        //featureDF = featureDF.withColumnRenamed("normalized_features", "features");
+
+        log.info("Dataframe after normalizing with StandardScaler");
+        featureDF.show(10);
+
+        // convert scaled features into an MLlibRowMatrix
+        Dataset<Row> scaledDf = featureDF.select("normalized_features");
+        JavaRDD<Vector> vectorRDD = scaledDf.javaRDD()
+            .map((Function<Row, Vector>) row -> (Vector) row.get(0));
+
+        RowMatrix matrix = new RowMatrix(vectorRDD.rdd());
+        //
+        //Matrix pc = matrix.computePrincipalComponents(4);
+        //
+        //RowMatrix projected = matrix.multiply(pc);
+        //
+        //projected.log();
 
         log.info("Completed");
         responseObserver.onNext(ModelResponse.newBuilder()
