@@ -11,6 +11,8 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.feature.StandardScaler;
 import org.apache.spark.ml.feature.StandardScalerModel;
 import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.mllib.feature.PCA;
+import org.apache.spark.mllib.feature.PCAModel;
 import org.apache.spark.mllib.linalg.Matrix;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.distributed.RowMatrix;
@@ -84,23 +86,26 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
 
         featureDF = scalerModel.transform(featureDF);
         featureDF = featureDF.drop("features");
-        //featureDF = featureDF.withColumnRenamed("normalized_features", "features");
+        featureDF = featureDF.withColumnRenamed("normalized_features", "features");
 
         log.info("Dataframe after normalizing with StandardScaler");
-        featureDF.show(10);
+        //featureDF.show(10);
 
         // convert scaled features into an MLlibRowMatrix
-        Dataset<Row> scaledDf = featureDF.select("normalized_features");
+        Dataset<Row> scaledDf = featureDF.select("features");
+        scaledDf.show(10);
         JavaRDD<Vector> vectorRDD = scaledDf.javaRDD()
             .map((Function<Row, Vector>) row -> (Vector) row.get(0));
 
         RowMatrix matrix = new RowMatrix(vectorRDD.rdd());
-        //
-        //Matrix pc = matrix.computePrincipalComponents(4);
-        //
+
+        Matrix pc = matrix.computePrincipalComponents(featuresList.size());
+        log.info(pc);
+
         //RowMatrix projected = matrix.multiply(pc);
-        //
         //projected.log();
+
+        //PCAModel pcaModel = new PCA(featuresList.size()).fit(vectorRDD);
 
         log.info("Completed");
         responseObserver.onNext(ModelResponse.newBuilder()
