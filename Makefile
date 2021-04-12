@@ -31,3 +31,15 @@ executable:
 
 clean:
 	rm -rf build log
+
+test-kmeans:
+	./gradlew test --tests SustainServerTest.testKMeansClusteringModel
+
+test-bisecting-kmeans:
+	./gradlew test --tests SustainServerTest.testBisectingKMeansClusteringModel
+
+test-gaussian-mixture:
+	./gradlew test --tests SustainServerTest.testGaussianMixtureClusteringModel
+
+test-lda:
+	./gradlew test --tests SustainServerTest.testLDAClusteringModel
