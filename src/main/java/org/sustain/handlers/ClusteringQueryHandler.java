@@ -105,7 +105,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         LDA lda = new LDA().setK(k).setMaxIter(maxIterations);
         LDAModel model = lda.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
-        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "ldaModelBuildTime");
+        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "LDAModelBuildTime");
 
         double ll = model.logLikelihood(featureDF);
         double lp = model.logPerplexity(featureDF);
@@ -113,9 +113,13 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         log.info("LDA: Upper bound on perplexity: " + lp);
 
         // results
-        Dataset<Row> predictDF = model.transform(featureDF);
+        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions...");
         predictDF.show(10);
+
+        // evaluate clustering results
+        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "LDA");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
@@ -140,14 +144,15 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
     }
 
     private void buildKMeansModel(JavaSparkContext sparkContext) {
-        long time1 = System.currentTimeMillis();
         int k = request.getKMeansClusteringRequest().getClusterCount();
         Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
         // KMeans Clustering
         long buildTime1 = System.currentTimeMillis();
         KMeans kmeans = new KMeans().setK(k).setSeed(1L);
+
         KMeansModel model = kmeans.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
+
         ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "KMeansModelBuildTime");
 
         Vector[] vectors = model.clusterCenters();
@@ -157,7 +162,12 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         }
 
         Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
+        log.info("Predictions...");
         predictDF.show(10);
+
+        // evaluate clustering results
+        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "KMeans");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
@@ -196,6 +206,10 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions ...");
         predictDF.show(10);
+
+        // evaluate clustering results
+        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "BisectingKMeans");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
@@ -239,6 +253,10 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions ...");
         predictDF.show(10);
+
+        // evaluate clustering results
+        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "GaussianMixture");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
