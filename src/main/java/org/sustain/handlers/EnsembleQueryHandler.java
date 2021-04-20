@@ -164,6 +164,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
 
 			// Wait for task to complete
 			future.get();
+            responseObserver.onCompleted();
 		} catch (Exception e) {
             log.error("Failed to evaluate query", e);
             responseObserver.onError(e);
