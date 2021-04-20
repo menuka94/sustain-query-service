@@ -35,6 +35,7 @@ import org.apache.spark.ml.regression.GBTRegressor;
 import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.storage.StorageLevel;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -331,7 +332,7 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
 
 
         Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0].cache();
+        Dataset<Row> trainrdd = rds[0].persist(StorageLevel.MEMORY_ONLY());
         Dataset<Row> testrdd = rds[1];
 
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
@@ -454,7 +455,7 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
 		try {
 			// Initialize SparkManager
 			SparkManager sparkManager =
-				new SparkManager("spark://lattice-1.cs.colostate.edu:32531", 1);        
+				new SparkManager("spark://lattice-1.cs.colostate.edu:32531", 1);
 
 			// Submit task to SparkManager
         	Future<Boolean> future =

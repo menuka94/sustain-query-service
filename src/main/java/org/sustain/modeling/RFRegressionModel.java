@@ -35,6 +35,7 @@ import org.apache.spark.ml.regression.RandomForestRegressor;
 import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.storage.StorageLevel;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -367,7 +368,7 @@ public class RFRegressionModel implements SparkTask<Boolean> {
 
 
         Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0].cache();
+        Dataset<Row> trainrdd = rds[0].persist(StorageLevel.MEMORY_ONLY());
         Dataset<Row> testrdd = rds[1];
 
         fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
