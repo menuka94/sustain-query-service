@@ -222,7 +222,6 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
         } else {
             log.warn("Invalid Model Request!");
         }
-        this.responseObserver.onCompleted();
     }
 }
 
