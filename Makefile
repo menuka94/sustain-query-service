@@ -31,3 +31,6 @@ executable:
 
 clean:
 	rm -rf build log
+
+test-pca:
+	./gradlew test --tests SustainServerTest.testPCAHandler
