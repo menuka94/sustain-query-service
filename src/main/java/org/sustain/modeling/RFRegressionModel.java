@@ -487,7 +487,7 @@ public class RFRegressionModel implements SparkTask<Boolean> {
 		try {
 			// Initialize SparkManager
 			SparkManager sparkManager =
-				new SparkManager("spark://lattice-1.cs.colostate.edu:8079", 1);
+				new SparkManager("spark://lattice-1.cs.colostate.edu:8079");
 
 			// Submit task to SparkManager
         	Future<Boolean> future =

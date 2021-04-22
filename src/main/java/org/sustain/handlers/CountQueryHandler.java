@@ -20,12 +20,13 @@ import org.sustain.SparkTask;
 import org.sustain.server.SustainServer;
 import org.sustain.util.Constants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountResponse>
-        implements SparkTask<Boolean> {
+public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountResponse> {
     protected static final Logger log =
         LoggerFactory.getLogger(CountQueryHandler.class);
 
@@ -38,13 +39,28 @@ public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountRespo
     @Override
     public void handleRequest() {
         try {
-            // Submit task to Spark Manager
-            Future<Boolean> future =
-                this.sparkManager.submit(this, "count-query");
+            // submit a CountSparkTask for each collection
+            List<Future<Long>> futures = new ArrayList();
+            for (String collection : request.getCollectionsList()) {
+                // initialize CountSparkTask
+                CountSparkTask countSparkTask = new CountSparkTask(collection);
 
-            // Wait for task to complete
-            future.get();
+                // submit task to SparkManager
+                Future<Long> future = this.sparkManager.submit(
+                    countSparkTask, "count-query");
 
+                futures.add(future);
+            }
+
+            // wait for all SparkTasks to complete
+            CountResponse.Builder response = CountResponse.newBuilder();
+            for (Future<Long> future : futures) {
+                long count = future.get();
+                response.addCount(count);
+            }
+
+            // send response
+            responseObserver.onNext(response.build());
             responseObserver.onCompleted();
         } catch (Exception e) {
             log.error("Failed to evaluate query", e);
@@ -52,34 +68,32 @@ public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountRespo
         }
     }
 
-    @Override
-    public Boolean execute(JavaSparkContext sparkContext) throws Exception {
-        // initialize ReadConfig
-        Map<String, String> readOverrides = new HashMap();
-        readOverrides.put("spark.mongodb.input.collection",
-			request.getCollection());
-        readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
-        readOverrides.put("spark.mongodb.input.uri",
-            "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT);
+    protected class CountSparkTask implements SparkTask<Long> {
+        protected String collection;
 
-        ReadConfig readConfig = 
-            ReadConfig.create(sparkContext.getConf(), readOverrides);
+        public CountSparkTask(String collection) {
+            this.collection = collection;
+        }
 
-        // load RDD
-        JavaMongoRDD<Document> rdd =
-            MongoSpark.load(sparkContext, readConfig);
+        @Override
+        public Long execute(JavaSparkContext sparkContext) throws Exception {
+            // initialize ReadConfig
+            Map<String, String> readOverrides = new HashMap();
+            readOverrides.put("spark.mongodb.input.collection", this.collection);
+            readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
+            readOverrides.put("spark.mongodb.input.uri",
+                "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT);
 
-        // perform count evaluation
-        long count = rdd.count();
+            ReadConfig readConfig = 
+                ReadConfig.create(sparkContext.getConf(), readOverrides);
 
-        // initailize response
-        CountResponse response = CountResponse.newBuilder()
-            .setCount(count)
-            .build();
+            // load RDD
+            JavaMongoRDD<Document> rdd =
+                MongoSpark.load(sparkContext, readConfig);
 
-        // send response
-        responseObserver.onNext(response);
-
-        return true;
+            // perform count evaluation
+            long count = rdd.count();
+            return count;
+        }
     }
 }
