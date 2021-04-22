@@ -20,10 +20,10 @@ public class SparkManager {
     protected List<String> jars;
     private String sparkMaster;
 
-    public SparkManager(String sparkMaster, int threadCount) {
+    public SparkManager(String sparkMaster) {
         this.sparkMaster = sparkMaster;
         this.jars = new ArrayList();
-        this.executorService = Executors.newFixedThreadPool(threadCount);
+        this.executorService = Executors.newCachedThreadPool();
     }
 
     public void addJar(String jar) {
