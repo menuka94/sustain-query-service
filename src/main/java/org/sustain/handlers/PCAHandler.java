@@ -1,4 +1,4 @@
-package org.sustain.modeling;
+package org.sustain.handlers;
 
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
