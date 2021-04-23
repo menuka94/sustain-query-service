@@ -11,6 +11,7 @@ import org.apache.spark.ml.feature.PCAModel;
 import org.apache.spark.ml.feature.StandardScaler;
 import org.apache.spark.ml.feature.StandardScalerModel;
 import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.ml.linalg.DenseVector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.sustain.ModelRequest;
@@ -91,6 +92,8 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
             .fit(featureDF);
 
         Dataset<Row> result = pca.transform(featureDF).select("features", "pcaFeatures");
+        DenseVector explainedVariance = pca.explainedVariance();
+        log.info("Explained Variance: {}", explainedVariance);
         result.show();
         log.info("Size of results: ({}, {})", result.count(), result.columns().length);
 
