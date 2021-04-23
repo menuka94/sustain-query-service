@@ -5,17 +5,12 @@ import com.mongodb.spark.config.ReadConfig;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.feature.PCA;
 import org.apache.spark.ml.feature.PCAModel;
 import org.apache.spark.ml.feature.StandardScaler;
 import org.apache.spark.ml.feature.StandardScalerModel;
 import org.apache.spark.ml.feature.VectorAssembler;
-import org.apache.spark.mllib.linalg.Matrix;
-import org.apache.spark.mllib.linalg.Vector;
-import org.apache.spark.mllib.linalg.distributed.RowMatrix;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.sustain.DummyResponse;
@@ -35,7 +30,7 @@ import java.util.Map;
 import java.util.concurrent.Future;
 
 public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
-    private static final Logger log = LogManager.getFormatterLogger(PCAHandler.class);
+    private static final Logger log = LogManager.getLogger(PCAHandler.class);
 
     public PCAHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
         super(request, responseObserver, sparkManager);
@@ -69,8 +64,6 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         // Dropping rows with null values
         selectedFeatures = selectedFeatures.na().drop();
 
-        //selectedFeatures.show(10);
-
         // Assembling
         VectorAssembler assembler =
             new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
@@ -91,34 +84,16 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         log.info("Dataframe after normalizing with StandardScaler");
         featureDF.show(10);
 
-        // convert scaled features into an MLlibRowMatrix
-        /*
-        Dataset<Row> scaledDf = featureDF.select("features");
-        scaledDf.show(10);
-        JavaRDD<Vector> vectorRDD = scaledDf.javaRDD()
-            .map((Function<Row, Vector>) row -> (Vector) row.get(0));
-
-        RowMatrix matrix = new RowMatrix(vectorRDD.rdd());
-
-        Matrix pc = matrix.computePrincipalComponents(featuresList.size());
-        log.info(pc);
-        */
-
-        // ML instead of MLlib
+        // PCA
         PCAModel pca = new PCA()
             .setInputCol("features")
             .setOutputCol("pcaFeatures")
             .setK(featuresList.size())
             .fit(featureDF);
 
-        Dataset<Row> result = pca.transform(featureDF).select("pcaFeatures");
+        Dataset<Row> result = pca.transform(featureDF).select("features", "pcaFeatures");
         result.show();
-
-
-        //RowMatrix projected = matrix.multiply(pc);
-        //projected.log();
-
-        //PCAModel pcaModel = new PCA(featuresList.size()).fit(vectorRDD);
+        log.info("Size of results: ({}, {})", result.count(), result.columns().length);
 
         log.info("Completed");
         responseObserver.onNext(ModelResponse.newBuilder()
