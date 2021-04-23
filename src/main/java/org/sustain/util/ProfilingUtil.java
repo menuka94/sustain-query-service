@@ -7,20 +7,26 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class ProfilingUtil {
     private static final Logger log = LogManager.getLogger(ProfilingUtil.class);
+    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
     private static BufferedWriter bw;
 
     static {
+        String outputFile = System.getenv("HOME") + File.separator + "sustain-profiling.out";
         try {
-            bw = new BufferedWriter(new FileWriter("profiling.txt", true));
+            bw = new BufferedWriter(new FileWriter(outputFile, true));
         } catch (IOException e) {
             log.error("Error opening profiling output file: {}", e.getMessage());
             e.printStackTrace();
         }
+
     }
 
     public static void calculateTimeDiff(long time1, long time2, String label) {
@@ -50,6 +56,7 @@ public class ProfilingUtil {
 
     private static void writeToFile(String line) throws IOException {
         if (bw != null) {
+            line = dateTimeFormatter.format(LocalDateTime.now()) + ": " + line;
             bw.write(line);
             bw.newLine();
             bw.flush();
