@@ -114,7 +114,7 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         try {
             // Submit task to Spark Manager
             Future<Boolean> future =
-                this.sparkManager.submit(this, "clustering-query");
+                this.sparkManager.submit(this, "pca-query");
 
             // Wait for task to complete
             future.get();

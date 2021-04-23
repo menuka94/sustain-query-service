@@ -77,7 +77,7 @@ public class SustainService extends SustainGrpc.SustainImplBase {
                 handler = new ClusteringQueryHandler(request, responseObserver, this.sparkManager);
                 break;
             case PCA:
-                log.info("Received a Dummy Request");
+                log.info("Received a PCA Request");
                 handler = new PCAHandler(request, responseObserver, this.sparkManager);
                 break;
             default:

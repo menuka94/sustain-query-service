@@ -41,10 +41,16 @@ public class ProfilingUtil {
         }
     }
 
-    public static void evaluateClusteringModel(Dataset<Row> evaluateDF, String modelName) {
+    public static void evaluateClusteringModel(Dataset<Row> evaluateDF, String modelName, String additionalInfo) {
         ClusteringEvaluator evaluator = new ClusteringEvaluator();
         double silhouette = evaluator.evaluate(evaluateDF);
-        String logLine = String.format("%s: Silhouette with squared euclidean distance = %f", modelName, silhouette);
+        String logLine;
+        if (additionalInfo.isEmpty()) {
+            logLine = String.format("%s: Silhouette with squared euclidean distance = %f", modelName, silhouette);
+        } else {
+            logLine = String.format("%s: Silhouette with squared euclidean distance = %f -- %s", modelName,
+                silhouette, additionalInfo);
+        }
         log.info(logLine);
         try {
             writeToFile(logLine);
@@ -52,6 +58,10 @@ public class ProfilingUtil {
             log.error("Error writing to file: {}", e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public static void evaluateClusteringModel(Dataset<Row> evaluateDF, String modelName) {
+        evaluateClusteringModel(evaluateDF, modelName, "");
     }
 
     private static void writeToFile(String line) throws IOException {
