@@ -17,6 +17,7 @@ public class ProfilingUtil {
     private static final Logger log = LogManager.getLogger(ProfilingUtil.class);
     private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
     private static BufferedWriter bw;
+    private static boolean newRun = true;
 
     static {
         String outputFile = System.getenv("HOME") + File.separator + "sustain-profiling.out";
@@ -60,6 +61,10 @@ public class ProfilingUtil {
                 line = dateTimeFormatter.format(LocalDateTime.now()) + ": " + line;
                 bw.write(line);
                 bw.newLine();
+                if (newRun) {
+                    newRun = false;
+                    bw.write("-----------------------------------------------");
+                }
                 bw.flush();
             }
         } catch (IOException e) {

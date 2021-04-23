@@ -1,39 +1,30 @@
 package org.sustain.handlers;
 
-import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
-import com.google.gson.reflect.TypeToken;
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.clustering.BisectingKMeans;
-import org.apache.spark.ml.clustering.BisectingKMeansModel;
-import org.apache.spark.ml.clustering.GaussianMixture;
-import org.apache.spark.ml.clustering.GaussianMixtureModel;
-import org.apache.spark.ml.clustering.LDA;
-import org.apache.spark.ml.clustering.LDAModel;
 import org.apache.spark.ml.feature.MinMaxScaler;
 import org.apache.spark.ml.feature.MinMaxScalerModel;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.sustain.BisectingKMeansResponse;
-import org.sustain.GaussianMixtureResponse;
-import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
 import org.sustain.SparkTask;
+import org.sustain.handlers.clustering.BisectingKMeansClusteringHandlerImpl;
+import org.sustain.handlers.clustering.GaussianMixtureClusteringHandlerImpl;
 import org.sustain.handlers.clustering.KMeansClusteringHandlerImpl;
+import org.sustain.handlers.clustering.LDAClusteringHandlerImpl;
 import org.sustain.util.Constants;
 import org.sustain.util.ProfilingUtil;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -97,61 +88,26 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         int maxIterations = request.getLatentDirichletAllocationRequest().getMaxIterations();
         Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
 
-        // LDA
-        long buildTime1 = System.currentTimeMillis();
-        LDA lda = new LDA().setK(k).setMaxIter(maxIterations);
-        LDAModel model = lda.fit(featureDF);
-        long buildTime2 = System.currentTimeMillis();
-        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "LDAModelBuildTime");
+        LDAClusteringHandlerImpl handler = new LDAClusteringHandlerImpl();
+        Dataset<Row> predictDF = handler.buildModel(k, maxIterations, featureDF);
 
-        double ll = model.logLikelihood(featureDF);
-        double lp = model.logPerplexity(featureDF);
-        log.info("LDA: Lower bound on the log likelihood of the entire corpus: " + ll);
-        log.info("LDA: Upper bound on perplexity: " + lp);
+        handler.writeToStream(predictDF, responseObserver);
 
-        // results
-        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
-        log.info("Predictions...");
-        predictDF.show(10);
-
-        // evaluate clustering results
-        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "LDA");
-
-        Dataset<String> jsonResults = predictDF.toJSON();
-        String jsonString = jsonResults.collectAsList().toString();
-
-        Gson gson = new Gson();
-        Type type = new TypeToken<List<ClusteringResult>>() {
-        }.getType();
-        List<ClusteringResult> results = gson.fromJson(jsonString, type);
-        log.info("results.size(): " + results.size());
-
-        log.info("Writing LatentDirichletAllocationResponse to stream");
-        for (ClusteringResult result : results) {
-            responseObserver.onNext(ModelResponse.newBuilder()
-                .setLatentDirichletAllocationResponse(
-                    LatentDirichletAllocationResponse.newBuilder()
-                        .setGisJoin(result.getGisJoin())
-                        .setPrediction(result.getPrediction())
-                        .build()
-                ).build()
-            );
-        }
+        handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
     }
 
     private void buildKMeansModel(JavaSparkContext sparkContext) {
         int k = request.getKMeansClusteringRequest().getClusterCount();
+        int maxIterations = request.getKMeansClusteringRequest().getMaxIterations();
         Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
 
-        // Build model
-        Dataset<Row> predictDF = KMeansClusteringHandlerImpl.buildModel(k, featureDF);
+        KMeansClusteringHandlerImpl handler = new KMeansClusteringHandlerImpl();
 
-        // Write results to stream
-        KMeansClusteringHandlerImpl.writeToStream(predictDF, responseObserver);
+        Dataset<Row> predictDF = handler.buildModel(k, maxIterations, featureDF);
 
-        // Build model with Principal Components
-        KMeansClusteringHandlerImpl.buildModelWithPCA(k, 2, featureDF);
+        handler.writeToStream(predictDF, responseObserver);
+
+        handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
     }
 
     private void buildBisectingKMeansModel(JavaSparkContext sparkContext) {
@@ -159,41 +115,13 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         int k = request.getBisectingKMeansRequest().getClusterCount();
         int maxIterations = request.getBisectingKMeansRequest().getMaxIterations();
 
-        long buildTime1 = System.currentTimeMillis();
-        BisectingKMeans bisectingKMeans = new BisectingKMeans().setK(k).setMaxIter(maxIterations);
-        BisectingKMeansModel model = bisectingKMeans.fit(featureDF);
-        long buildTime2 = System.currentTimeMillis();
-        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "bisectingKMeansModelBuildTime");
+        BisectingKMeansClusteringHandlerImpl handler = new BisectingKMeansClusteringHandlerImpl();
 
-        // Make predictions
-        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
-        log.info("Predictions ...");
-        predictDF.show(10);
+        Dataset<Row> predictDF = handler.buildModel(k, maxIterations, featureDF);
 
-        // evaluate clustering results
-        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "BisectingKMeans");
+        handler.writeToStream(predictDF, responseObserver);
 
-        Dataset<String> jsonResults = predictDF.toJSON();
-        String jsonString = jsonResults.collectAsList().toString();
-
-        Gson gson = new Gson();
-        Type type = new TypeToken<List<ClusteringResult>>() {
-        }.getType();
-        List<ClusteringResult> results = gson.fromJson(jsonString, type);
-        log.info("results.size(): " + results.size());
-
-        log.info("Writing BisectingKMeansResponses to stream");
-        for (ClusteringResult result : results) {
-            responseObserver.onNext(ModelResponse.newBuilder()
-                .setBisectingKMeansResponse(
-                    BisectingKMeansResponse.newBuilder()
-                        .setGisJoin(result.getGisJoin())
-                        .setPrediction(result.getPrediction())
-                        .build()
-                ).build()
-            );
-        }
+        handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
     }
 
     private void buildGaussianMixtureModel(JavaSparkContext sparkContext) {
@@ -201,46 +129,12 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         int k = request.getGaussianMixtureRequest().getClusterCount();
         int maxIterations = request.getGaussianMixtureRequest().getMaxIterations();
 
-        long buildTime1 = System.currentTimeMillis();
-        GaussianMixture gaussianMixture = new GaussianMixture().setK(k).setMaxIter(maxIterations);
-        GaussianMixtureModel model = gaussianMixture.fit(featureDF);
-        long buildTime2 = System.currentTimeMillis();
-        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "gaussianMixtureModelBuildTime");
+        GaussianMixtureClusteringHandlerImpl handler = new GaussianMixtureClusteringHandlerImpl();
+        Dataset<Row> predictDF = handler.buildModel(k, maxIterations, featureDF);
 
-        for (int i = 0; i < model.getK(); i++) {
-            System.out.printf("Gaussian %d:\nweight=%f\nmu=%s\nsigma=\n%s\n\n",
-                i, model.weights()[i], model.gaussians()[i].mean(), model.gaussians()[i].cov());
-        }
+        handler.writeToStream(predictDF, responseObserver);
 
-        // Make predictions
-        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
-        log.info("Predictions ...");
-        predictDF.show(10);
-
-        // evaluate clustering results
-        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "GaussianMixture");
-
-        Dataset<String> jsonResults = predictDF.toJSON();
-        String jsonString = jsonResults.collectAsList().toString();
-
-        Gson gson = new Gson();
-        Type type = new TypeToken<List<ClusteringResult>>() {
-        }.getType();
-        List<ClusteringResult> results = gson.fromJson(jsonString, type);
-        log.info("results.size(): " + results.size());
-
-        log.info("Writing GaussianMixtureResponses to stream");
-        for (ClusteringResult result : results) {
-            responseObserver.onNext(ModelResponse.newBuilder()
-                .setGaussianMixtureResponse(
-                    GaussianMixtureResponse.newBuilder()
-                        .setGisJoin(result.getGisJoin())
-                        .setPrediction(result.getPrediction())
-                        .build()
-                ).build()
-            );
-        }
+        handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
     }
 
     private Dataset<Row> preprocessAndGetFeatureDF(JavaSparkContext sparkContext) {
