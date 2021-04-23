@@ -33,12 +33,7 @@ public class ProfilingUtil {
         double timeTaken = (time2 - time1) / 1000.0;
         String logLine = String.format("%s: %f", label, timeTaken);
         log.info(logLine);
-        try {
-            writeToFile(logLine);
-        } catch (IOException e) {
-            log.error("Error writing to file: {}", e.getMessage());
-            e.printStackTrace();
-        }
+        writeToFile(logLine);
     }
 
     public static void evaluateClusteringModel(Dataset<Row> evaluateDF, String modelName, String additionalInfo) {
@@ -52,24 +47,24 @@ public class ProfilingUtil {
                 silhouette, additionalInfo);
         }
         log.info(logLine);
-        try {
-            writeToFile(logLine);
-        } catch (IOException e) {
-            log.error("Error writing to file: {}", e.getMessage());
-            e.printStackTrace();
-        }
+        writeToFile(logLine);
     }
 
     public static void evaluateClusteringModel(Dataset<Row> evaluateDF, String modelName) {
         evaluateClusteringModel(evaluateDF, modelName, "");
     }
 
-    private static void writeToFile(String line) throws IOException {
-        if (bw != null) {
-            line = dateTimeFormatter.format(LocalDateTime.now()) + ": " + line;
-            bw.write(line);
-            bw.newLine();
-            bw.flush();
+    public static void writeToFile(String line) {
+        try {
+            if (bw != null) {
+                line = dateTimeFormatter.format(LocalDateTime.now()) + ": " + line;
+                bw.write(line);
+                bw.newLine();
+                bw.flush();
+            }
+        } catch (IOException e) {
+            log.error(e.getMessage());
+            e.printStackTrace();
         }
     }
 }

@@ -19,6 +19,8 @@ import org.apache.spark.ml.clustering.LDA;
 import org.apache.spark.ml.clustering.LDAModel;
 import org.apache.spark.ml.feature.MinMaxScaler;
 import org.apache.spark.ml.feature.MinMaxScalerModel;
+import org.apache.spark.ml.feature.PCA;
+import org.apache.spark.ml.feature.PCAModel;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
@@ -148,7 +150,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
         // KMeans Clustering
         long buildTime1 = System.currentTimeMillis();
-        KMeans kmeans = new KMeans().setK(k).setSeed(1L);
+        KMeans kmeans = new KMeans().setK(k);
 
         KMeansModel model = kmeans.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
@@ -167,7 +169,32 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         // evaluate clustering results
         Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "KMeans");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "KMeans", "without PCA");
+
+        // Build model again with Principal Components
+        List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
+        PCAModel pca = new PCA()
+            .setInputCol("features")
+            .setOutputCol("pcaFeatures")
+            .setK(featuresList.size())
+            .fit(featureDF);
+
+        Dataset<Row> featureDF1 = pca.transform(featureDF)
+            .drop("features")
+            .withColumnRenamed("pcaFeatures", "features")
+            .select("GISJOIN", "features");
+        featureDF1.show();
+        ProfilingUtil.writeToFile("featureDF with PCA: " + featureDF1.showString(20, 1000, true));
+
+        KMeans kMeans1 = new KMeans().setK(k);
+        KMeansModel model1 = kMeans1.fit(featureDF1);
+        Dataset<Row> predictDF1 = model1.transform(featureDF1).select(Constants.GIS_JOIN, "prediction");
+        log.info("KMEANS with PCA");
+        predictDF1.show();
+
+        // evaluate clustering (with PCA) results
+        Dataset<Row> evaluateDF1 = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF1, "KMeans", "with PCA");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
@@ -325,10 +352,12 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         // Assembling
         long assemblyTime1 = System.currentTimeMillis();
+
         VectorAssembler assembler =
             new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
         Dataset<Row> featureDF = assembler.transform(selectedFeatures);
         featureDF.show(10);
+
         long assemblyTime2 = System.currentTimeMillis();
         ProfilingUtil.calculateTimeDiff(assemblyTime1, assemblyTime2, "AssemblyTime");
 

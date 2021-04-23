@@ -11,6 +11,7 @@ import org.apache.spark.ml.feature.PCAModel;
 import org.apache.spark.ml.feature.StandardScaler;
 import org.apache.spark.ml.feature.StandardScalerModel;
 import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.ml.linalg.DenseMatrix;
 import org.apache.spark.ml.linalg.DenseVector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
@@ -20,6 +21,7 @@ import org.sustain.PCAResposne;
 import org.sustain.SparkManager;
 import org.sustain.SparkTask;
 import org.sustain.util.Constants;
+import org.sustain.util.ProfilingUtil;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -90,11 +92,15 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
             .setOutputCol("pcaFeatures")
             .setK(featuresList.size())
             .fit(featureDF);
+        DenseMatrix pc = pca.pc();
+        ProfilingUtil.writeToFile("PC: " + pc.toString(34, 34));
 
         Dataset<Row> result = pca.transform(featureDF).select("features", "pcaFeatures");
         DenseVector explainedVariance = pca.explainedVariance();
         log.info("Explained Variance: {}", explainedVariance);
+        ProfilingUtil.writeToFile("Explained Variance: " + explainedVariance.toString());
         result.show();
+        ProfilingUtil.writeToFile("PCA Results DataFrame: " + result.showString(100, 100, true));
         log.info("Size of results: ({}, {})", result.count(), result.columns().length);
 
         log.info("Completed");
