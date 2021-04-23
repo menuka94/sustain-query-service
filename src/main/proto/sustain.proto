@@ -90,7 +90,7 @@ message ModelRequest {
 }
 
 message PCARequest {}
-message PCAResposne {
+message PCAResponse {
   string result = 1;
 }
 
@@ -108,7 +108,7 @@ message ModelResponse {
   BisectingKMeansResponse bisectingKMeansResponse = 5;
   GaussianMixtureResponse gaussianMixtureResponse = 6;
   LatentDirichletAllocationResponse latentDirichletAllocationResponse = 7;
-  PCAResposne pcaResponse = 8;
+  PCAResponse pcaResponse = 8;
 }
 
 // Clustering

@@ -17,7 +17,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
-import org.sustain.PCAResposne;
+import org.sustain.PCAResponse;
 import org.sustain.SparkManager;
 import org.sustain.SparkTask;
 import org.sustain.util.Constants;
@@ -106,7 +106,7 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         log.info("Completed");
         responseObserver.onNext(ModelResponse.newBuilder()
             .setPcaResponse(
-                PCAResposne.newBuilder()
+                PCAResponse.newBuilder()
                     .setResult("completed!")
                     .build())
             .build());

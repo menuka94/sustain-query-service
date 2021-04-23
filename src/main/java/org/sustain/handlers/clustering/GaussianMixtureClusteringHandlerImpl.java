@@ -73,7 +73,7 @@ public class GaussianMixtureClusteringHandlerImpl extends AbstractClusteringHand
         }
 
         // Make predictions
-        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
+        Dataset<Row> predictDF = model.transform(featureDF1).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions ...");
         predictDF.show(10);
 
