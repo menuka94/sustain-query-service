@@ -128,7 +128,7 @@ public class SustainServerTest {
     @Tag("slow")
     @Test
     public void testLDAClusteringModel() {
-        executeJsonModelRequest("requests/lra_clustering_county_stats_request.json");
+        executeJsonModelRequest("requests/lda_clustering_county_stats_request.json");
     }
 
     @Tag("slow")

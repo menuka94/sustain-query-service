@@ -11,7 +11,7 @@
   ],
   "latentDirichletAllocationRequest": {
     "clusterCount": 10,
-    "maxIterations": 100,
+    "maxIterations": 10,
     "resolution": "County"
   }
 }
