@@ -51,7 +51,7 @@ public class SustainServer {
 
     public void start() throws IOException {
         // initialize SparkManager
-        sparkManager = new SparkManager(Constants.Spark.MASTER, Constants.Spark.THREAD_COUNT);
+        sparkManager = new SparkManager(Constants.Spark.MASTER);
 
         for (String jar: sparkJarPaths) {
             log.info("Adding dependency JAR to the Spark Context: {}", jar);
