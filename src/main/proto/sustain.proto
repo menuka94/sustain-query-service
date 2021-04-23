@@ -73,7 +73,7 @@ enum ModelType {
   LATENT_DIRICHLET_ALLOCATION = 5;
   R_FOREST_REGRESSION = 6;
   G_BOOST_REGRESSION = 7;
-  DUMMY = 8;
+  PCA = 8;
 }
 
 message ModelRequest {
@@ -86,11 +86,11 @@ message ModelRequest {
   LatentDirichletAllocationRequest latentDirichletAllocationRequest = 7;
   RForestRegressionRequest rForestRegressionRequest = 8;
   GBoostRegressionRequest gBoostRegressionRequest = 9;
-  DummyRequest dummyRequest = 10;
+  PCARequest pcaRequest = 10;
 }
 
-message DummyRequest {}
-message DummyResponse {
+message PCARequest {}
+message PCAResposne {
   string result = 1;
 }
 
@@ -108,7 +108,7 @@ message ModelResponse {
   BisectingKMeansResponse bisectingKMeansResponse = 5;
   GaussianMixtureResponse gaussianMixtureResponse = 6;
   LatentDirichletAllocationResponse latentDirichletAllocationResponse = 7;
-  DummyResponse dummyResponse = 8;
+  PCAResposne pcaResponse = 8;
 }
 
 // Clustering

@@ -23,6 +23,7 @@ import org.sustain.handlers.CountQueryHandler;
 import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.handlers.EnsembleQueryHandler;
 import org.sustain.handlers.GrpcHandler;
+import org.sustain.handlers.PCAHandler;
 import org.sustain.handlers.RegressionQueryHandler;
 import org.sustain.handlers.SlidingWindowQueryHandler;
 
@@ -74,6 +75,10 @@ public class SustainService extends SustainGrpc.SustainImplBase {
             case LATENT_DIRICHLET_ALLOCATION:
                 log.info("Received a Latent Dirichlet Allocation Request");
                 handler = new ClusteringQueryHandler(request, responseObserver, this.sparkManager);
+                break;
+            case PCA:
+                log.info("Received a Dummy Request");
+                handler = new PCAHandler(request, responseObserver, this.sparkManager);
                 break;
             default:
                 responseObserver.onError(new Exception("Invalid Model Type"));

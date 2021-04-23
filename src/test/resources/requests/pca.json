@@ -1,5 +1,5 @@
 {
-  "type": "DUMMY",
+  "type": "PCA",
   "collections": [
     {
       "name": "county_svi_GISJOIN",
@@ -41,6 +41,6 @@
       ]
     }
   ],
-  "dummyRequest": {
+  "pcaRequest": {
   }
 }

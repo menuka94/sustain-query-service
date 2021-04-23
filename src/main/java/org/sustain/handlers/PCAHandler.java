@@ -13,12 +13,11 @@ import org.apache.spark.ml.feature.StandardScalerModel;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.sustain.DummyResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
+import org.sustain.PCAResposne;
 import org.sustain.SparkManager;
 import org.sustain.SparkTask;
-import org.sustain.handlers.GrpcSparkHandler;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -97,8 +96,8 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
 
         log.info("Completed");
         responseObserver.onNext(ModelResponse.newBuilder()
-            .setDummyResponse(
-                DummyResponse.newBuilder()
+            .setPcaResponse(
+                PCAResposne.newBuilder()
                     .setResult("completed!")
                     .build())
             .build());
