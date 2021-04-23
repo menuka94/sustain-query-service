@@ -23,23 +23,21 @@ import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import org.sustain.BisectingKMeansResponse;
 import org.sustain.GaussianMixtureResponse;
 import org.sustain.KMeansClusteringResponse;
 import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
-import org.sustain.ModelType;
 import org.sustain.SparkManager;
 import org.sustain.SparkTask;
 import org.sustain.util.Constants;
+import org.sustain.util.ProfilingUtil;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,9 +45,10 @@ import java.util.concurrent.Future;
 
 public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
 
-    private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
+    private static final Logger log = LogManager.getLogger(ClusteringQueryHandler.class);
 
-    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
+    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
+                                  SparkManager sparkManager) {
         super(request, responseObserver, sparkManager);
     }
 
@@ -102,8 +101,11 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
 
         // LDA
+        long buildTime1 = System.currentTimeMillis();
         LDA lda = new LDA().setK(k).setMaxIter(maxIterations);
         LDAModel model = lda.fit(featureDF);
+        long buildTime2 = System.currentTimeMillis();
+        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "LDAModelBuildTime");
 
         double ll = model.logLikelihood(featureDF);
         double lp = model.logPerplexity(featureDF);
@@ -111,9 +113,13 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         log.info("LDA: Upper bound on perplexity: " + lp);
 
         // results
-        Dataset<Row> predictDF = model.transform(featureDF);
+        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions...");
         predictDF.show(10);
+
+        // evaluate clustering results
+        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "LDA");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
@@ -141,8 +147,13 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         int k = request.getKMeansClusteringRequest().getClusterCount();
         Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
         // KMeans Clustering
+        long buildTime1 = System.currentTimeMillis();
         KMeans kmeans = new KMeans().setK(k).setSeed(1L);
+
         KMeansModel model = kmeans.fit(featureDF);
+        long buildTime2 = System.currentTimeMillis();
+
+        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "KMeansModelBuildTime");
 
         Vector[] vectors = model.clusterCenters();
         log.info("======================== CLUSTER CENTERS =====================================");
@@ -151,7 +162,12 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         }
 
         Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
+        log.info("Predictions...");
         predictDF.show(10);
+
+        // evaluate clustering results
+        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "KMeans");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
@@ -180,13 +196,20 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         int k = request.getBisectingKMeansRequest().getClusterCount();
         int maxIterations = request.getBisectingKMeansRequest().getMaxIterations();
 
+        long buildTime1 = System.currentTimeMillis();
         BisectingKMeans bisectingKMeans = new BisectingKMeans().setK(k).setMaxIter(maxIterations);
         BisectingKMeansModel model = bisectingKMeans.fit(featureDF);
+        long buildTime2 = System.currentTimeMillis();
+        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "bisectingKMeansModelBuildTime");
 
         // Make predictions
         Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions ...");
         predictDF.show(10);
+
+        // evaluate clustering results
+        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "BisectingKMeans");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
@@ -215,9 +238,11 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         int k = request.getGaussianMixtureRequest().getClusterCount();
         int maxIterations = request.getGaussianMixtureRequest().getMaxIterations();
 
+        long buildTime1 = System.currentTimeMillis();
         GaussianMixture gaussianMixture = new GaussianMixture().setK(k).setMaxIter(maxIterations);
         GaussianMixtureModel model = gaussianMixture.fit(featureDF);
-
+        long buildTime2 = System.currentTimeMillis();
+        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "gaussianMixtureModelBuildTime");
 
         for (int i = 0; i < model.getK(); i++) {
             System.out.printf("Gaussian %d:\nweight=%f\nmu=%s\nsigma=\n%s\n\n",
@@ -228,6 +253,10 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions ...");
         predictDF.show(10);
+
+        // evaluate clustering results
+        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "GaussianMixture");
 
         Dataset<String> jsonResults = predictDF.toJSON();
         String jsonString = jsonResults.collectAsList().toString();
@@ -284,6 +313,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         // Load mongodb rdd and convert to dataset
         log.info("Preprocessing data");
+        long time1 = System.currentTimeMillis();
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
         List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
         Seq<String> features = convertListToSeq(featuresList);
@@ -294,19 +324,27 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         selectedFeatures = selectedFeatures.na().drop();
 
         // Assembling
+        long assemblyTime1 = System.currentTimeMillis();
         VectorAssembler assembler =
             new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
         Dataset<Row> featureDF = assembler.transform(selectedFeatures);
         featureDF.show(10);
+        long assemblyTime2 = System.currentTimeMillis();
+        ProfilingUtil.calculateTimeDiff(assemblyTime1, assemblyTime2, "AssemblyTime");
 
         // Scaling
         log.info("Normalizing features");
+        long scalingTime1 = System.currentTimeMillis();
         MinMaxScaler scaler = new MinMaxScaler()
             .setInputCol("features")
             .setOutputCol("normalized_features");
         MinMaxScalerModel scalerModel = scaler.fit(featureDF);
 
         featureDF = scalerModel.transform(featureDF);
+        long scalingTime2 = System.currentTimeMillis();
+        ProfilingUtil.calculateTimeDiff(scalingTime1, scalingTime2, "ScalingTime");
+        ProfilingUtil.calculateTimeDiff(assemblyTime1, scalingTime2, "AssemblyAndScalingTime");
+
         featureDF = featureDF.drop("features");
         featureDF = featureDF.withColumnRenamed("normalized_features", "features");
 
