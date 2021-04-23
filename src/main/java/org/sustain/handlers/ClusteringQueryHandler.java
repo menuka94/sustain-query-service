@@ -1,4 +1,4 @@
-package org.sustain.modeling;
+package org.sustain.handlers;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -24,18 +24,15 @@ import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.sustain.BisectingKMeansRequest;
 import org.sustain.BisectingKMeansResponse;
-import org.sustain.Collection;
-import org.sustain.GaussianMixtureRequest;
 import org.sustain.GaussianMixtureResponse;
-import org.sustain.KMeansClusteringRequest;
 import org.sustain.KMeansClusteringResponse;
-import org.sustain.LatentDirichletAllocationRequest;
 import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.ModelType;
+import org.sustain.SparkManager;
+import org.sustain.SparkTask;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -43,75 +40,66 @@ import scala.collection.Seq;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
 
-public class ClusteringQueryHandler {
+public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
+
     private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
-    private final ModelRequest request;
-    private final StreamObserver<ModelResponse> responseObserver;
-    private JavaSparkContext sparkContext;
 
-    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-        this.request = request;
-        this.responseObserver = responseObserver;
+    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
+        super(request, responseObserver, sparkManager);
     }
 
-    public void initSparkSession(ModelType modelType) {
-        String resolution = "";
-        switch (modelType) {
+    @Override
+    public boolean isValid(ModelRequest modelRequest) {
+        // TODO: Implement
+        return true;
+    }
+
+    @Override
+    public void handleRequest() {
+        this.logRequest(request);
+
+        try {
+            // Submit task to Spark Manager
+            Future<Boolean> future =
+                this.sparkManager.submit(this, "clustering-query");
+
+            // Wait for task to complete
+            future.get();
+        } catch (Exception e) {
+            log.error("Failed to evaluate query", e);
+            responseObserver.onError(e);
+        }
+    }
+
+    @Override
+    public Boolean execute(JavaSparkContext sparkContext) {
+        switch (request.getType()) {
             case K_MEANS_CLUSTERING:
-                resolution = request.getKMeansClusteringRequest().getResolution().toString().toLowerCase();
+                buildKMeansModel(sparkContext);
                 break;
             case BISECTING_K_MEANS:
-                resolution = request.getBisectingKMeansRequest().getResolution().toString().toLowerCase();
+                buildBisectingKMeansModel(sparkContext);
                 break;
             case GAUSSIAN_MIXTURE:
-                resolution = request.getGaussianMixtureRequest().getResolution().toString().toLowerCase();
+                buildGaussianMixtureModel(sparkContext);
                 break;
             case LATENT_DIRICHLET_ALLOCATION:
-                resolution = request.getLatentDirichletAllocationRequest().getResolution().toString().toLowerCase();
-                break;
-            case UNRECOGNIZED:
-                log.warn("Invalid request type");
+                buildLatentDirichletAllocationModel(sparkContext);
                 break;
         }
-        log.info("resolution: " + resolution);
-        String databaseUrl = "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT;
-        String collection = resolution + "_stats";
-        SparkSession sparkSession = SparkSession.builder()
-                .master(Constants.Spark.MASTER)
-                .appName("SUSTAIN Clustering: " + new Date())
-                .config("spark.mongodb.input.uri", databaseUrl + "/" + Constants.DB.NAME + "." + collection)
-                .getOrCreate();
 
-        sparkContext = new JavaSparkContext(sparkSession.sparkContext());
-        addClusterDependencyJars(sparkContext);
+        return true;
     }
 
-    public void handleQuery(ModelType modelType) {
-        logRequest(modelType);
-        initSparkSession(modelType);
-        switch (modelType) {
-            case K_MEANS_CLUSTERING:
-                buildKMeansModel();
-                break;
-            case BISECTING_K_MEANS:
-                buildBisectingKMeansModel();
-                break;
-            case GAUSSIAN_MIXTURE:
-                buildGaussianMixtureModel();
-                break;
-            case LATENT_DIRICHLET_ALLOCATION:
-                buildLatentDirichletAllocationModel();
-                break;
-        }
-        sparkContext.close();
-    }
-
-    private void buildLatentDirichletAllocationModel() {
+    private void buildLatentDirichletAllocationModel(JavaSparkContext sparkContext) {
         int k = request.getLatentDirichletAllocationRequest().getClusterCount();
         int maxIterations = request.getLatentDirichletAllocationRequest().getMaxIterations();
-        Dataset<Row> featureDF = preprocessAndGetFeatureDF();
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
 
         // LDA
         LDA lda = new LDA().setK(k).setMaxIter(maxIterations);
@@ -139,19 +127,19 @@ public class ClusteringQueryHandler {
         log.info("Writing LatentDirichletAllocationResponse to stream");
         for (ClusteringResult result : results) {
             responseObserver.onNext(ModelResponse.newBuilder()
-                    .setLatentDirichletAllocationResponse(
-                            LatentDirichletAllocationResponse.newBuilder()
-                                    .setGisJoin(result.getGisJoin())
-                                    .setPrediction(result.getPrediction())
-                                    .build()
-                    ).build()
+                .setLatentDirichletAllocationResponse(
+                    LatentDirichletAllocationResponse.newBuilder()
+                        .setGisJoin(result.getGisJoin())
+                        .setPrediction(result.getPrediction())
+                        .build()
+                ).build()
             );
         }
     }
 
-    private void buildKMeansModel() {
+    private void buildKMeansModel(JavaSparkContext sparkContext) {
         int k = request.getKMeansClusteringRequest().getClusterCount();
-        Dataset<Row> featureDF = preprocessAndGetFeatureDF();
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
         // KMeans Clustering
         KMeans kmeans = new KMeans().setK(k).setSeed(1L);
         KMeansModel model = kmeans.fit(featureDF);
@@ -177,18 +165,18 @@ public class ClusteringQueryHandler {
         log.info("Writing KMeansClusteringResponses to stream");
         for (ClusteringResult result : results) {
             responseObserver.onNext(ModelResponse.newBuilder()
-                    .setKMeansClusteringResponse(
-                            KMeansClusteringResponse.newBuilder()
-                                    .setGisJoin(result.getGisJoin())
-                                    .setPrediction(result.getPrediction())
-                                    .build()
-                    ).build()
+                .setKMeansClusteringResponse(
+                    KMeansClusteringResponse.newBuilder()
+                        .setGisJoin(result.getGisJoin())
+                        .setPrediction(result.getPrediction())
+                        .build()
+                ).build()
             );
         }
     }
 
-    private void buildBisectingKMeansModel() {
-        Dataset<Row> featureDF = preprocessAndGetFeatureDF();
+    private void buildBisectingKMeansModel(JavaSparkContext sparkContext) {
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
         int k = request.getBisectingKMeansRequest().getClusterCount();
         int maxIterations = request.getBisectingKMeansRequest().getMaxIterations();
 
@@ -212,18 +200,18 @@ public class ClusteringQueryHandler {
         log.info("Writing BisectingKMeansResponses to stream");
         for (ClusteringResult result : results) {
             responseObserver.onNext(ModelResponse.newBuilder()
-                    .setBisectingKMeansResponse(
-                            BisectingKMeansResponse.newBuilder()
-                                    .setGisJoin(result.getGisJoin())
-                                    .setPrediction(result.getPrediction())
-                                    .build()
-                    ).build()
+                .setBisectingKMeansResponse(
+                    BisectingKMeansResponse.newBuilder()
+                        .setGisJoin(result.getGisJoin())
+                        .setPrediction(result.getPrediction())
+                        .build()
+                ).build()
             );
         }
     }
 
-    private void buildGaussianMixtureModel() {
-        Dataset<Row> featureDF = preprocessAndGetFeatureDF();
+    private void buildGaussianMixtureModel(JavaSparkContext sparkContext) {
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
         int k = request.getGaussianMixtureRequest().getClusterCount();
         int maxIterations = request.getGaussianMixtureRequest().getMaxIterations();
 
@@ -233,7 +221,7 @@ public class ClusteringQueryHandler {
 
         for (int i = 0; i < model.getK(); i++) {
             System.out.printf("Gaussian %d:\nweight=%f\nmu=%s\nsigma=\n%s\n\n",
-                    i, model.weights()[i], model.gaussians()[i].mean(), model.gaussians()[i].cov());
+                i, model.weights()[i], model.gaussians()[i].mean(), model.gaussians()[i].cov());
         }
 
         // Make predictions
@@ -253,19 +241,49 @@ public class ClusteringQueryHandler {
         log.info("Writing GaussianMixtureResponses to stream");
         for (ClusteringResult result : results) {
             responseObserver.onNext(ModelResponse.newBuilder()
-                    .setGaussianMixtureResponse(
-                            GaussianMixtureResponse.newBuilder()
-                                    .setGisJoin(result.getGisJoin())
-                                    .setPrediction(result.getPrediction())
-                                    .build()
-                    ).build()
+                .setGaussianMixtureResponse(
+                    GaussianMixtureResponse.newBuilder()
+                        .setGisJoin(result.getGisJoin())
+                        .setPrediction(result.getPrediction())
+                        .build()
+                ).build()
             );
         }
     }
 
-    private Dataset<Row> preprocessAndGetFeatureDF() {
+    private Dataset<Row> preprocessAndGetFeatureDF(JavaSparkContext sparkContext) {
+        // Identify resolution of evaluation
+        String resolution = "";
+        switch (request.getType()) {
+            case K_MEANS_CLUSTERING:
+                resolution = request.getKMeansClusteringRequest().getResolution().toString().toLowerCase();
+                break;
+            case BISECTING_K_MEANS:
+                resolution = request.getBisectingKMeansRequest().getResolution().toString().toLowerCase();
+                break;
+            case GAUSSIAN_MIXTURE:
+                resolution = request.getGaussianMixtureRequest().getResolution().toString().toLowerCase();
+                break;
+            case LATENT_DIRICHLET_ALLOCATION:
+                resolution = request.getLatentDirichletAllocationRequest().getResolution().toString().toLowerCase();
+                break;
+            case UNRECOGNIZED:
+                log.warn("Invalid request type");
+                break;
+        }
+
+        // Initialize mongodb read configuration
+        Map<String, String> readOverrides = new HashMap();
+        readOverrides.put("spark.mongodb.input.collection", resolution + "_stats");
+        readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
+        readOverrides.put("spark.mongodb.input.uri",
+            "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT);
+
+        ReadConfig readConfig =
+            ReadConfig.create(sparkContext.getConf(), readOverrides);
+
+        // Load mongodb rdd and convert to dataset
         log.info("Preprocessing data");
-        ReadConfig readConfig = ReadConfig.create(sparkContext);
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
         List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
         Seq<String> features = convertListToSeq(featuresList);
@@ -277,15 +295,15 @@ public class ClusteringQueryHandler {
 
         // Assembling
         VectorAssembler assembler =
-                new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
+            new VectorAssembler().setInputCols(featuresList.toArray(new String[0])).setOutputCol("features");
         Dataset<Row> featureDF = assembler.transform(selectedFeatures);
         featureDF.show(10);
 
         // Scaling
         log.info("Normalizing features");
         MinMaxScaler scaler = new MinMaxScaler()
-                .setInputCol("features")
-                .setOutputCol("normalized_features");
+            .setInputCol("features")
+            .setOutputCol("normalized_features");
         MinMaxScalerModel scalerModel = scaler.fit(featureDF);
 
         featureDF = scalerModel.transform(featureDF);
@@ -301,63 +319,6 @@ public class ClusteringQueryHandler {
 
     public Seq<String> convertListToSeq(List<String> inputList) {
         return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
-    }
-
-    /**
-     * Adds required dependency jars to the Spark Context member.
-     */
-    private void addClusterDependencyJars(JavaSparkContext sparkContext) {
-        String[] jarPaths = {
-                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
-                "build/libs/spark-core_2.12-3.0.1.jar",
-                "build/libs/spark-mllib_2.12-3.0.1.jar",
-                "build/libs/spark-sql_2.12-3.0.1.jar",
-                "build/libs/bson-4.0.5.jar",
-                "build/libs/mongo-java-driver-3.12.5.jar"
-        };
-
-        for (String jar : jarPaths) {
-            log.info("Adding dependency JAR to the Spark Context: " + jar);
-            sparkContext.addJar(jar);
-        }
-    }
-
-    private void logRequest(ModelType modelType) {
-        log.info("Logging " + modelType.toString());
-        log.info("============== REQUEST ===============");
-        log.info("Collections:");
-        for (int i = 0; i < this.request.getCollectionsCount(); i++) {
-            Collection col = this.request.getCollections(i);
-            log.info("\tName: " + col.getName());
-            log.info("\tLabel: " + col.getLabel());
-            log.info("\tFeatures:");
-            for (int j = 0; j < col.getFeaturesCount(); j++) {
-                log.info("\t\t" + col.getFeatures(j));
-            }
-        }
-        switch (modelType) {
-            case K_MEANS_CLUSTERING:
-                KMeansClusteringRequest kMeansClusteringRequest = request.getKMeansClusteringRequest();
-                log.info("\tClusterCount: " + kMeansClusteringRequest.getClusterCount());
-                log.info("\tMaxIterations: " + kMeansClusteringRequest.getMaxIterations());
-                break;
-            case BISECTING_K_MEANS:
-                BisectingKMeansRequest bisectingKMeansRequest = request.getBisectingKMeansRequest();
-                log.info("\tClusterCount: " + bisectingKMeansRequest.getClusterCount());
-                log.info("\tMaxIterations: " + bisectingKMeansRequest.getMaxIterations());
-                break;
-            case GAUSSIAN_MIXTURE:
-                GaussianMixtureRequest gaussianMixtureRequest = request.getGaussianMixtureRequest();
-                log.info("\tClusterCount: " + gaussianMixtureRequest.getClusterCount());
-                log.info("\tMaxIterations: " + gaussianMixtureRequest.getMaxIterations());
-                break;
-            case LATENT_DIRICHLET_ALLOCATION:
-                LatentDirichletAllocationRequest latentDirichletAllocationRequest =
-                        request.getLatentDirichletAllocationRequest();
-                log.info("\tClusterCount: " + latentDirichletAllocationRequest.getClusterCount());
-                log.info("\tMaxIterations: " + latentDirichletAllocationRequest.getMaxIterations());
-                break;
-        }
     }
 
     private static class ClusteringResult {
@@ -376,9 +337,9 @@ public class ClusteringQueryHandler {
         @Override
         public String toString() {
             return "ClusteringResult{" +
-                    "gisJoin='" + gisJoin + '\'' +
-                    ", prediction=" + prediction +
-                    '}';
+                "gisJoin='" + gisJoin + '\'' +
+                ", prediction=" + prediction +
+                '}';
         }
     }
 }

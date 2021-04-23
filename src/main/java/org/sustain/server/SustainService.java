@@ -20,14 +20,11 @@ import org.sustain.SustainGrpc;
 import org.sustain.handlers.ClusteringQueryHandler;
 import org.sustain.handlers.CompoundQueryHandler;
 import org.sustain.handlers.CountQueryHandler;
-import org.sustain.handlers.GrpcHandler;
-import org.sustain.handlers.RegressionQueryHandler;
 import org.sustain.handlers.DirectQueryHandler;
 import org.sustain.handlers.EnsembleQueryHandler;
 import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.RegressionQueryHandler;
 import org.sustain.handlers.SlidingWindowQueryHandler;
-import org.sustain.modeling.PCAHandler;
 
 public class SustainService extends SustainGrpc.SustainImplBase {
     private static final Logger log = LogManager.getLogger(SustainService.class);
@@ -47,7 +44,6 @@ public class SustainService extends SustainGrpc.SustainImplBase {
 
     @Override
     public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
-
         GrpcHandler handler;
         ModelType type = request.getType();
         switch (type) {
@@ -78,10 +74,6 @@ public class SustainService extends SustainGrpc.SustainImplBase {
             case LATENT_DIRICHLET_ALLOCATION:
                 log.info("Received a Latent Dirichlet Allocation Request");
                 handler = new ClusteringQueryHandler(request, responseObserver, this.sparkManager);
-                break;
-            case DUMMY:
-                log.info("Received a Dummy Request");
-                handler = new PCAHandler(request, responseObserver, this.sparkManager);
                 break;
             default:
                 responseObserver.onError(new Exception("Invalid Model Type"));
