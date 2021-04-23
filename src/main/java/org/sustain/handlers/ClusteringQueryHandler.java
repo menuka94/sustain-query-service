@@ -171,12 +171,11 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
         ProfilingUtil.evaluateClusteringModel(evaluateDF, "KMeans", "without PCA");
 
-        // Build model again with Principal Components
-        List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
+        // Re-build model with Principal Components
         PCAModel pca = new PCA()
             .setInputCol("features")
             .setOutputCol("pcaFeatures")
-            .setK(featuresList.size())
+            .setK(1)
             .fit(featureDF);
 
         Dataset<Row> featureDF1 = pca.transform(featureDF)
@@ -184,6 +183,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
             .withColumnRenamed("pcaFeatures", "features")
             .select("GISJOIN", "features");
         featureDF1.show();
+
         ProfilingUtil.writeToFile("featureDF with PCA: " + featureDF1.showString(20, 1000, true));
 
         KMeans kMeans1 = new KMeans().setK(k);
@@ -193,7 +193,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         predictDF1.show();
 
         // evaluate clustering (with PCA) results
-        Dataset<Row> evaluateDF1 = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        Dataset<Row> evaluateDF1 = model1.transform(featureDF1).select(Constants.GIS_JOIN, "features", "prediction");
         ProfilingUtil.evaluateClusteringModel(evaluateDF1, "KMeans", "with PCA");
 
         Dataset<String> jsonResults = predictDF.toJSON();
