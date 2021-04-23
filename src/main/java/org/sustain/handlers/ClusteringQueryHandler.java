@@ -13,26 +13,21 @@ import org.apache.spark.ml.clustering.BisectingKMeans;
 import org.apache.spark.ml.clustering.BisectingKMeansModel;
 import org.apache.spark.ml.clustering.GaussianMixture;
 import org.apache.spark.ml.clustering.GaussianMixtureModel;
-import org.apache.spark.ml.clustering.KMeans;
-import org.apache.spark.ml.clustering.KMeansModel;
 import org.apache.spark.ml.clustering.LDA;
 import org.apache.spark.ml.clustering.LDAModel;
 import org.apache.spark.ml.feature.MinMaxScaler;
 import org.apache.spark.ml.feature.MinMaxScalerModel;
-import org.apache.spark.ml.feature.PCA;
-import org.apache.spark.ml.feature.PCAModel;
 import org.apache.spark.ml.feature.VectorAssembler;
-import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.sustain.BisectingKMeansResponse;
 import org.sustain.GaussianMixtureResponse;
-import org.sustain.KMeansClusteringResponse;
 import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
 import org.sustain.SparkTask;
+import org.sustain.handlers.clustering.KMeansClusteringHandlerImpl;
 import org.sustain.util.Constants;
 import org.sustain.util.ProfilingUtil;
 import scala.collection.JavaConverters;
@@ -148,74 +143,15 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
     private void buildKMeansModel(JavaSparkContext sparkContext) {
         int k = request.getKMeansClusteringRequest().getClusterCount();
         Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
-        // KMeans Clustering
-        long buildTime1 = System.currentTimeMillis();
-        KMeans kmeans = new KMeans().setK(k);
 
-        KMeansModel model = kmeans.fit(featureDF);
-        long buildTime2 = System.currentTimeMillis();
+        // Build model
+        Dataset<Row> predictDF = KMeansClusteringHandlerImpl.buildModel(k, featureDF);
 
-        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "KMeansModelBuildTime");
+        // Write results to stream
+        KMeansClusteringHandlerImpl.writeToStream(predictDF, responseObserver);
 
-        Vector[] vectors = model.clusterCenters();
-        log.info("======================== CLUSTER CENTERS =====================================");
-        for (Vector vector : vectors) {
-            log.info(vector.toString());
-        }
-
-        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
-        log.info("Predictions...");
-        predictDF.show(10);
-
-        // evaluate clustering results
-        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "KMeans", "without PCA");
-
-        // Re-build model with Principal Components
-        PCAModel pca = new PCA()
-            .setInputCol("features")
-            .setOutputCol("pcaFeatures")
-            .setK(1)
-            .fit(featureDF);
-
-        Dataset<Row> featureDF1 = pca.transform(featureDF)
-            .drop("features")
-            .withColumnRenamed("pcaFeatures", "features")
-            .select("GISJOIN", "features");
-        featureDF1.show();
-
-        ProfilingUtil.writeToFile("featureDF with PCA: " + featureDF1.showString(20, 1000, true));
-
-        KMeans kMeans1 = new KMeans().setK(k);
-        KMeansModel model1 = kMeans1.fit(featureDF1);
-        Dataset<Row> predictDF1 = model1.transform(featureDF1).select(Constants.GIS_JOIN, "prediction");
-        log.info("KMEANS with PCA");
-        predictDF1.show();
-
-        // evaluate clustering (with PCA) results
-        Dataset<Row> evaluateDF1 = model1.transform(featureDF1).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF1, "KMeans", "with PCA");
-
-        Dataset<String> jsonResults = predictDF.toJSON();
-        String jsonString = jsonResults.collectAsList().toString();
-
-        Gson gson = new Gson();
-        Type type = new TypeToken<List<ClusteringResult>>() {
-        }.getType();
-        List<ClusteringResult> results = gson.fromJson(jsonString, type);
-        log.info("results.size(): " + results.size());
-
-        log.info("Writing KMeansClusteringResponses to stream");
-        for (ClusteringResult result : results) {
-            responseObserver.onNext(ModelResponse.newBuilder()
-                .setKMeansClusteringResponse(
-                    KMeansClusteringResponse.newBuilder()
-                        .setGisJoin(result.getGisJoin())
-                        .setPrediction(result.getPrediction())
-                        .build()
-                ).build()
-            );
-        }
+        // Build model with Principal Components
+        KMeansClusteringHandlerImpl.buildModelWithPCA(k, 2, featureDF);
     }
 
     private void buildBisectingKMeansModel(JavaSparkContext sparkContext) {
@@ -340,7 +276,6 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         // Load mongodb rdd and convert to dataset
         log.info("Preprocessing data");
-        long time1 = System.currentTimeMillis();
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
         List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
         Seq<String> features = convertListToSeq(featuresList);
@@ -388,7 +323,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
     }
 
-    private static class ClusteringResult {
+    public static class ClusteringResult {
         @SerializedName("GISJOIN")
         String gisJoin;
         int prediction;
