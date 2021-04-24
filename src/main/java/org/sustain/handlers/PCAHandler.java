@@ -48,7 +48,7 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
     private void doPca(JavaSparkContext sparkContext) {
         // Initialize mongodb read configuration
         Map<String, String> readOverrides = new HashMap();
-        readOverrides.put("spark.mongodb.input.collection", "svi_county_GISJOIN");
+        readOverrides.put("spark.mongodb.input.collection", "noaa_nam");
         readOverrides.put("spark.mongodb.input.database", "sustaindb");
         readOverrides.put("spark.mongodb.input.uri",
             "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT);
@@ -62,7 +62,7 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
         Seq<String> features = convertListToSeq(featuresList);
 
-        Dataset<Row> selectedFeatures = collection.select(Constants.GIS_JOIN, features);
+        Dataset<Row> selectedFeatures = collection.select("gis_join", features);
 
         // Dropping rows with null values
         selectedFeatures = selectedFeatures.na().drop();
