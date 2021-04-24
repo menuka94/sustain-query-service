@@ -25,6 +25,7 @@ import org.sustain.util.ProfilingUtil;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,13 +96,14 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         DenseMatrix pc = pca.pc();
         ProfilingUtil.writeToFile("PC: " + pc.toString(34, 34));
 
-        Dataset<Row> result = pca.transform(featureDF).select("features", "pcaFeatures");
+        Dataset<Row> pcaDF = pca.transform(featureDF).select("features", "pcaFeatures");
+        pcaDF.write().json("sustain-pcaDF.json");
         DenseVector explainedVariance = pca.explainedVariance();
         log.info("Explained Variance: {}", explainedVariance);
         ProfilingUtil.writeToFile("Explained Variance: " + explainedVariance.toString());
-        result.show();
-        ProfilingUtil.writeToFile("PCA Results DataFrame: " + result.showString(100, 100, true));
-        log.info("Size of results: ({}, {})", result.count(), result.columns().length);
+        pcaDF.show();
+        ProfilingUtil.writeToFile("PCA Results DataFrame: " + pcaDF.showString(100, 100, true));
+        log.info("Size of results: ({}, {})", pcaDF.count(), pcaDF.columns().length);
 
         log.info("Completed");
         responseObserver.onNext(ModelResponse.newBuilder()

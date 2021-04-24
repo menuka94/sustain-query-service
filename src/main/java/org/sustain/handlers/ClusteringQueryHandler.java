@@ -138,7 +138,6 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
     }
 
     private Dataset<Row> preprocessAndGetFeatureDF(JavaSparkContext sparkContext) {
-        // Identify resolution of evaluation
         String resolution = "";
         switch (request.getType()) {
             case K_MEANS_CLUSTERING:
