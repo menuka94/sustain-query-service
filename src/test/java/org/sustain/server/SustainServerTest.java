@@ -152,7 +152,7 @@ public class SustainServerTest {
     @Tag("slow")
     @Test
     public void testPCAHandler() {
-        executeJsonModelRequest("requests/pca/pca_noaa.json");
+        executeJsonModelRequest("requests/pca/pca_svi_county.json");
     }
 
     @Tag("slow")

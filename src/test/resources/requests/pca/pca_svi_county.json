@@ -2,7 +2,7 @@
   "type": "PCA",
   "collections": [
     {
-      "name": "county_svi_GISJOIN",
+      "name": "svi_county_GISJOIN",
       "features": [
         "E_HU",
         "M_HU",

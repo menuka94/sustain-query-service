@@ -22,10 +22,11 @@ import org.sustain.SparkManager;
 import org.sustain.SparkTask;
 import org.sustain.util.Constants;
 import org.sustain.util.ProfilingUtil;
+import scala.Tuple2;
+import scala.collection.Iterator;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,8 +48,14 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
 
     private void doPca(JavaSparkContext sparkContext) {
         // Initialize mongodb read configuration
-        Map<String, String> readOverrides = new HashMap();
-        readOverrides.put("spark.mongodb.input.collection", "noaa_nam");
+        List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
+        Seq<String> features = convertListToSeq(featuresList);
+
+        String collectionName = request.getCollections(0).getName();
+        log.info("collectionName: {}", collectionName);
+
+        Map<String, String> readOverrides = new HashMap<>();
+        readOverrides.put("spark.mongodb.input.collection", collectionName);
         readOverrides.put("spark.mongodb.input.database", "sustaindb");
         readOverrides.put("spark.mongodb.input.uri",
             "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT);
@@ -59,10 +66,8 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         // Load mongodb rdd and convert to dataset
         log.info("Preprocessing data");
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
-        List<String> featuresList = new ArrayList<>(request.getCollections(0).getFeaturesList());
-        Seq<String> features = convertListToSeq(featuresList);
 
-        Dataset<Row> selectedFeatures = collection.select("gis_join", features);
+        Dataset<Row> selectedFeatures = collection.select("GISJOIN", features);
 
         // Dropping rows with null values
         selectedFeatures = selectedFeatures.na().drop();
@@ -94,15 +99,16 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
             .setK(featuresList.size())
             .fit(featureDF);
         DenseMatrix pc = pca.pc();
-        ProfilingUtil.writeToFile("PC: " + pc.toString(34, 34));
+        //ProfilingUtil.writeToFile("PC: " + pc.toString(34, 34));
 
         Dataset<Row> pcaDF = pca.transform(featureDF).select("features", "pcaFeatures");
-        pcaDF.write().json("sustain-pcaDF.json");
-        DenseVector explainedVariance = pca.explainedVariance();
-        log.info("Explained Variance: {}", explainedVariance);
-        ProfilingUtil.writeToFile("Explained Variance: " + explainedVariance.toString());
+        //pcaDF.write().json("sustain-pcaDF.json");
+        int requiredNoOfPCs = getNoOfPrincipalComponentsByVariance(pca, 0.95);
+        log.info("requiredNoOfPCs: {}", requiredNoOfPCs);
+        ProfilingUtil.writeToFile("requiredNoOfPCs: " + requiredNoOfPCs);
+
         pcaDF.show();
-        ProfilingUtil.writeToFile("PCA Results DataFrame: " + pcaDF.showString(100, 100, true));
+        //ProfilingUtil.writeToFile("PCA Results DataFrame: " + pcaDF.showString(100, 100, true));
         log.info("Size of results: ({}, {})", pcaDF.count(), pcaDF.columns().length);
 
         log.info("Completed");
@@ -112,6 +118,32 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
                     .setResult("completed!")
                     .build())
             .build());
+    }
+
+    /**
+     * pca: PCA object
+     * targetVariance: required variance
+     *
+     * @return : minimum number of principal components that account for the required variance
+     */
+    public int getNoOfPrincipalComponentsByVariance(PCAModel pca, double targetVariance) {
+        int n;
+        double varianceSum = 0.0;
+        DenseVector explainedVariance = pca.explainedVariance();
+        Iterator<Tuple2<Object, Object>> iterator = explainedVariance.iterator();
+        while (iterator.hasNext()) {
+            Tuple2<Object, Object> next = iterator.next();
+            n = Integer.parseInt(next._1().toString()) + 1;
+            if (n >= pca.getK()) {
+                break;
+            }
+            varianceSum += Double.parseDouble(next._2().toString());
+            if (varianceSum >= targetVariance) {
+                return n;
+            }
+        }
+
+        return pca.getK();
     }
 
     public Seq<String> convertListToSeq(List<String> inputList) {
