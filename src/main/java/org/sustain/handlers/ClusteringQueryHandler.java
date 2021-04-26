@@ -83,19 +83,6 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         return true;
     }
 
-    private void buildLatentDirichletAllocationModel(JavaSparkContext sparkContext) {
-        int k = request.getLatentDirichletAllocationRequest().getClusterCount();
-        int maxIterations = request.getLatentDirichletAllocationRequest().getMaxIterations();
-        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
-
-        LDAClusteringHandlerImpl handler = new LDAClusteringHandlerImpl();
-        Dataset<Row> predictDF = handler.buildModel(k, maxIterations, featureDF);
-
-        handler.writeToStream(predictDF, responseObserver);
-
-        handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
-    }
-
     private void buildKMeansModel(JavaSparkContext sparkContext) {
         int k = request.getKMeansClusteringRequest().getClusterCount();
         int maxIterations = request.getKMeansClusteringRequest().getMaxIterations();
@@ -111,9 +98,9 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
     }
 
     private void buildBisectingKMeansModel(JavaSparkContext sparkContext) {
-        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
         int k = request.getBisectingKMeansRequest().getClusterCount();
         int maxIterations = request.getBisectingKMeansRequest().getMaxIterations();
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
 
         BisectingKMeansClusteringHandlerImpl handler = new BisectingKMeansClusteringHandlerImpl();
 
@@ -125,9 +112,9 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
     }
 
     private void buildGaussianMixtureModel(JavaSparkContext sparkContext) {
-        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
         int k = request.getGaussianMixtureRequest().getClusterCount();
         int maxIterations = request.getGaussianMixtureRequest().getMaxIterations();
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
 
         GaussianMixtureClusteringHandlerImpl handler = new GaussianMixtureClusteringHandlerImpl();
         Dataset<Row> predictDF = handler.buildModel(k, maxIterations, featureDF);
@@ -135,6 +122,19 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         handler.writeToStream(predictDF, responseObserver);
 
         handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
+    }
+
+    private void buildLatentDirichletAllocationModel(JavaSparkContext sparkContext) {
+        int k = request.getLatentDirichletAllocationRequest().getClusterCount();
+        int maxIterations = request.getLatentDirichletAllocationRequest().getMaxIterations();
+        Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
+
+        LDAClusteringHandlerImpl handler = new LDAClusteringHandlerImpl();
+        Dataset<Row> predictDF = handler.buildModel(k, maxIterations, featureDF);
+
+        handler.writeToStream(predictDF, responseObserver);
+
+        //handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
     }
 
     private Dataset<Row> preprocessAndGetFeatureDF(JavaSparkContext sparkContext) {
@@ -157,8 +157,10 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
                 break;
         }
 
+        log.info("Clustering Model Type: {}, Census Resolution: {}", request.getType(), resolution);
+
         // Initialize mongodb read configuration
-        Map<String, String> readOverrides = new HashMap();
+        Map<String, String> readOverrides = new HashMap<>();
         readOverrides.put("spark.mongodb.input.collection", resolution + "_stats");
         readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
         readOverrides.put("spark.mongodb.input.uri",

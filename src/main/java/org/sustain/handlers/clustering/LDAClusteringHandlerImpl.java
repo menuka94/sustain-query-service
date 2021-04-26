@@ -33,17 +33,23 @@ public class LDAClusteringHandlerImpl extends AbstractClusteringHandler {
 
         double ll = model.logLikelihood(featureDF);
         double lp = model.logPerplexity(featureDF);
-        log.info("LDA: Lower bound on the log likelihood of the entire corpus: " + ll);
-        log.info("LDA: Upper bound on perplexity: " + lp);
+        log.info("LDA: Lower bound on the log likelihood of the entire corpus: {}", ll);
+        log.info("LDA: Upper bound on perplexity: {}", lp);
+
+        // describe topics
+        Dataset<Row> topics = model.describeTopics();
+        log.info("The topics described by their top-weighted terms:");
+        topics.show(false);
 
         // results
-        Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
+        Dataset<Row> predictDF = model.transform(featureDF);
+        //Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");
         log.info("Predictions...");
         predictDF.show(10);
 
         // evaluate clustering results
-        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "LDA", "without PCA");
+        //Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
+        //ProfilingUtil.evaluateClusteringModel(evaluateDF, "LDA", "without PCA");
 
         return predictDF;
     }
@@ -69,8 +75,8 @@ public class LDAClusteringHandlerImpl extends AbstractClusteringHandler {
 
         double ll = model.logLikelihood(featureDF1);
         double lp = model.logPerplexity(featureDF1);
-        log.info("LDA: Lower bound on the log likelihood of the entire corpus: " + ll);
-        log.info("LDA: Upper bound on perplexity: " + lp);
+        log.info("LDA: Lower bound on the log likelihood of the entire corpus: {}", ll);
+        log.info("LDA: Upper bound on perplexity: {}", lp);
 
         // results
         Dataset<Row> predictDF = model.transform(featureDF1).select(Constants.GIS_JOIN, "prediction");
