@@ -24,9 +24,9 @@ public class GaussianMixtureClusteringHandlerImpl extends AbstractClusteringHand
     private static final Logger log = LogManager.getLogger(GaussianMixtureClusteringHandlerImpl.class);
 
     @Override
-    public Dataset<Row> buildModel(int k, int maxIterations, Dataset<Row> featureDF) {
+    public Dataset<Row> buildModel(int clusterCount, int maxIterations, Dataset<Row> featureDF) {
         long buildTime1 = System.currentTimeMillis();
-        GaussianMixture gaussianMixture = new GaussianMixture().setK(k).setMaxIter(maxIterations);
+        GaussianMixture gaussianMixture = new GaussianMixture().setK(clusterCount).setMaxIter(maxIterations);
         GaussianMixtureModel model = gaussianMixture.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
         ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "GaussianMixtureModelBuildTime");
@@ -43,7 +43,7 @@ public class GaussianMixtureClusteringHandlerImpl extends AbstractClusteringHand
 
         // evaluate clustering results
         Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "GaussianMixture", "without PCA");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "GaussianMixture", String.format("without PCA, k=%d", clusterCount));
 
         return predictDF;
     }
@@ -61,7 +61,7 @@ public class GaussianMixtureClusteringHandlerImpl extends AbstractClusteringHand
         Dataset<Row> featureDF1 = pca.transform(featureDF)
             .drop("features")
             .withColumnRenamed("pcaFeatures", "features")
-            .select("GISJOIN", "features");
+            .select(Constants.GIS_JOIN, "features");
         featureDF1.show();
 
         GaussianMixture gaussianMixture = new GaussianMixture().setK(clusterCount).setMaxIter(maxIterations);
@@ -78,8 +78,9 @@ public class GaussianMixtureClusteringHandlerImpl extends AbstractClusteringHand
         predictDF.show(10);
 
         // evaluate clustering results
-        Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "GaussianMixture", "with PCA");
+        Dataset<Row> evaluateDF = model.transform(featureDF1).select(Constants.GIS_JOIN, "features", "prediction");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "GaussianMixture",
+                String.format("with PCA, k=%d, #PC=%d", clusterCount, principalComponentCount));
     }
 
     @Override

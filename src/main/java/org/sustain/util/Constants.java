@@ -2,6 +2,7 @@ package org.sustain.util;
 
 public class Constants {
     public static final String GIS_JOIN = "GISJOIN";
+    public static final int PRINCIPAL_COMPONENT_COUNT = Integer.parseInt(System.getenv("PRINCIPAL_COMPONENT_COUNT"));
 
     public static class Server {
         public static final String  HOST = System.getenv("SERVER_HOST");

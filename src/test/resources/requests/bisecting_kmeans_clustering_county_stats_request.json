@@ -14,7 +14,7 @@
     }
   ],
   "bisectingKMeansRequest": {
-    "clusterCount": 10,
+    "clusterCount": 55,
     "maxIterations": 10,
     "resolution": "County"
   }

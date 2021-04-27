@@ -24,9 +24,9 @@ public class BisectingKMeansClusteringHandlerImpl extends AbstractClusteringHand
     private static final Logger log = LogManager.getLogger(BisectingKMeansClusteringHandlerImpl.class);
 
     @Override
-    public Dataset<Row> buildModel(int k, int maxIterations, Dataset<Row> featureDF) {
+    public Dataset<Row> buildModel(int clusterCount, int maxIterations, Dataset<Row> featureDF) {
         long buildTime1 = System.currentTimeMillis();
-        BisectingKMeans bisectingKMeans = new BisectingKMeans().setK(k).setMaxIter(maxIterations);
+        BisectingKMeans bisectingKMeans = new BisectingKMeans().setK(clusterCount).setMaxIter(maxIterations);
         BisectingKMeansModel model = bisectingKMeans.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
         ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "bisectingKMeansModelBuildTime");
@@ -38,7 +38,7 @@ public class BisectingKMeansClusteringHandlerImpl extends AbstractClusteringHand
 
         // evaluate clustering results
         Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "BisectingKMeans", "Without PCA");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "BisectingKMeans", String.format("Without PCA, k=%d", clusterCount));
 
         return predictDF;
     }
@@ -55,7 +55,7 @@ public class BisectingKMeansClusteringHandlerImpl extends AbstractClusteringHand
         Dataset<Row> featureDF1 = pca.transform(featureDF)
             .drop("features")
             .withColumnRenamed("pcaFeatures", "features")
-            .select("GISJOIN", "features");
+            .select(Constants.GIS_JOIN, "features");
         featureDF1.show();
 
         BisectingKMeans bisectingKMeans = new BisectingKMeans().setK(clusterCount).setMaxIter(maxIterations);
@@ -68,7 +68,8 @@ public class BisectingKMeansClusteringHandlerImpl extends AbstractClusteringHand
 
         // evaluate clustering results
         Dataset<Row> evaluateDF = model.transform(featureDF1).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "BisectingKMeans", "with PCA");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "BisectingKMeans",
+                String.format("with PCA, k=%d, #PC=%d", clusterCount, principalComponentCount));
     }
 
     @Override

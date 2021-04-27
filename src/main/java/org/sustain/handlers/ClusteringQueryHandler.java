@@ -34,10 +34,12 @@ import java.util.concurrent.Future;
 public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
 
     private static final Logger log = LogManager.getLogger(ClusteringQueryHandler.class);
+    private static int principalComponentCount;
 
     public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
                                   SparkManager sparkManager) {
         super(request, responseObserver, sparkManager);
+        principalComponentCount = Constants.PRINCIPAL_COMPONENT_COUNT;
     }
 
     @Override
@@ -94,7 +96,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         handler.writeToStream(predictDF, responseObserver);
 
-        handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
+        handler.buildModelWithPCA(k, maxIterations, principalComponentCount, featureDF);
     }
 
     private void buildBisectingKMeansModel(JavaSparkContext sparkContext) {
@@ -108,7 +110,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         handler.writeToStream(predictDF, responseObserver);
 
-        handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
+        handler.buildModelWithPCA(k, maxIterations, principalComponentCount, featureDF);
     }
 
     private void buildGaussianMixtureModel(JavaSparkContext sparkContext) {
@@ -117,11 +119,12 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         Dataset<Row> featureDF = preprocessAndGetFeatureDF(sparkContext);
 
         GaussianMixtureClusteringHandlerImpl handler = new GaussianMixtureClusteringHandlerImpl();
+
         Dataset<Row> predictDF = handler.buildModel(k, maxIterations, featureDF);
 
         handler.writeToStream(predictDF, responseObserver);
 
-        handler.buildModelWithPCA(k, maxIterations, 2, featureDF);
+        handler.buildModelWithPCA(k, maxIterations, principalComponentCount, featureDF);
     }
 
     private void buildLatentDirichletAllocationModel(JavaSparkContext sparkContext) {

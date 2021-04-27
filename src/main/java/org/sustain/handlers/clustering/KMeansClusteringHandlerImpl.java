@@ -25,10 +25,10 @@ public class KMeansClusteringHandlerImpl extends AbstractClusteringHandler {
     private static final Logger log = LogManager.getLogger(KMeansClusteringHandlerImpl.class);
 
     @Override
-    public Dataset<Row> buildModel(int k, int maxIterations, Dataset<Row> featureDF) {
+    public Dataset<Row> buildModel(int clusterCount, int maxIterations, Dataset<Row> featureDF) {
         // KMeans Clustering
         long buildTime1 = System.currentTimeMillis();
-        KMeans kmeans = new KMeans().setK(k).setMaxIter(maxIterations);
+        KMeans kmeans = new KMeans().setK(clusterCount).setMaxIter(maxIterations);
 
         KMeansModel model = kmeans.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
@@ -47,7 +47,7 @@ public class KMeansClusteringHandlerImpl extends AbstractClusteringHandler {
 
         // evaluate clustering results
         Dataset<Row> evaluateDF = model.transform(featureDF).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF, "KMeans", "without PCA");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF, "KMeans", String.format("without PCA, k=%d", clusterCount));
 
         return predictDF;
     }
@@ -64,7 +64,7 @@ public class KMeansClusteringHandlerImpl extends AbstractClusteringHandler {
         Dataset<Row> featureDF1 = pca.transform(featureDF)
             .drop("features")
             .withColumnRenamed("pcaFeatures", "features")
-            .select("GISJOIN", "features");
+            .select(Constants.GIS_JOIN, "features");
         featureDF1.show();
 
         KMeans kMeans1 = new KMeans().setK(clusterCount).setMaxIter(maxIterations);
@@ -74,7 +74,8 @@ public class KMeansClusteringHandlerImpl extends AbstractClusteringHandler {
 
         // evaluate clustering (with PCA) results
         Dataset<Row> evaluateDF1 = model1.transform(featureDF1).select(Constants.GIS_JOIN, "features", "prediction");
-        ProfilingUtil.evaluateClusteringModel(evaluateDF1, "KMeans", "with PCA");
+        ProfilingUtil.evaluateClusteringModel(evaluateDF1, "KMeans",
+                String.format("with PCA, k=%d, #PC=%d", clusterCount, principalComponentCount));
     }
 
     public void writeToStream(Dataset<Row> predictDF, StreamObserver<ModelResponse> responseObserver) {
