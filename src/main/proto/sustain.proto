@@ -89,7 +89,10 @@ message ModelRequest {
   PCARequest pcaRequest = 10;
 }
 
-message PCARequest {}
+message PCARequest {
+  double samplingPercentage = 1;
+}
+
 message PCAResponse {
   string result = 1;
 }

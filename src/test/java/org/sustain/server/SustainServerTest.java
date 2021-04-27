@@ -152,7 +152,10 @@ public class SustainServerTest {
     @Tag("slow")
     @Test
     public void testPCAHandler() {
-        executeJsonModelRequest("requests/pca/pca_svi_county.json");
+        String collectionName = System.getProperty("COLLECTION_NAME");
+        log.info("collectionName: {}", collectionName);
+        String resourceName = String.format("requests/pca/pca_%s.json", collectionName);
+        executeJsonModelRequest(resourceName);
     }
 
     @Tag("slow")

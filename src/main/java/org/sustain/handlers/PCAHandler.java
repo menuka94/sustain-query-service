@@ -63,11 +63,18 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         ReadConfig readConfig =
             ReadConfig.create(sparkContext.getConf(), readOverrides);
 
+        String gisJoin;
+        if (collectionName.equals("noaa_nam")) {
+            gisJoin = "gis_join";
+        } else {
+            gisJoin = Constants.GIS_JOIN;
+        }
+
         // Load mongodb rdd and convert to dataset
         log.info("Preprocessing data");
         Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
 
-        Dataset<Row> selectedFeatures = collection.select("GISJOIN", features);
+        Dataset<Row> selectedFeatures = collection.select(gisJoin, features);
 
         // Dropping rows with null values
         selectedFeatures = selectedFeatures.na().drop();
@@ -92,16 +99,23 @@ public class PCAHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> im
         log.info("Dataframe after normalizing with StandardScaler");
         featureDF.show(10);
 
+        double samplingPercentage = request.getPcaRequest().getSamplingPercentage();
+
+        featureDF = featureDF.sample(samplingPercentage);
+
         // PCA
+        long pcaTime1 = System.currentTimeMillis();
         PCAModel pca = new PCA()
             .setInputCol("features")
             .setOutputCol("pcaFeatures")
             .setK(featuresList.size())
             .fit(featureDF);
         DenseMatrix pc = pca.pc();
-        //ProfilingUtil.writeToFile("PC: " + pc.toString(34, 34));
 
         Dataset<Row> pcaDF = pca.transform(featureDF).select("features", "pcaFeatures");
+        long pcaTime2 = System.currentTimeMillis();
+        ProfilingUtil.calculateTimeDiff(pcaTime1, pcaTime2,
+                String.format("PCA Time for collection '%s' with %f sampling", collectionName, samplingPercentage));
         //pcaDF.write().json("sustain-pcaDF.json");
         int requiredNoOfPCs = getNoOfPrincipalComponentsByVariance(pca, 0.95);
         log.info("requiredNoOfPCs: {}", requiredNoOfPCs);

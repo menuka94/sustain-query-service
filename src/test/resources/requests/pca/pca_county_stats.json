@@ -1,0 +1,19 @@
+{
+  "type": "PCA",
+  "collections": [
+    {
+      "name": "county_stats",
+      "features": [
+        "total_population",
+        "median_household_income",
+        "no_of_hospitals",
+        "no_of_fire_stations",
+        "no_of_electrical_substations",
+        "no_of_power_plants"
+      ]
+    }
+  ],
+  "pcaRequest": {
+    "samplingPercentage": 1.0
+  }
+}

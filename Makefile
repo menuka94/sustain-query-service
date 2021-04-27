@@ -33,7 +33,7 @@ clean:
 	rm -rf build log
 
 test-pca:
-	./gradlew test --tests SustainServerTest.testPCAHandler
+	./gradlew test --tests SustainServerTest.testPCAHandler -DCOLLECTION_NAME=$(COLLECTION_NAME)
 
 test-kmeans:
 	./gradlew test --tests SustainServerTest.testKMeansClusteringModel

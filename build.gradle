@@ -90,7 +90,10 @@ test {
     testLogging {
         showStandardStreams = true
     }
+
+    systemProperties(System.getProperties())
 }
+
 
 startScripts.enabled = false
 

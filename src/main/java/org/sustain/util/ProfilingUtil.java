@@ -32,7 +32,7 @@ public class ProfilingUtil {
 
     public static void calculateTimeDiff(long time1, long time2, String label) {
         double timeTaken = (time2 - time1) / 1000.0;
-        String logLine = String.format("%s: %f", label, timeTaken);
+        String logLine = String.format("%s: %f ms", label, timeTaken);
         log.info(logLine);
         writeToFile(logLine);
     }

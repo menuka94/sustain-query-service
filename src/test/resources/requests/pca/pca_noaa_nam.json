@@ -27,5 +27,6 @@
     }
   ],
   "pcaRequest": {
+    "samplingPercentage": 1.0
   }
 }
