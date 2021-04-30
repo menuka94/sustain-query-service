@@ -39,6 +39,9 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 		List<List<String>> batches = new ArrayList<>();
 		int totalGisJoins = gisJoins.size();
 		int gisJoinsPerBatch = (int) Math.ceil( (1.0*totalGisJoins) / (1.0*batchSize) );
+		log.info(">>> Max batch size: {}, totalGisJoins: {}, gisJoinsPerBatch: {}", batchSize, totalGisJoins,
+				gisJoinsPerBatch);
+
 		for (int i = 0; i < totalGisJoins; i++) {
 			if ( (i+1) % gisJoinsPerBatch == 0 ) {
 				batches.add(new ArrayList<>());
