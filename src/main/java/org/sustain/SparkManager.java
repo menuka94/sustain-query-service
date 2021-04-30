@@ -61,6 +61,7 @@ public class SparkManager {
                 Constants.Spark.BACKLOG_TIMEOUT)
             .config("spark.dynamicAllocation.executorIdleTimeout",
                 Constants.Spark.IDLE_TIMEOUT)
+            .config("mongodb.keep_alive_ms", "100000")
             .getOrCreate();
 
         // if they don't exist - add JARs to SparkContext
