@@ -140,22 +140,25 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 						.withStandardization(lrRequest.getSetStandardization())
 						.build();
 
-				model.train(); // Launches the Spark Model
+				boolean ok = model.train(); // Launches the Spark Model
+				if (ok) {
+					// Build model response and return it
+					LinearRegressionResponse modelResults = LinearRegressionResponse.newBuilder()
+							.setGisJoin(model.getGisJoin())
+							.setTotalIterations(model.getTotalIterations())
+							.setRmseResidual(model.getRmse())
+							.setR2Residual(model.getR2())
+							.setIntercept(model.getIntercept())
+							.addAllSlopeCoefficients(model.getCoefficients())
+							.addAllObjectiveHistory(model.getObjectiveHistory())
+							.build();
 
-				// Build model response and return it
-				LinearRegressionResponse modelResults = LinearRegressionResponse.newBuilder()
-						.setGisJoin(model.getGisJoin())
-						.setTotalIterations(model.getTotalIterations())
-						.setRmseResidual(model.getRmse())
-						.setR2Residual(model.getR2())
-						.setIntercept(model.getIntercept())
-						.addAllSlopeCoefficients(model.getCoefficients())
-						.addAllObjectiveHistory(model.getObjectiveHistory())
-						.build();
-
-				modelResponses.add(ModelResponse.newBuilder()
-						.setLinearRegressionResponse(modelResults)
-						.build());
+					modelResponses.add(ModelResponse.newBuilder()
+							.setLinearRegressionResponse(modelResults)
+							.build());
+				} else {
+					log.info("Ran into a problem building a model for GISJoin {}, skipping.", gisJoin);
+				}
 			}
 			return modelResponses;
 		}

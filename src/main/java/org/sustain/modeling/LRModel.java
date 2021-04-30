@@ -103,7 +103,7 @@ public class LRModel {
     /**
      * Trains a Linear Regression model for a single GISJoin.
      */
-    public void train() {
+    public boolean train() {
 
         // Begin a profiling task for how long it takes to train this gisJoin
         log.info(">>> Building model for GISJoin {}", this.gisJoin);
@@ -115,6 +115,11 @@ public class LRModel {
         // Filter collection by our GISJoin
         Dataset<Row> gisDataset = selected.filter(selected.col("gis_join").$eq$eq$eq(this.gisJoin))
                 .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
+
+        if (gisDataset.count() == 0) {
+            log.info(">>> Dataset for GISJoin {} is empty!", this.gisJoin);
+            return false;
+        }
 
         // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
         VectorAssembler vectorAssembler = new VectorAssembler()
@@ -162,6 +167,7 @@ public class LRModel {
 
         trainTask.finish();
         log.info(">>> Finished building model for GISJoin: {}, Task: {}", this.gisJoin, trainTask);
+        return true;
     }
 
     /**
