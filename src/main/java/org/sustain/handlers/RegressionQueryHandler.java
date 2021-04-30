@@ -17,16 +17,16 @@ import org.sustain.ModelResponse;
 import org.sustain.ModelType;
 import org.sustain.SparkManager;
 import org.sustain.SparkTask;
-import org.sustain.modeling.LinearRegressionModelImpl;
+import org.sustain.modeling.LRModel;
 import org.sustain.util.Constants;
-import org.sustain.util.Profiler;
-import org.apache.spark.util.SizeEstimator;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
+public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> {
 
     private static final Logger log = LogManager.getLogger(RegressionQueryHandler.class);
 
@@ -39,12 +39,19 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         if (isValid(this.request)) {
             logRequest(this.request);
 			try {
-				// Submit task to Spark Manager
-				Future<Boolean> future =
-					this.sparkManager.submit(this, "regression-query");
 
-				// Wait for task to complete
-				future.get();
+				// For each GISJoin in the request, submit a task to Spark Manager
+				List<Future<ModelResponse>> lrModelTasks = new ArrayList<>();
+				for (String gisJoin: this.request.getLinearRegressionRequest().getGisJoinsList()) {
+					LinearRegressionTask lrTask = new LinearRegressionTask(this.request, gisJoin);
+					lrModelTasks.add(this.sparkManager.submit(lrTask, "regression-query"));
+				}
+
+				// Wait for each task to complete and return their ModelResponses
+				for (Future<ModelResponse> lrModelTask: lrModelTasks) {
+					this.responseObserver.onNext(lrModelTask.get());
+				}
+
 			} catch (Exception e) {
 				log.error("Failed to evaluate query", e);
 				responseObserver.onError(e);
@@ -54,45 +61,34 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         }
     }
 
-    @Override
-    public Boolean execute(JavaSparkContext sparkContext) {
-		Profiler profiler = new Profiler();
-		profiler.addTask("LINEAR_REGRESSION_MODELS");
-		profiler.indent();
+    protected class LinearRegressionTask implements SparkTask<ModelResponse> {
 
-		// Set parameters of Linear Regression Model
-		LinearRegressionRequest lrRequest = this.request.getLinearRegressionRequest();
-		Collection requestCollection = this.request.getCollections(0); // We only support 1 collection currently
+		private final LinearRegressionRequest lrRequest;
+		private final Collection requestCollection;
+    	private final String gisJoin;
 
-		String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
+    	LinearRegressionTask(ModelRequest modelRequest, String gisJoin) {
+			this.lrRequest = modelRequest.getLinearRegressionRequest();
+			this.requestCollection = modelRequest.getCollections(0); // We only support 1 collection currently
+			this.gisJoin = gisJoin;
+		}
 
-		// Create a custom ReadConfig
-		profiler.addTask("CREATE_READ_CONFIG");
-		Map<String, String> readOverrides = new HashMap<String, String>();
-		readOverrides.put("uri", mongoUri);
-		readOverrides.put("database", Constants.DB.NAME);
-		readOverrides.put("collection", requestCollection.getName());
-		ReadConfig readConfig = ReadConfig.create(sparkContext.getConf(), readOverrides);
-		profiler.completeTask("CREATE_READ_CONFIG");
+		@Override
+		public ModelResponse execute(JavaSparkContext sparkContext) throws Exception {
 
-		// Lazy-load the collection in as a DF
-		profiler.addTask("LOAD_MONGO_COLLECTION");
-		Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
-		Dataset<Row> checkPointed = mongoCollection.localCheckpoint(true);
-		log.info(">>> mongoCollection Size: {}", SizeEstimator.estimate(checkPointed));
-		profiler.completeTask("LOAD_MONGO_COLLECTION");
+			// Create a custom Mongo-Spark ReadConfig
+			Map<String, String> readOverrides = new HashMap<String, String>();
+			String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
+			readOverrides.put("uri", mongoUri);
+			readOverrides.put("database", Constants.DB.NAME);
+			readOverrides.put("collection", requestCollection.getName());
+			ReadConfig readConfig = ReadConfig.create(sparkContext.getConf(), readOverrides);
 
-		// Build and run a model for each GISJoin in the request
+			// Lazy-load the collection in as a DF
+			Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
 
-		for (String gisJoin: lrRequest.getGisJoinsList()) {
-
-			String modelTaskName = String.format("MODEL_GISJOIN_%s", gisJoin);
-
-			profiler.addTask(modelTaskName);
-			profiler.indent();
-
-			LinearRegressionModelImpl model = new LinearRegressionModelImpl.LinearRegressionModelBuilder()
-					.forMongoCollection(checkPointed)
+			LRModel model = new LRModel.LRModelBuilder()
+					.forMongoCollection(mongoCollection)
 					.forGISJoin(gisJoin)
 					.forFeatures(requestCollection.getFeaturesList())
 					.forLabel(requestCollection.getLabel())
@@ -108,8 +104,9 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 					.withStandardization(lrRequest.getSetStandardization())
 					.build();
 
-			model.buildAndRunModel(profiler); // Launches the Spark Model
+			model.train(); // Launches the Spark Model
 
+			// Build model response and return it
 			LinearRegressionResponse modelResults = LinearRegressionResponse.newBuilder()
 					.setGisJoin(model.getGisJoin())
 					.setTotalIterations(model.getTotalIterations())
@@ -120,22 +117,11 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 					.addAllObjectiveHistory(model.getObjectiveHistory())
 					.build();
 
-			ModelResponse response = ModelResponse.newBuilder()
+			return ModelResponse.newBuilder()
 					.setLinearRegressionResponse(modelResults)
 					.build();
-
-			logResponse(response);
-			profiler.completeTask(modelTaskName);
-			profiler.unindent();
-			this.responseObserver.onNext(response);
 		}
-		profiler.completeTask("LINEAR_REGRESSION_MODELS");
-		profiler.unindent();
-		log.info(profiler.toString());
-
-		return true;
-    }
-
+	}
 
     @Override
     public boolean isValid(ModelRequest modelRequest) {

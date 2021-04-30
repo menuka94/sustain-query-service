@@ -4,9 +4,10 @@ import java.time.Duration;
 
 public class Task implements Comparable<Task> {
 
-    private Long startTime, endTime;
-    private String name;
-    private int indentLevel;
+    private final Long startTime;
+    private Long endTime;
+    private final String name;
+    private final int indentLevel;
 
     public Task(String name, int indentLevel) {
         this(name, System.currentTimeMillis(), indentLevel);
@@ -51,7 +52,7 @@ public class Task implements Comparable<Task> {
         Duration d = Duration.ofMillis(timeTaken()) ;
         int minutes = d.toMinutesPart();
         int seconds = d.toSecondsPart();
-        return minutes == 0 ? String.format("%d S", seconds) : String.format("%d M %d S", minutes, seconds);
+        return minutes == 0 ? String.format("%d sec", seconds) : String.format("%d min %d sec", minutes, seconds);
     }
 
     private String indent() {
