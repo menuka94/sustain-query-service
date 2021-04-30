@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.sparkproject.dmg.pmml.Model;
 import org.sustain.Collection;
 import org.sustain.LinearRegressionRequest;
 import org.sustain.LinearRegressionResponse;
@@ -34,22 +35,52 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         super(request, responseObserver, sparkManager);
     }
 
+    private List<List<String>> batchGisJoins(List<String> gisJoins, int batchSize) {
+		List<List<String>> batches = new ArrayList<>();
+		int totalGisJoins = gisJoins.size();
+		int gisJoinsPerBatch = (int) Math.ceil( (1.0*totalGisJoins) / (1.0*batchSize) );
+		for (int i = 0; i < totalGisJoins; i++) {
+			if ( (i+1) % gisJoinsPerBatch == 0 ) {
+				batches.add(new ArrayList<>());
+			}
+			String gisJoin = gisJoins.get(i);
+			batches.get(batches.size() - 1).add(gisJoin);
+		}
+
+		StringBuilder batchLog = new StringBuilder(
+				String.format(">>> %d batches for %d GISJoins\n", batches.size(), totalGisJoins)
+		);
+		for (int i = 0; i < batches.size(); i++) {
+			batchLog.append(String.format("\tBatch %d size: %d\n", i, batches.get(i).size()));
+		}
+		log.info(batchLog.toString());
+		return batches;
+	}
+
     @Override
     public void handleRequest() {
         if (isValid(this.request)) {
             logRequest(this.request);
 			try {
 
-				// For each GISJoin in the request, submit a task to Spark Manager
-				List<Future<ModelResponse>> lrModelTasks = new ArrayList<>();
-				for (String gisJoin: this.request.getLinearRegressionRequest().getGisJoinsList()) {
-					LinearRegressionTask lrTask = new LinearRegressionTask(this.request, gisJoin);
-					lrModelTasks.add(this.sparkManager.submit(lrTask, "regression-query"));
+				// For each batch of GISJoins in the request, submit a task to Spark Manager
+				List<List<String>> gisJoinBatches = batchGisJoins(
+						this.request.getLinearRegressionRequest().getGisJoinsList(),
+						20
+				);
+
+				List<Future<List<ModelResponse>>> batchedModelTasks = new ArrayList<>();
+				for (List<String> gisJoinBatch: gisJoinBatches) {
+					LinearRegressionTask lrTask = new LinearRegressionTask(this.request, gisJoinBatch);
+					batchedModelTasks.add(this.sparkManager.submit(lrTask, "regression-query"));
 				}
 
 				// Wait for each task to complete and return their ModelResponses
-				for (Future<ModelResponse> lrModelTask: lrModelTasks) {
-					this.responseObserver.onNext(lrModelTask.get());
+				for (Future<List<ModelResponse>> lrModelTask: batchedModelTasks) {
+					List<ModelResponse> batchedModelResponses = lrModelTask.get();
+					for (ModelResponse modelResponse: batchedModelResponses) {
+						this.responseObserver.onNext(modelResponse);
+					}
 				}
 
 			} catch (Exception e) {
@@ -61,20 +92,20 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         }
     }
 
-    protected class LinearRegressionTask implements SparkTask<ModelResponse> {
+    protected class LinearRegressionTask implements SparkTask<List<ModelResponse>> {
 
 		private final LinearRegressionRequest lrRequest;
 		private final Collection requestCollection;
-    	private final String gisJoin;
+    	private final List<String> gisJoins;
 
-    	LinearRegressionTask(ModelRequest modelRequest, String gisJoin) {
+    	LinearRegressionTask(ModelRequest modelRequest, List<String> gisJoins) {
 			this.lrRequest = modelRequest.getLinearRegressionRequest();
 			this.requestCollection = modelRequest.getCollections(0); // We only support 1 collection currently
-			this.gisJoin = gisJoin;
+			this.gisJoins = gisJoins;
 		}
 
 		@Override
-		public ModelResponse execute(JavaSparkContext sparkContext) throws Exception {
+		public List<ModelResponse> execute(JavaSparkContext sparkContext) throws Exception {
 
 			// Create a custom Mongo-Spark ReadConfig
 			Map<String, String> readOverrides = new HashMap<String, String>();
@@ -87,39 +118,43 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 			// Lazy-load the collection in as a DF
 			Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
 
-			LRModel model = new LRModel.LRModelBuilder()
-					.forMongoCollection(mongoCollection)
-					.forGISJoin(gisJoin)
-					.forFeatures(requestCollection.getFeaturesList())
-					.forLabel(requestCollection.getLabel())
-					.withLoss(lrRequest.getLoss())
-					.withSolver(lrRequest.getSolver())
-					.withAggregationDepth(lrRequest.getAggregationDepth())
-					.withMaxIterations(lrRequest.getMaxIterations())
-					.withElasticNetParam(lrRequest.getElasticNetParam())
-					.withEpsilon(lrRequest.getEpsilon())
-					.withRegularizationParam(lrRequest.getRegularizationParam())
-					.withTolerance(lrRequest.getConvergenceTolerance())
-					.withFitIntercept(lrRequest.getFitIntercept())
-					.withStandardization(lrRequest.getSetStandardization())
-					.build();
+			List<ModelResponse> modelResponses = new ArrayList<>();
+			for (String gisJoin: this.gisJoins) {
+				LRModel model = new LRModel.LRModelBuilder()
+						.forMongoCollection(mongoCollection)
+						.forGISJoin(gisJoin)
+						.forFeatures(requestCollection.getFeaturesList())
+						.forLabel(requestCollection.getLabel())
+						.withLoss(lrRequest.getLoss())
+						.withSolver(lrRequest.getSolver())
+						.withAggregationDepth(lrRequest.getAggregationDepth())
+						.withMaxIterations(lrRequest.getMaxIterations())
+						.withElasticNetParam(lrRequest.getElasticNetParam())
+						.withEpsilon(lrRequest.getEpsilon())
+						.withRegularizationParam(lrRequest.getRegularizationParam())
+						.withTolerance(lrRequest.getConvergenceTolerance())
+						.withFitIntercept(lrRequest.getFitIntercept())
+						.withStandardization(lrRequest.getSetStandardization())
+						.build();
 
-			model.train(); // Launches the Spark Model
+				model.train(); // Launches the Spark Model
 
-			// Build model response and return it
-			LinearRegressionResponse modelResults = LinearRegressionResponse.newBuilder()
-					.setGisJoin(model.getGisJoin())
-					.setTotalIterations(model.getTotalIterations())
-					.setRmseResidual(model.getRmse())
-					.setR2Residual(model.getR2())
-					.setIntercept(model.getIntercept())
-					.addAllSlopeCoefficients(model.getCoefficients())
-					.addAllObjectiveHistory(model.getObjectiveHistory())
-					.build();
+				// Build model response and return it
+				LinearRegressionResponse modelResults = LinearRegressionResponse.newBuilder()
+						.setGisJoin(model.getGisJoin())
+						.setTotalIterations(model.getTotalIterations())
+						.setRmseResidual(model.getRmse())
+						.setR2Residual(model.getR2())
+						.setIntercept(model.getIntercept())
+						.addAllSlopeCoefficients(model.getCoefficients())
+						.addAllObjectiveHistory(model.getObjectiveHistory())
+						.build();
 
-			return ModelResponse.newBuilder()
-					.setLinearRegressionResponse(modelResults)
-					.build();
+				modelResponses.add(ModelResponse.newBuilder()
+						.setLinearRegressionResponse(modelResults)
+						.build());
+			}
+			return modelResponses;
 		}
 	}
 
