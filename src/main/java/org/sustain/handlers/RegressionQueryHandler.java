@@ -43,7 +43,7 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 				gisJoinsPerBatch);
 
 		for (int i = 0; i < totalGisJoins; i++) {
-			if ( (i+1) % gisJoinsPerBatch == 0 ) {
+			if ( i % gisJoinsPerBatch == 0 ) {
 				batches.add(new ArrayList<>());
 			}
 			String gisJoin = gisJoins.get(i);
