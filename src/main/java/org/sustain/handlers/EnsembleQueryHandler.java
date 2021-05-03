@@ -72,7 +72,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
             Collection collection = requestCollection; // We only support 1 collection currently
 
             // Initailize ReadConfig
-            Map<String, String> readOverrides = new HashMap();
+            Map<String, String> readOverrides = new HashMap<String, String>();
             readOverrides.put("spark.mongodb.input.collection", requestCollection.getName());
             readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
             readOverrides.put("spark.mongodb.input.uri", mongoUri);
@@ -166,7 +166,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
             Collection collection = requestCollection; // We only support 1 collection currently
 
             // Initailize ReadConfig
-            Map<String, String> readOverrides = new HashMap();
+            Map<String, String> readOverrides = new HashMap<String, String>();
             readOverrides.put("spark.mongodb.input.collection", requestCollection.getName());
             readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
             readOverrides.put("spark.mongodb.input.uri", mongoUri);
