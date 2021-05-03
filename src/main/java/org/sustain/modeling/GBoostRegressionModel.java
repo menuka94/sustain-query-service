@@ -65,8 +65,6 @@ public class GBoostRegressionModel{
     private String[] features;
     private String label, gisJoin;
 
-    private JavaSparkContext sparkContext;
-
     // MODEL PARAMETERS
     // Loss function which GBT tries to minimize. (case-insensitive) Supported: "squared" (L2) and "absolute" (L1) (default = squared)
     private String lossType = null;
@@ -91,7 +89,7 @@ public class GBoostRegressionModel{
     private Integer maxDepth = null;
     //maxBins - Maximum number of bins used for splitting features. (suggested value: 100)
     private Integer maxBins = null;
-    private Double trainSplit = 0.9d;
+    private Double trainSplit = 0.8d;
 
     String queryField = "gis_join";
     //String queryField = "countyName";

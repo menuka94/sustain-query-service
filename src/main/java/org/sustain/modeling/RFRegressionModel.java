@@ -88,7 +88,7 @@ public class RFRegressionModel{
     private Integer maxDepth = null;
     //maxBins - Maximum number of bins used for splitting features. (suggested value: 100)
     private Integer maxBins = null;
-    private Double trainSplit = 0.7d;
+    private Double trainSplit = 0.8d;
     String errorType = "rmse";
     String queryField = "gis_join";
 
