@@ -35,7 +35,9 @@ import org.apache.spark.ml.regression.GBTRegressor;
 import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 import org.apache.spark.storage.StorageLevel;
+import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -54,15 +56,14 @@ import java.util.concurrent.Future;
  * Provides an interface for building generalized Gradient Boost Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class GBoostRegressionModel implements SparkTask<Boolean> {
+public class GBoostRegressionModel{
 
+    private Dataset<Row> mongoCollection;
     // DATABASE PARAMETERS
     protected static final Logger log = LogManager.getLogger(GBoostRegressionModel.class);
     private String database, collection, mongoUri;
     private String[] features;
     private String label, gisJoin;
-
-    private JavaSparkContext sparkContext;
 
     // MODEL PARAMETERS
     // Loss function which GBT tries to minimize. (case-insensitive) Supported: "squared" (L2) and "absolute" (L1) (default = squared)
@@ -88,13 +89,21 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
     private Integer maxDepth = null;
     //maxBins - Maximum number of bins used for splitting features. (suggested value: 100)
     private Integer maxBins = null;
-    private Double trainSplit = 0.9d;
+    private Double trainSplit = 0.8d;
 
     String queryField = "gis_join";
     //String queryField = "countyName";
 
     double rmse = 0.0;
     private double r2 = 0.0;
+
+    public Dataset<Row> getMongoCollection() {
+        return mongoCollection;
+    }
+
+    public void setMongoCollection(Dataset<Row> mongoCollection) {
+        this.mongoCollection = mongoCollection;
+    }
 
     public String getLossType() {
         return lossType;
@@ -293,26 +302,14 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
     /**
      * Creates Spark context and trains the distributed model
      */
-    @Override
-    public Boolean execute(JavaSparkContext sparkContext) {
+    public Boolean train() {
         //addClusterDependencyJars(sparkContext);
         double startTime = System.currentTimeMillis();
 
         fancy_logging("Initiating Gradient Boost Modelling...");
 
-		// Initailize ReadConfig
-        Map<String, String> readOverrides = new HashMap();
-        readOverrides.put("spark.mongodb.input.collection", getCollection());
-        readOverrides.put("spark.mongodb.input.database", getDatabase());
-        readOverrides.put("spark.mongodb.input.uri", getMongoUri());
-
-        ReadConfig readConfig = 
-            ReadConfig.create(sparkContext.getConf(), readOverrides);
-
-        Dataset<Row> collection = MongoSpark.load(sparkContext, readConfig).toDF();
-
         // Select just the columns we want, discard the rest
-        Dataset<Row> selected = collection.select("_id", desiredColumns());
+        Dataset<Row> selected = mongoCollection.select("_id", desiredColumns());
 
         fancy_logging("Data Fetch Completed in "+ calc_interval(startTime)+" secs");
         startTime = System.currentTimeMillis();
@@ -357,7 +354,7 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
         fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
         logModelResults();
-		return true;
+        return true;
     }
 
     private void addClusterDependencyJars(JavaSparkContext sparkContext) {
@@ -430,7 +427,7 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
         log.info("Results for GISJoin {}\n" +
                         "RMSE: {}\n" +
                         "R2: {}\n"
-                        ,
+                ,
                 this.gisJoin, this.rmse, this.r2);
     }
 
@@ -444,28 +441,28 @@ public class GBoostRegressionModel implements SparkTask<Boolean> {
         String gisJoins = "G0100290";
         String collection_name = "macav2";
 
+        SparkSession sparkSession = SparkSession.builder()
+                .master(Constants.Spark.MASTER)
+                .appName("SUSTAIN GBoost Regression Model")
+                .config("spark.mongodb.input.uri", String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT))
+                .config("spark.mongodb.input.database", Constants.DB.NAME)
+                .config("spark.mongodb.input.collection", "maca_v2")
+                .getOrCreate();
+
+        JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
+        ReadConfig readConfig = ReadConfig.create(sparkContext);
+
         GBoostRegressionModel gbModel = new GBoostRegressionModel(
                 "mongodb://lattice-46:27017", "sustaindb", collection_name, gisJoins);
-
+        gbModel.setMongoCollection(MongoSpark.load(sparkContext, readConfig).toDF());
         gbModel.populateTest();
         gbModel.setFeatures(features);
         gbModel.setLabel(label);
         gbModel.setGisjoin(gisJoins);
 
-		try {
-			// Initialize SparkManager
-			SparkManager sparkManager =
-				new SparkManager("spark://lattice-1.cs.colostate.edu:32531");
-
-			// Submit task to SparkManager
-        	Future<Boolean> future =
-				sparkManager.submit(gbModel, "gradient-boosting-test");
-
-			// Wait for task to complete
-			future.get();
-		} catch (Exception e) {
-            log.error("Failed to evaluate query", e);
-		}
+        gbModel.train();
+        log.info("Executed rfModel.main() successfully");
+        sparkContext.close();
     }
 
 }
