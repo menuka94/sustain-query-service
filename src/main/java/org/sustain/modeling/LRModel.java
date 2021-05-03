@@ -1,5 +1,5 @@
 /* ---------------------------------------------------------------------------------------------------------------------
- * LinearRegressionModel.java -
+ * LRModel.java -
  *      Defines a generalized linear regression model that can be
  *      built and executed over a set of MongoDB documents.
  *
@@ -18,9 +18,8 @@ import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.util.SizeEstimator;
 import org.sustain.util.Constants;
-import org.sustain.util.Profiler;
+import org.sustain.util.Task;
 import scala.collection.JavaConverters;
 
 import org.apache.logging.log4j.LogManager;
@@ -33,12 +32,10 @@ import java.util.*;
  * Provides an interface for building generalized Linear Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class LinearRegressionModelImpl {
+public class LRModel {
 
-    protected static final Logger log = LogManager.getLogger(LinearRegressionModelImpl.class);
+    protected static final Logger log = LogManager.getLogger(LRModel.class);
 
-    private JavaSparkContext sparkContext;
-    private ReadConfig       mongoReadConfig;
     private Dataset<Row>     mongoCollection;
     private List<String>     features;
     private String           gisJoin, label, loss, solver;
@@ -51,7 +48,7 @@ public class LinearRegressionModelImpl {
     /**
      * Default constructor, made private so only the Builder class may access it.
      */
-    private LinearRegressionModelImpl() {}
+    private LRModel() {}
 
 
     public String getGisJoin() {
@@ -103,42 +100,36 @@ public class LinearRegressionModelImpl {
         return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
     }
 
-    public void buildAndRunModel(Profiler profiler) {
+    /**
+     * Trains a Linear Regression model for a single GISJoin.
+     */
+    public boolean train() {
+
+        // Begin a profiling task for how long it takes to train this gisJoin
+        log.info(">>> Building model for GISJoin {}", this.gisJoin);
+        Task trainTask = new Task(String.format("LRModel train(%s)", this.gisJoin), 0);
 
         // Select just the columns we want, discard the rest
-        String selectColumnsTaskName = String.format("SELECT_COLUMNS_%s", this.gisJoin);
-        profiler.addTask(selectColumnsTaskName);
         Dataset<Row> selected = this.mongoCollection.select("_id", desiredColumns());
-        profiler.completeTask(selectColumnsTaskName);
-
-        log.info(">>> Building model for GISJoin {}", this.gisJoin);
 
         // Filter collection by our GISJoin
-        String filterTaskName = String.format("FILTER_GISJOIN_%s", this.gisJoin);
-        profiler.addTask(filterTaskName);
         Dataset<Row> gisDataset = selected.filter(selected.col("gis_join").$eq$eq$eq(this.gisJoin))
                 .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
-        profiler.completeTask(filterTaskName);
 
+        if (gisDataset.count() == 0) {
+            log.info(">>> Dataset for GISJoin {} is empty!", this.gisJoin);
+            return false;
+        }
 
         // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
-        String vectorTransformTaskName = String.format("VECTOR_TRANSFORM_%s", this.gisJoin);
-        profiler.addTask(vectorTransformTaskName);
         VectorAssembler vectorAssembler = new VectorAssembler()
                 .setInputCols(this.features.toArray(new String[0]))
                 .setOutputCol("features");
 
         // Transform the gisDataset to have the new "features" column vector
         Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
-        mergedDataset.show(5);
-        log.info(">>> mergedDataset Size: {}", SizeEstimator.estimate(mergedDataset));
-        log.info(">>> mergedDataset explain():");
-        mergedDataset.explain();
-        profiler.completeTask(vectorTransformTaskName);
 
-        // Create an MLLib Linear Regression object using user-specified parameters
-        String lrCreateFitTaskName = String.format("LR_CREATE_FIT_%s", this.gisJoin);
-        profiler.addTask(lrCreateFitTaskName);
+        // Create a SparkML Linear Regression object using user-specified parameters
         LinearRegression linearRegression = new LinearRegression()
                 .setLoss(this.loss)
                 .setSolver(this.solver)
@@ -153,7 +144,6 @@ public class LinearRegressionModelImpl {
 
         // Fit the dataset with the "features" and "label" columns
         LinearRegressionModel lrModel = linearRegression.fit(mergedDataset);
-        profiler.completeTask(lrCreateFitTaskName);
 
         // Save training summary
         LinearRegressionTrainingSummary summary = lrModel.summary();
@@ -175,7 +165,9 @@ public class LinearRegressionModelImpl {
         this.rmse = summary.rootMeanSquaredError();
         this.r2 = summary.r2();
 
-        log.info(">>> Finished building model for GISJoin {}", this.gisJoin);
+        trainTask.finish();
+        log.info(">>> Finished building model for GISJoin: {}, Task: {}", this.gisJoin, trainTask);
+        return true;
     }
 
     /**
@@ -195,7 +187,7 @@ public class LinearRegressionModelImpl {
         JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
         ReadConfig readConfig = ReadConfig.create(sparkContext);
 
-        LinearRegressionModelImpl lrModel = new LinearRegressionModelBuilder()
+        LRModel lrModel = new LRModelBuilder()
                 .forMongoCollection(MongoSpark.load(sparkContext, readConfig).toDF())
                 .forGISJoin("G0100290") // Cleburne County, Alabama
                 .forFeatures(Collections.singletonList("singleton"))
@@ -206,18 +198,16 @@ public class LinearRegressionModelImpl {
                 .build();
 
 
-        lrModel.buildAndRunModel(new Profiler());
-        log.info("Executed LinearRegressionModelImpl.main() successfully");
+        lrModel.train();
+        log.info("Executed LRModel.main() successfully");
         sparkContext.close();
     }
 
     /**
-     * Builder class for the LinearRegressionModelImpl object.
+     * Builder class for the LRModel object.
      */
-    public static class LinearRegressionModelBuilder implements ModelBuilder<LinearRegressionModelImpl> {
+    public static class LRModelBuilder implements ModelBuilder<LRModel> {
 
-        private JavaSparkContext sparkContext;
-        private ReadConfig       mongoReadConfig;
         private Dataset<Row>     mongoCollection;
         private List<String>     features;
         private String           gisJoin, label;
@@ -228,99 +218,89 @@ public class LinearRegressionModelImpl {
         private Double           elasticNetParam=0.0, epsilon=1.35, regularizationParam=0.5, convergenceTolerance=1E-6;
         private Boolean          fitIntercept=true, setStandardization=true;
 
-        public LinearRegressionModelBuilder forSparkContext(JavaSparkContext sparkContextReference) {
-            this.sparkContext = sparkContextReference;
-            return this;
-        }
-
-        public LinearRegressionModelBuilder forReadConfig(ReadConfig mongoReadConfig) {
-            this.mongoReadConfig = mongoReadConfig;
-            return this;
-        }
-
-        public LinearRegressionModelBuilder forMongoCollection(Dataset<Row> mongoCollection) {
+        public LRModelBuilder forMongoCollection(Dataset<Row> mongoCollection) {
             this.mongoCollection = mongoCollection;
             return this;
         }
 
-        public LinearRegressionModelBuilder forGISJoin(String gisJoin) {
+        public LRModelBuilder forGISJoin(String gisJoin) {
             this.gisJoin = gisJoin;
             return this;
         }
 
-        public LinearRegressionModelBuilder forLabel(String label) {
+        public LRModelBuilder forLabel(String label) {
             this.label = label;
             return this;
         }
 
-        public LinearRegressionModelBuilder forFeatures(List<String> features) {
+        public LRModelBuilder forFeatures(List<String> features) {
             this.features = features;
             return this;
         }
 
-        public LinearRegressionModelBuilder withLoss(String loss) {
+        public LRModelBuilder withLoss(String loss) {
             if (!loss.isBlank()) {
                 this.loss = loss;
             }
             return this;
         }
 
-        public LinearRegressionModelBuilder withSolver(String solver) {
+        public LRModelBuilder withSolver(String solver) {
             if (!solver.isBlank()) {
                 this.solver = solver;
             }
             return this;
         }
 
-        public LinearRegressionModelBuilder withAggregationDepth(Integer aggregationDepth) {
+        public LRModelBuilder withAggregationDepth(Integer aggregationDepth) {
             if (aggregationDepth != null && aggregationDepth >= 2 && aggregationDepth <= 10) {
                 this.aggregationDepth = aggregationDepth;
             }
             return this;
         }
 
-        public LinearRegressionModelBuilder withMaxIterations(Integer maxIterations) {
+        public LRModelBuilder withMaxIterations(Integer maxIterations) {
             if (maxIterations != null && maxIterations >= 0 && maxIterations < 100) {
                 this.maxIterations = maxIterations;
             }
             return this;
         }
 
-        public LinearRegressionModelBuilder withElasticNetParam(Double elasticNetParam) {
+        public LRModelBuilder withElasticNetParam(Double elasticNetParam) {
             if ((elasticNetParam != null) && elasticNetParam >= 0.0 && elasticNetParam <= 1.0 ) {
                 this.elasticNetParam = elasticNetParam;
             }
             return this;
         }
 
-        public LinearRegressionModelBuilder withEpsilon(Double epsilon) {
+        public LRModelBuilder withEpsilon(Double epsilon) {
             if (epsilon != null && epsilon > 1.0 && epsilon <= 10.0) {
                 this.epsilon = epsilon;
             }
             return this;
         }
 
-        public LinearRegressionModelBuilder withRegularizationParam(Double regularizationParam) {
+        public LRModelBuilder withRegularizationParam(Double regularizationParam) {
             if (regularizationParam != null && regularizationParam >= 0.0 && regularizationParam <= 10.0 ) {
                 this.regularizationParam = regularizationParam;
             }
             return this;
         }
 
-        public LinearRegressionModelBuilder withTolerance(Double convergenceTolerance) {
+        public LRModelBuilder withTolerance(Double convergenceTolerance) {
             if (convergenceTolerance != null && convergenceTolerance >= 0.0 && convergenceTolerance <= 10.0 )
             this.convergenceTolerance = convergenceTolerance;
             return this;
         }
 
-        public LinearRegressionModelBuilder withFitIntercept(Boolean fitIntercept) {
+        public LRModelBuilder withFitIntercept(Boolean fitIntercept) {
             if (fitIntercept != null) {
                 this.fitIntercept = fitIntercept;
             }
             return this;
         }
 
-        public LinearRegressionModelBuilder withStandardization(Boolean setStandardization) {
+        public LRModelBuilder withStandardization(Boolean setStandardization) {
             if (setStandardization != null) {
                 this.setStandardization = setStandardization;
             }
@@ -328,10 +308,8 @@ public class LinearRegressionModelImpl {
         }
 
         @Override
-        public LinearRegressionModelImpl build() {
-            LinearRegressionModelImpl model = new LinearRegressionModelImpl();
-            model.sparkContext = this.sparkContext;
-            model.mongoReadConfig = this.mongoReadConfig;
+        public LRModel build() {
+            LRModel model = new LRModel();
             model.mongoCollection = this.mongoCollection;
             model.gisJoin = this.gisJoin;
             model.features = this.features;
