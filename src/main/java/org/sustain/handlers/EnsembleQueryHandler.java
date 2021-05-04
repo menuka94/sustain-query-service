@@ -53,6 +53,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
     }
 
     protected class RFRegressionTask implements SparkTask<List<ModelResponse>> {
+
         private final RForestRegressionRequest rfRequest;
         private final Collection requestCollection;
         private final List<String> gisJoins;
@@ -66,62 +67,37 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
         @Override
         public List<ModelResponse> execute(JavaSparkContext sparkContext) throws Exception {
 
-            String mongoUri = String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT);
-            String dbName = Constants.DB.NAME;
-
-            Collection collection = requestCollection; // We only support 1 collection currently
-
-            // Initailize ReadConfig
+            // Create a custom Mongo-Spark ReadConfig
             Map<String, String> readOverrides = new HashMap<String, String>();
+            String mongoUri = String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT);
             readOverrides.put("spark.mongodb.input.collection", requestCollection.getName());
             readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
             readOverrides.put("spark.mongodb.input.uri", mongoUri);
-
             ReadConfig readConfig = ReadConfig.create(sparkContext.getConf(), readOverrides);
 
-            // FETCHING MONGO COLLECTION ONCE FOR ALL MODELS
-            Dataset<Row> mongocollection = MongoSpark.load(sparkContext, readConfig).toDF();
+            // Lazy-load the collection in as a DF
+            Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
             List<ModelResponse> modelResponses = new ArrayList<>();
 
             for (String gisJoin : this.gisJoins) {
-                RFRegressionModel model = new RFRegressionModel(mongoUri, dbName, collection.getName(),
-                        gisJoin);
 
-                model.setMongoCollection(mongocollection);
-                // Set parameters of Random Forest Regression Model
-
-                int featuresCount = collection.getFeaturesCount();
-                String[] features = new String[featuresCount];
-                for (int i = 0; i < featuresCount; i++) {
-                    features[i] = collection.getFeatures(i);
-                }
-
-                model.setFeatures(features);
-                model.setLabel(collection.getLabel());
-                model.setBootstrap(rfRequest.getIsBootstrap());
-
-                // CHECKING FOR VALID MODEL PARAMETER VALUES
-                if (rfRequest.getSubsamplingRate() > 0 && rfRequest.getSubsamplingRate() <= 1)
-                    model.setSubsamplingRate(rfRequest.getSubsamplingRate());
-                if (rfRequest.getNumTrees() > 0)
-                    model.setNumTrees(rfRequest.getNumTrees());
-                if (rfRequest.getFeatureSubsetStrategy() != null && !rfRequest.getFeatureSubsetStrategy().isEmpty())
-                    model.setFeatureSubsetStrategy(rfRequest.getFeatureSubsetStrategy());
-                if (rfRequest.getImpurity() != null && !rfRequest.getImpurity().isEmpty())
-                    model.setImpurity(rfRequest.getImpurity());
-                if (rfRequest.getMaxDepth() > 0)
-                    model.setMaxDepth(rfRequest.getMaxDepth());
-                if (rfRequest.getMaxBins() > 0)
-                    model.setMaxBins(rfRequest.getMaxBins());
-                if (rfRequest.getTrainSplit() > 0 && rfRequest.getTrainSplit() < 1)
-                    model.setTrainSplit(rfRequest.getTrainSplit());
-                if (rfRequest.getMinInfoGain() > 0)
-                    model.setMinInfoGain(rfRequest.getMinInfoGain());
-                if (rfRequest.getMinInstancesPerNode() >= 1)
-                    model.setMinInstancesPerNode(rfRequest.getMinInstancesPerNode());
-                if (rfRequest.getMinWeightFractionPerNode() >= 0.0 && rfRequest.getMinWeightFractionPerNode() < 0.5)
-                    model.setMinWeightFractionPerNode(rfRequest.getMinWeightFractionPerNode());
-
+                RFRegressionModel model = new RFRegressionModel.RFRegressionBuilder()
+                        .forMongoCollection(mongoCollection)
+                        .forGISJoin(gisJoin)
+                        .forFeatures(requestCollection.getFeaturesList())
+                        .forLabel(requestCollection.getLabel())
+                        .withImpurity(rfRequest.getImpurity())
+                        .withFeatureSubsetStrategy(rfRequest.getFeatureSubsetStrategy())
+                        .withMinInstancesPerNode(rfRequest.getMinInstancesPerNode())
+                        .withNumTrees(rfRequest.getNumTrees())
+                        .withMaxDepth(rfRequest.getMaxDepth())
+                        .withMaxBins(rfRequest.getMaxBins())
+                        .withMinInfoGain(rfRequest.getMinInfoGain())
+                        .withMinWeightFractionPerNode(rfRequest.getMinWeightFractionPerNode())
+                        .withSubsamplingRate(rfRequest.getSubsamplingRate())
+                        .withTrainSplit(rfRequest.getTrainSplit())
+                        .withIsBootstrap(rfRequest.getIsBootstrap())
+                        .build();
 
                 // Submit task to Spark Manager
                 boolean ok = model.train();
