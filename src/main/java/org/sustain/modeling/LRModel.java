@@ -190,7 +190,7 @@ public class LRModel {
         LRModel lrModel = new LRModelBuilder()
                 .forMongoCollection(MongoSpark.load(sparkContext, readConfig).toDF())
                 .forGISJoin("G0100290") // Cleburne County, Alabama
-                .forFeatures(Collections.singletonList("singleton"))
+                .forFeatures(Collections.singletonList("timestamp"))
                 .forLabel("max_max_air_temperature")
                 .withMaxIterations(100)
                 .withEpsilon(1.35)

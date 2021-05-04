@@ -36,243 +36,85 @@ import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.storage.StorageLevel;
 import org.sustain.util.Constants;
+import org.sustain.util.Task;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
-import org.sustain.SparkManager;
-import org.sustain.SparkTask;
-
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
 
 /**
  * Provides an interface for building generalized Gradient Boost Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class GBoostRegressionModel{
+public class GBoostRegressionModel {
+
+    protected static final Logger log = LogManager.getLogger(GBoostRegressionModel.class);
 
     private Dataset<Row> mongoCollection;
-    // DATABASE PARAMETERS
-    protected static final Logger log = LogManager.getLogger(GBoostRegressionModel.class);
     private String database, collection, mongoUri;
-    private String[] features;
+    private List<String> features;
     private String label, gisJoin;
-
-    // MODEL PARAMETERS
-    // Loss function which GBT tries to minimize. (case-insensitive) Supported: "squared" (L2) and "absolute" (L1) (default = squared)
-    private String lossType = null;
-    // Max number of iterations
-    private Integer maxIter = null;
-    //Minimum information gain for a split to be considered at a tree node. default 0.0
-    private Double minInfoGain = null;
-    // Minimum number of instances each child must have after split. If a split causes the left or right child to have fewer than minInstancesPerNode, the split will be discarded as invalid. Must be at least 1. (default = 1)
-    private Integer minInstancesPerNode = null;
-    //Minimum fraction of the weighted sample count that each child must have after split. Should be in the interval [0.0, 0.5). (default = 0.0)
-    private Double minWeightFractionPerNode = null;
-    //Fraction of the training data used for learning each decision tree, in range (0, 1]. (default = 1.0)
-    private Double subsamplingRate = null;
-    //Param for Step size (a.k.a. learning rate) in interval (0, 1] for shrinking the contribution of each estimator. (default = 0.1)
-    private Double stepSize = null;
-    // Number of features to consider for splits at each node. Supported: "auto", "all", "sqrt", "log2", "onethird".
-    // If "auto" is set, this parameter is set based on numTrees: if numTrees == 1, set to "all"; if numTrees > 1 (forest) set to "onethird".
-    private String featureSubsetStrategy = null; //auto/all/sqrt/log2/onethird
-    //Criterion used for information gain calculation. Supported values: "variance".
-    private String impurity = null;
-    //maxDepth - Maximum depth of the tree. (e.g., depth 0 means 1 leaf node, depth 1 means 1 internal node + 2 leaf nodes). (suggested value: 4)
-    private Integer maxDepth = null;
-    //maxBins - Maximum number of bins used for splitting features. (suggested value: 100)
-    private Integer maxBins = null;
-    private Double trainSplit = 0.8d;
-
-    String queryField = "gis_join";
-    //String queryField = "countyName";
-
-    double rmse = 0.0;
+    private final String queryField = "gis_join";
+    private double rmse = 0.0;
     private double r2 = 0.0;
 
-    public Dataset<Row> getMongoCollection() {
-        return mongoCollection;
-    }
+    // Loss function which GBT tries to minimize. (case-insensitive) Supported: "squared" (L2) and "absolute" (L1)
+    // (default = squared)
+    private String lossType = null;
+    // Criterion used for information gain calculation. Supported values: "variance".
+    private String impurity = null;
+    // If "auto" is set, this parameter is set based on numTrees: if numTrees == 1, set to "all";
+    // if numTrees > 1 (forest) set to "onethird".
+    private String featureSubsetStrategy = null;
 
-    public void setMongoCollection(Dataset<Row> mongoCollection) {
-        this.mongoCollection = mongoCollection;
-    }
+    // Minimum number of instances each child must have after split. If a split causes the left or right child to have
+    // fewer than minInstancesPerNode, the split will be discarded as invalid. Must be at least 1. (default = 1)
+    private Integer minInstancesPerNode = null;
+    // Max number of iterations
+    private Integer maxIter = null;
+    // Maximum depth of the tree. (e.g., depth 0 means 1 leaf node, depth 1 means 1 internal node + 2 leaf nodes).
+    // (suggested value: 4)
+    private Integer maxDepth = null;
+    // Maximum number of bins used for splitting features. (suggested value: 100)
+    private Integer maxBins = null;
 
-    public String getLossType() {
-        return lossType;
-    }
+    // Minimum information gain for a split to be considered at a tree node. default 0.0
+    private Double minInfoGain = null;
+    // Minimum fraction of the weighted sample count that each child must have after split. Should be in the
+    // interval [0.0, 0.5). (default = 0.0)
+    private Double minWeightFractionPerNode = null;
+    // Fraction of the training data used for learning each decision tree, in range (0, 1]. (default = 1.0)
+    private Double subsamplingRate = null;
+    // Param for Step size (a.k.a. learning rate) in interval (0, 1] for shrinking the contribution of each estimator.
+    // (default = 0.1)
+    private Double stepSize = null;
+    // Ratio of Training Data size to Test Data size . Range - (0, 1).
+    private Double trainSplit = null;
 
-    public void setLossType(String lossType) {
-        this.lossType = lossType;
-    }
+    /**
+     * Default constructor, made private so only the Builder class may access it.
+     */
+    private GBoostRegressionModel() {}
 
-    public Integer getMaxIter() {
-        return maxIter;
-    }
-
-    public void setMaxIter(Integer maxIter) {
-        this.maxIter = maxIter;
-    }
-
-    public Double getMinInfoGain() {
-        return minInfoGain;
-    }
-
-    public void setMinInfoGain(Double minInfoGain) {
-        this.minInfoGain = minInfoGain;
-    }
-
-    public Integer getMinInstancesPerNode() {
-        return minInstancesPerNode;
-    }
-
-    public void setMinInstancesPerNode(Integer minInstancesPerNode) {
-        this.minInstancesPerNode = minInstancesPerNode;
-    }
-
-    public Double getMinWeightFractionPerNode() {
-        return minWeightFractionPerNode;
-    }
-
-    public void setMinWeightFractionPerNode(Double minWeightFractionPerNode) {
-        this.minWeightFractionPerNode = minWeightFractionPerNode;
-    }
-
-    public double getR2() {
-        return r2;
-    }
-
-    public void setR2(double r2) {
-        this.r2 = r2;
+    public String getGisJoin() {
+        return gisJoin;
     }
 
     public double getRmse() {
         return rmse;
     }
 
-    public void setRmse(double rmse) {
-        this.rmse = rmse;
-    }
-
-    public void setTrainSplit(Double trainSplit) {
-        this.trainSplit = trainSplit;
-    }
-
-    public GBoostRegressionModel(String mongoUri, String database, String collection, String gisJoin) {
-        log.info("Gradient Boosting constructor invoked");
-        setMongoUri(mongoUri);
-        setDatabase(database);
-        setCollection(collection);
-        setGisjoin(gisJoin);
-    }
-
-    public String getDatabase() {
-        return database;
-    }
-
-    public void setDatabase(String database) {
-        this.database = database;
-    }
-
-    public String getCollection() {
-        return collection;
-    }
-
-    public void setCollection(String collection) {
-        this.collection = collection;
-    }
-
-    public String getMongoUri() {
-        return mongoUri;
-    }
-
-    public void setMongoUri(String mongoUri) {
-        this.mongoUri = mongoUri;
-    }
-
-    public void setFeatures(String[] features) {
-        this.features = features;
-    }
-
-    public void setGisjoin(String gisJoin) {
-        this.gisJoin = gisJoin;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public String[] getFeatures() {
-        return features;
-    }
-
-    public String getGisJoin() {
-        return gisJoin;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public Double getSubsamplingRate() {
-        return subsamplingRate;
-    }
-
-    public void setSubsamplingRate(Double subsamplingRate) {
-        this.subsamplingRate = subsamplingRate;
-    }
-
-    public Double getStepSize() {
-        return stepSize;
-    }
-
-    public void setStepSize(Double stepSize) {
-        this.stepSize = stepSize;
-    }
-
-    public String getFeatureSubsetStrategy() {
-        return featureSubsetStrategy;
-    }
-
-    public void setFeatureSubsetStrategy(String featureSubsetStrategy) {
-        this.featureSubsetStrategy = featureSubsetStrategy;
-    }
-
-    public String getImpurity() {
-        return impurity;
-    }
-
-    public void setImpurity(String impurity) {
-        this.impurity = impurity;
-    }
-
-    public Integer getMaxDepth() {
-        return maxDepth;
-    }
-
-    public void setMaxDepth(Integer maxDepth) {
-        this.maxDepth = maxDepth;
-    }
-
-    public Integer getMaxBins() {
-        return maxBins;
-    }
-
-    public void setMaxBins(Integer maxBins) {
-        this.maxBins = maxBins;
+    public double getR2() {
+        return r2;
     }
 
     private Seq<String> desiredColumns() {
         List<String> cols = new ArrayList<>();
         cols.add(queryField);
-        Collections.addAll(cols, this.features);
+        cols.addAll(this.features);
         cols.add(this.label);
         return convertListToSeq(cols);
     }
@@ -286,149 +128,61 @@ public class GBoostRegressionModel{
         return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
     }
 
-    private void fancy_logging(String msg){
-
-        String logStr = "\n============================================================================================================\n";
-        logStr+=msg;
-        logStr+="\n============================================================================================================";
-
-        log.info(logStr);
-    }
-
-    private double calc_interval(double startTime) {
-        return ((double)System.currentTimeMillis() - startTime)/1000;
-    }
-
     /**
      * Creates Spark context and trains the distributed model
      */
-    public Boolean train() {
-        //addClusterDependencyJars(sparkContext);
-        double startTime = System.currentTimeMillis();
+    public boolean train() {
 
-        fancy_logging("Initiating Gradient Boost Modelling...");
+        log.info(">>> Building Gradient-Boosted Model for GISJoin {}...", this.gisJoin);
+        Task trainTask = new Task(String.format("GBRModel train(%s)", this.gisJoin), 0);
 
-        // Select just the columns we want, discard the rest
-        Dataset<Row> selected = mongoCollection.select("_id", desiredColumns());
-
-        fancy_logging("Data Fetch Completed in "+ calc_interval(startTime)+" secs");
-        startTime = System.currentTimeMillis();
-
-        Dataset<Row> gisDataset = selected.filter(selected.col(queryField).equalTo(gisJoin))
+        // Select just the columns we want, discard the rest, then filter by the model's GISJoin
+        Dataset<Row> selected = this.mongoCollection.select("_id", desiredColumns());
+        Dataset<Row> gisDataset = selected.filter(selected.col(this.queryField).equalTo(this.gisJoin))
                 .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
 
-        log.info("DATA TYPES: \n"+Arrays.toString(gisDataset.columns())+" "+gisDataset.dtypes());
+        if (gisDataset.count() == 0) {
+            log.info(">>> Dataset for GISJoin {} is empty!", this.gisJoin);
+            return false;
+        }
 
         // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
         VectorAssembler vectorAssembler = new VectorAssembler()
-                .setInputCols(this.features)
+                .setInputCols(this.features.toArray(new String[0]))
                 .setOutputCol("features");
 
         // Transform the gisDataset to have the new "features" column vector
         Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
 
+        Dataset<Row>[] splits = mergedDataset.randomSplit(new double[]{this.trainSplit , 1.0 - this.trainSplit});
+        Dataset<Row> trainSet = splits[0]; Dataset<Row> testSet  = splits[1];
 
-        Dataset<Row>[] rds = mergedDataset.randomSplit(new double[]{trainSplit , 1.0d - trainSplit});
-        Dataset<Row> trainrdd = rds[0].persist(StorageLevel.MEMORY_ONLY());
-        Dataset<Row> testrdd = rds[1];
+        GBTRegressor gradientBoost = new GBTRegressor()
+                .setFeaturesCol("features")
+                .setLabelCol("label")
+                .setLossType(this.lossType)
+                .setImpurity(this.impurity)
+                .setFeatureSubsetStrategy(this.featureSubsetStrategy)
+                .setMinInstancesPerNode(this.minInstancesPerNode)
+                .setMaxIter(this.maxIter)
+                .setMaxDepth(this.maxDepth)
+                .setMaxBins(this.maxBins)
+                .setMinInfoGain(this.minInfoGain)
+                .setMinWeightFractionPerNode(this.minWeightFractionPerNode)
+                .setSubsamplingRate(this.subsamplingRate)
+                .setStepSize(this.stepSize);
 
-        fancy_logging("Data Manipulation completed in "+calc_interval(startTime)+" secs\nData Size: "+gisDataset.count());
-        startTime = System.currentTimeMillis();
+        GBTRegressionModel gbModel = gradientBoost.fit(trainSet);
 
-        GBTRegressor gb = new GBTRegressor().setFeaturesCol("features").setLabelCol("label");
-
-        // POPULATING USER PARAMETERS
-        ingestParameters(gb);
-
-        GBTRegressionModel gbModel = gb.fit(trainrdd);
-
-        fancy_logging("Model Training completed in "+calc_interval(startTime));
-        startTime = System.currentTimeMillis();
-
-        Dataset<Row> pred_pair = gbModel.transform(testrdd).select("label", "prediction").cache();
-
-        RegressionMetrics metrics = new RegressionMetrics(pred_pair);
+        Dataset<Row> predictions = gbModel.transform(testSet).select("label", "prediction");
+        RegressionMetrics metrics = new RegressionMetrics(predictions);
 
         this.rmse = metrics.rootMeanSquaredError();
         this.r2 = metrics.r2();
-        fancy_logging("Model Testing/Loss Computation completed in "+calc_interval(startTime)+"\nEVALUATIONS: RMSE, R2: "+rmse+" "+r2);
 
-        logModelResults();
+        trainTask.finish();
+        log.info(">>> Finished building model for GISJoin: {}, Task: {}", this.gisJoin, trainTask);
         return true;
-    }
-
-    private void addClusterDependencyJars(JavaSparkContext sparkContext) {
-        String[] jarPaths = {
-                "build/libs/mongo-spark-connector_2.12-3.0.1.jar",
-                "build/libs/spark-core_2.12-3.0.1.jar",
-                "build/libs/spark-mllib_2.12-3.0.1.jar",
-                "build/libs/spark-sql_2.12-3.0.1.jar",
-                "build/libs/bson-4.0.5.jar",
-                "build/libs/mongo-java-driver-3.12.5.jar",
-                //"build/libs/mongodb-driver-core-4.0.5.jar"
-        };
-
-        for (String jar: jarPaths) {
-            log.info("Adding dependency JAR to the Spark Context: {}", jar);
-            sparkContext.addJar(jar);
-        }
-    }
-
-    /**
-     * Injecting user-defined parameters into model
-     * @param gb - Gradient Boosting Regression model Object
-     */
-    private void ingestParameters(GBTRegressor gb) {
-        if (this.subsamplingRate != null) {
-            gb.setSubsamplingRate(this.subsamplingRate);
-        }
-        if (this.stepSize != null) {
-            gb.setStepSize(this.stepSize);
-        }
-        if (this.featureSubsetStrategy != null) {
-            gb.setFeatureSubsetStrategy(this.featureSubsetStrategy);
-        }
-        if (this.impurity != null) {
-            gb.setImpurity(this.impurity);
-        }
-        if (this.maxDepth != null) {
-            gb.setMaxDepth(this.maxDepth);
-        }
-        if (this.maxBins != null) {
-            gb.setMaxBins(this.maxBins);
-        }
-
-        if (this.minInfoGain != null) {
-            gb.setMinInfoGain(this.minInfoGain);
-        }
-
-        if (this.minInstancesPerNode != null) {
-            gb.setMinInstancesPerNode(this.minInstancesPerNode);
-        }
-
-        if (this.minWeightFractionPerNode != null) {
-            gb.setMinWeightFractionPerNode(this.minWeightFractionPerNode);
-        }
-
-        if (this.lossType != null) {
-            gb.setLossType(this.lossType);
-        }
-        if (this.maxIter != null) {
-            gb.setMaxIter(this.maxIter);
-        }
-
-    }
-
-    public void populateTest() {
-        this.maxIter = 5;
-    }
-
-    private void logModelResults() {
-        log.info("Results for GISJoin {}\n" +
-                        "RMSE: {}\n" +
-                        "R2: {}\n"
-                ,
-                this.gisJoin, this.rmse, this.r2);
     }
 
     /**
@@ -436,33 +190,172 @@ public class GBoostRegressionModel{
      * @param args Usually not used.
      */
     public static void main(String[] args) {
-        String[] features = {"max_eastward_wind","max_min_air_temperature"};
+        List<String> features = Collections.singletonList("timestamp");
         String label = "min_eastward_wind";
-        String gisJoins = "G0100290";
-        String collection_name = "macav2";
+        String gisJoin = "G0100290";
+        String collection = "macav2";
 
         SparkSession sparkSession = SparkSession.builder()
                 .master(Constants.Spark.MASTER)
-                .appName("SUSTAIN GBoost Regression Model")
+                .appName("SUSTAIN Linear Regression Model")
                 .config("spark.mongodb.input.uri", String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT))
                 .config("spark.mongodb.input.database", Constants.DB.NAME)
-                .config("spark.mongodb.input.collection", "maca_v2")
+                .config("spark.mongodb.input.collection", collection)
                 .getOrCreate();
 
         JavaSparkContext sparkContext = new JavaSparkContext(sparkSession.sparkContext());
         ReadConfig readConfig = ReadConfig.create(sparkContext);
 
-        GBoostRegressionModel gbModel = new GBoostRegressionModel(
-                "mongodb://lattice-46:27017", "sustaindb", collection_name, gisJoins);
-        gbModel.setMongoCollection(MongoSpark.load(sparkContext, readConfig).toDF());
-        gbModel.populateTest();
-        gbModel.setFeatures(features);
-        gbModel.setLabel(label);
-        gbModel.setGisjoin(gisJoins);
+        GBoostRegressionModel model = new GBoostRegressionModel.GradientBoostRegressionBuilder()
+                .forMongoCollection(MongoSpark.load(sparkContext, readConfig).toDF())
+                .forGISJoin(gisJoin)
+                .forFeatures(features)
+                .forLabel(label)
+                .build();
 
-        gbModel.train();
-        log.info("Executed rfModel.main() successfully");
+        model.train();
+        log.info("Executed GBoostRegressionModel.main() successfully");
         sparkContext.close();
+    }
+
+    /**
+     * Builder class for the GBoostRegressionModel object.
+     */
+    public static class GradientBoostRegressionBuilder implements ModelBuilder<GBoostRegressionModel> {
+
+        private Dataset<Row>     mongoCollection;
+        private List<String>     features;
+        private String           gisJoin, label;
+
+        // Model parameters and their defaults
+        private String           lossType="squared", impurity="variance", featureSubsetStrategy="auto";
+        private Integer          minInstancesPerNode=1, maxDepth=5, maxIterations=10, maxBins=32;
+        private Double           minInfoGain=0.0, minWeightFractionPerNode=0.0, subsamplingRate=1.0, stepSize=0.1,
+                                 trainSplit = 0.8;
+
+        public GradientBoostRegressionBuilder forMongoCollection(Dataset<Row> mongoCollection) {
+            this.mongoCollection = mongoCollection;
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder forGISJoin(String gisJoin) {
+            this.gisJoin = gisJoin;
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder forLabel(String label) {
+            this.label = label;
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder forFeatures(List<String> features) {
+            this.features = features;
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withLossType(String lossType) {
+            if (!lossType.isBlank()) {
+                this.lossType = lossType;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withImpurity(String impurity) {
+            if (!impurity.isBlank()) {
+                this.impurity = impurity;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withFeatureSubsetStrategy(String featureSubsetStrategy) {
+            if (!featureSubsetStrategy.isBlank()) {
+                this.featureSubsetStrategy = featureSubsetStrategy;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withMinInstancesPerNode(Integer minInstancesPerNode) {
+            if (minInstancesPerNode != null && minInstancesPerNode >= 0 && minInstancesPerNode <= 10000) {
+                this.minInstancesPerNode = minInstancesPerNode;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withMaxIterations(Integer maxIterations) {
+            if (maxIterations != null && maxIterations >= 0 && maxIterations <= 10000) {
+                this.maxIterations = maxIterations;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withMaxDepth(Integer maxDepth) {
+            if (maxDepth != null && maxDepth >= 0 && maxDepth <= 15) {
+                this.maxDepth = maxDepth;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withMaxBins(Integer maxBins) {
+            if (maxBins != null && maxBins >= 2 && maxBins <= 100) {
+                this.maxBins = maxBins;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withMinInfoGain(Double minInfoGain) {
+            if ((minInfoGain != null) && minInfoGain >= 0.0 && minInfoGain <= 1.0 ) {
+                this.minInfoGain = minInfoGain;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withMinWeightFractionPerNode(Double minWeightFractionPerNode) {
+            if (minWeightFractionPerNode != null && minWeightFractionPerNode >= 0.0 && minWeightFractionPerNode < 0.5) {
+                this.minWeightFractionPerNode = minWeightFractionPerNode;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withSubsamplingRate(Double subsamplingRate) {
+            if (subsamplingRate != null && subsamplingRate > 0.0 && subsamplingRate <= 1.0 ) {
+                this.subsamplingRate = subsamplingRate;
+            }
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withStepSize(Double stepSize) {
+            if (stepSize != null && stepSize > 0.0 && stepSize <= 1.0 )
+                this.stepSize = stepSize;
+            return this;
+        }
+
+        public GradientBoostRegressionBuilder withTrainSplit(Double trainSplit) {
+            if (trainSplit != null && trainSplit > 0.0 && trainSplit < 1.0 )
+                this.trainSplit = trainSplit;
+            return this;
+        }
+
+        @Override
+        public GBoostRegressionModel build() {
+            GBoostRegressionModel model = new GBoostRegressionModel();
+            model.mongoCollection = this.mongoCollection;
+            model.gisJoin = this.gisJoin;
+            model.features = this.features;
+            model.label = this.label;
+            model.lossType = this.lossType;
+            model.impurity = this.impurity;
+            model.featureSubsetStrategy = this.featureSubsetStrategy;
+            model.minInstancesPerNode = this.minInstancesPerNode;
+            model.maxDepth = this.maxDepth;
+            model.maxIter = this.maxIterations;
+            model.maxBins = this.maxBins;
+            model.minInfoGain = this.minInfoGain;
+            model.minWeightFractionPerNode = this.minWeightFractionPerNode;
+            model.subsamplingRate = this.subsamplingRate;
+            model.stepSize = this.stepSize;
+            model.trainSplit = this.trainSplit;
+            return model;
+        }
     }
 
 }
