@@ -64,6 +64,7 @@ public class ProfilingUtil {
                 if (newRun) {
                     newRun = false;
                     bw.write("-----------------------------------------------");
+                    bw.newLine();
                 }
                 bw.flush();
             }

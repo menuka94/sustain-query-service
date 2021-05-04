@@ -26,7 +26,6 @@ public class KMeansClusteringHandlerImpl extends AbstractClusteringHandler {
 
     @Override
     public Dataset<Row> buildModel(int clusterCount, int maxIterations, Dataset<Row> featureDF) {
-        // KMeans Clustering
         long buildTime1 = System.currentTimeMillis();
         KMeans kmeans = new KMeans().setK(clusterCount).setMaxIter(maxIterations);
 

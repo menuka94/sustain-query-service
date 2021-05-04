@@ -1,5 +1,5 @@
 {
-  "type": "K_MEANS_CLUSTERING",
+  "type": "GAUSSIAN_MIXTURE",
   "collections": [
     {
       "name": "county_stats",
@@ -13,9 +13,10 @@
       ]
     }
   ],
-  "kMeansClusteringRequest": {
+  "gaussianMixtureRequest": {
     "clusterCount": 55,
     "maxIterations": 10,
+    "principalComponentCount": 2,
     "resolution": "County"
   }
 }

@@ -36,13 +36,13 @@ test-pca:
 	./gradlew test --tests SustainServerTest.testPCAHandler -DCOLLECTION_NAME=$(COLLECTION_NAME)
 
 test-kmeans:
-	./gradlew test --tests SustainServerTest.testKMeansClusteringModel
+	./gradlew test --tests SustainServerTest.testKMeansClusteringModel -DCOLLECTION_NAME=$(COLLECTION_NAME)
 
 test-bisecting-kmeans:
-	./gradlew test --tests SustainServerTest.testBisectingKMeansClusteringModel
+	./gradlew test --tests SustainServerTest.testBisectingKMeansClusteringModel -DCOLLECTION_NAME=$(COLLECTION_NAME)
 
 test-gaussian-mixture:
-	./gradlew test --tests SustainServerTest.testGaussianMixtureClusteringModel
+	./gradlew test --tests SustainServerTest.testGaussianMixtureClusteringModel -DCOLLECTION_NAME=$(COLLECTION_NAME)
 
 test-lda:
-	./gradlew test --tests SustainServerTest.testLDAClusteringModel
+	./gradlew test --tests SustainServerTest.testLDAClusteringModel -DCOLLECTION_NAME=$(COLLECTION_NAME)

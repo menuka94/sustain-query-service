@@ -34,12 +34,10 @@ import java.util.concurrent.Future;
 public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
 
     private static final Logger log = LogManager.getLogger(ClusteringQueryHandler.class);
-    private static int principalComponentCount;
 
     public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver,
                                   SparkManager sparkManager) {
         super(request, responseObserver, sparkManager);
-        principalComponentCount = Constants.PRINCIPAL_COMPONENT_COUNT;
     }
 
     @Override
@@ -96,7 +94,8 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         handler.writeToStream(predictDF, responseObserver);
 
-        handler.buildModelWithPCA(k, maxIterations, principalComponentCount, featureDF);
+        handler.buildModelWithPCA(k, maxIterations,
+                request.getKMeansClusteringRequest().getPrincipalComponentCount(), featureDF);
     }
 
     private void buildBisectingKMeansModel(JavaSparkContext sparkContext) {
@@ -110,7 +109,8 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         handler.writeToStream(predictDF, responseObserver);
 
-        handler.buildModelWithPCA(k, maxIterations, principalComponentCount, featureDF);
+        handler.buildModelWithPCA(k, maxIterations,
+                request.getBisectingKMeansRequest().getPrincipalComponentCount(), featureDF);
     }
 
     private void buildGaussianMixtureModel(JavaSparkContext sparkContext) {
@@ -124,7 +124,8 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         handler.writeToStream(predictDF, responseObserver);
 
-        handler.buildModelWithPCA(k, maxIterations, principalComponentCount, featureDF);
+        handler.buildModelWithPCA(k, maxIterations,
+                request.getGaussianMixtureRequest().getPrincipalComponentCount(), featureDF);
     }
 
     private void buildLatentDirichletAllocationModel(JavaSparkContext sparkContext) {
@@ -162,9 +163,12 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         log.info("Clustering Model Type: {}, Census Resolution: {}", request.getType(), resolution);
 
+        String collectionName = request.getCollections(0).getName();
+
         // Initialize mongodb read configuration
         Map<String, String> readOverrides = new HashMap<>();
-        readOverrides.put("spark.mongodb.input.collection", resolution + "_stats");
+        readOverrides.put("spark.mongodb.input.collection", collectionName);
+
         readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
         readOverrides.put("spark.mongodb.input.uri",
             "mongodb://" + Constants.DB.HOST + ":" + Constants.DB.PORT);
@@ -192,7 +196,8 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         featureDF.show(10);
 
         long assemblyTime2 = System.currentTimeMillis();
-        ProfilingUtil.calculateTimeDiff(assemblyTime1, assemblyTime2, "AssemblyTime");
+        ProfilingUtil.calculateTimeDiff(assemblyTime1, assemblyTime2,
+                String.format("AssemblyTime for collection '%s'", collectionName));
 
         // Scaling
         log.info("Normalizing features");
@@ -204,8 +209,10 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
         featureDF = scalerModel.transform(featureDF);
         long scalingTime2 = System.currentTimeMillis();
-        ProfilingUtil.calculateTimeDiff(scalingTime1, scalingTime2, "ScalingTime");
-        ProfilingUtil.calculateTimeDiff(assemblyTime1, scalingTime2, "AssemblyAndScalingTime");
+        ProfilingUtil.calculateTimeDiff(scalingTime1, scalingTime2,
+                String.format("ScalingTime for collection '%s'", collectionName));
+        ProfilingUtil.calculateTimeDiff(assemblyTime1, scalingTime2,
+                String.format("AssemblyAndScalingTime for collection '%s'", collectionName));
 
         featureDF = featureDF.drop("features");
         featureDF = featureDF.withColumnRenamed("normalized_features", "features");

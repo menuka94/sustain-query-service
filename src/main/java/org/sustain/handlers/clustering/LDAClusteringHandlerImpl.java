@@ -27,8 +27,10 @@ public class LDAClusteringHandlerImpl extends AbstractClusteringHandler {
     public Dataset<Row> buildModel(int k, int maxIterations, Dataset<Row> featureDF) {
         long buildTime1 = System.currentTimeMillis();
         LDA lda = new LDA().setK(k).setMaxIter(maxIterations);
+
         LDAModel model = lda.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
+
         ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "LDAModelBuildTime");
 
         double ll = model.logLikelihood(featureDF);

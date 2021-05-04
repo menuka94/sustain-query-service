@@ -116,25 +116,37 @@ public class SustainServerTest {
     @Tag("slow")
     @Test
     public void testKMeansClusteringModel() {
-        executeJsonModelRequest("requests/kmeans_clustering_county_stats_request.json");
+        String collectionName = System.getProperty("COLLECTION_NAME");
+        log.info("collectionName: {}", collectionName);
+        String resource = String.format("requests/kmeans-clustering/%s.json", collectionName);
+        executeJsonModelRequest(resource);
     }
 
     @Tag("slow")
     @Test
     public void testBisectingKMeansClusteringModel() {
-        executeJsonModelRequest("requests/bisecting_kmeans_clustering_county_stats_request.json");
+        String collectionName = System.getProperty("COLLECTION_NAME");
+        log.info("collectionName: {}", collectionName);
+        String resource = String.format("requests/bisecting-kmeans-clustering/%s.json", collectionName);
+        executeJsonModelRequest(resource);
     }
 
     @Tag("slow")
     @Test
     public void testLDAClusteringModel() {
-        executeJsonModelRequest("requests/lda_clustering_county_stats_request.json");
+        String collectionName = System.getProperty("COLLECTION_NAME");
+        log.info("collectionName: {}", collectionName);
+        String resource = String.format("requests/lda-clustering/%s.json", collectionName);
+        executeJsonModelRequest(resource);
     }
 
     @Tag("slow")
     @Test
     public void testGaussianMixtureClusteringModel() {
-        executeJsonModelRequest("requests/gaussian_mixture_clustering_county_stats_request.json");
+        String collectionName = System.getProperty("COLLECTION_NAME");
+        log.info("collectionName: {}", collectionName);
+        String resource = String.format("requests/gaussian-mixture-clustering/%s.json", collectionName);
+        executeJsonModelRequest(resource);
     }
 
     @Tag("slow")

@@ -1,5 +1,5 @@
 {
-  "type": "GAUSSIAN_MIXTURE",
+  "type": "BISECTING_K_MEANS",
   "collections": [
     {
       "name": "county_stats",
@@ -13,9 +13,10 @@
       ]
     }
   ],
-  "gaussianMixtureRequest": {
+  "bisectingKMeansRequest": {
     "clusterCount": 55,
     "maxIterations": 10,
+    "principalComponentCount": 2,
     "resolution": "County"
   }
 }

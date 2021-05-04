@@ -1,0 +1,50 @@
+{
+  "type": "BISECTING_K_MEANS",
+  "collections": [
+    {
+      "name": "svi_county_GISJOIN",
+      "features": [
+        "E_HU",
+        "M_HU",
+        "E_HH",
+        "M_HH",
+        "E_POV",
+        "M_POV",
+        "E_UNEMP",
+        "M_UNEMP",
+        "E_PCI",
+        "M_PCI",
+        "E_NOHSDP",
+        "M_NOHSDP",
+        "E_AGE65",
+        "M_AGE65",
+        "E_AGE17",
+        "M_AGE17",
+        "E_DISABL",
+        "M_DISABL",
+        "E_SNGPNT",
+        "M_SNGPNT",
+        "E_MINRTY",
+        "M_MINRTY",
+        "E_LIMENG",
+        "M_LIMENG",
+        "E_MUNIT",
+        "M_MUNIT",
+        "E_MOBILE",
+        "M_MOBILE",
+        "E_CROWD",
+        "M_CROWD",
+        "E_NOVEH",
+        "M_NOVEH",
+        "E_GROUPQ",
+        "M_GROUPQ"
+      ]
+    }
+  ],
+  "bisectingKMeansRequest": {
+    "clusterCount": 55,
+    "maxIterations": 10,
+    "principalComponentCount": 10,
+    "resolution": "County"
+  }
+}

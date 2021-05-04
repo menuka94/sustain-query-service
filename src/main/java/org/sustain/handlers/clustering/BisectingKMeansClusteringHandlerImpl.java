@@ -27,9 +27,11 @@ public class BisectingKMeansClusteringHandlerImpl extends AbstractClusteringHand
     public Dataset<Row> buildModel(int clusterCount, int maxIterations, Dataset<Row> featureDF) {
         long buildTime1 = System.currentTimeMillis();
         BisectingKMeans bisectingKMeans = new BisectingKMeans().setK(clusterCount).setMaxIter(maxIterations);
+
         BisectingKMeansModel model = bisectingKMeans.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
-        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "bisectingKMeansModelBuildTime");
+
+        ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "BisectingKMeansModelBuildTime");
 
         // Make predictions
         Dataset<Row> predictDF = model.transform(featureDF).select(Constants.GIS_JOIN, "prediction");

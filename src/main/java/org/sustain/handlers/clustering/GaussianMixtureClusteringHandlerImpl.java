@@ -27,8 +27,10 @@ public class GaussianMixtureClusteringHandlerImpl extends AbstractClusteringHand
     public Dataset<Row> buildModel(int clusterCount, int maxIterations, Dataset<Row> featureDF) {
         long buildTime1 = System.currentTimeMillis();
         GaussianMixture gaussianMixture = new GaussianMixture().setK(clusterCount).setMaxIter(maxIterations);
+
         GaussianMixtureModel model = gaussianMixture.fit(featureDF);
         long buildTime2 = System.currentTimeMillis();
+
         ProfilingUtil.calculateTimeDiff(buildTime1, buildTime2, "GaussianMixtureModelBuildTime");
 
         for (int i = 0; i < model.getK(); i++) {

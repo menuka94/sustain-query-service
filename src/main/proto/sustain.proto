@@ -118,7 +118,8 @@ message ModelResponse {
 message KMeansClusteringRequest {
   int32 clusterCount = 1;
   int32 maxIterations = 2;
-  CensusResolution resolution = 3;
+  int32 principalComponentCount = 3;
+  CensusResolution resolution = 4;
 }
 
 message KMeansClusteringResponse {
@@ -129,7 +130,8 @@ message KMeansClusteringResponse {
 message BisectingKMeansRequest {
   int32 clusterCount = 1;
   int32 maxIterations = 2;
-  CensusResolution resolution = 3;
+  int32 principalComponentCount = 3;
+  CensusResolution resolution = 4;
 }
 
 message BisectingKMeansResponse {
@@ -140,7 +142,8 @@ message BisectingKMeansResponse {
 message GaussianMixtureRequest {
   int32 clusterCount = 1;
   int32 maxIterations = 2;
-  CensusResolution resolution = 3;
+  int32 principalComponentCount = 3;
+  CensusResolution resolution = 4;
 }
 
 message GaussianMixtureResponse {

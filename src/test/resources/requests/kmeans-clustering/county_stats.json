@@ -1,5 +1,5 @@
 {
-  "type": "BISECTING_K_MEANS",
+  "type": "K_MEANS_CLUSTERING",
   "collections": [
     {
       "name": "county_stats",
@@ -13,9 +13,10 @@
       ]
     }
   ],
-  "bisectingKMeansRequest": {
+  "kMeansClusteringRequest": {
     "clusterCount": 55,
     "maxIterations": 10,
+    "principalComponentCount": 2,
     "resolution": "County"
   }
 }
