@@ -44,12 +44,10 @@ public class LRModel {
     private List<Double>     coefficients, objectiveHistory;
     private Boolean          fitIntercept, setStandardization;
 
-
     /**
      * Default constructor, made private so only the Builder class may access it.
      */
     private LRModel() {}
-
 
     public String getGisJoin() {
         return gisJoin;
@@ -192,11 +190,7 @@ public class LRModel {
                 .forGISJoin("G0100290") // Cleburne County, Alabama
                 .forFeatures(Collections.singletonList("timestamp"))
                 .forLabel("max_max_air_temperature")
-                .withMaxIterations(100)
-                .withEpsilon(1.35)
-                .withTolerance(1E-7)
                 .build();
-
 
         lrModel.train();
         log.info("Executed LRModel.main() successfully");
