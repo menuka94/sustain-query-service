@@ -125,9 +125,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
 
                 // Submit task to Spark Manager
                 boolean ok = model.train();
-
                 if (ok) {
-
                     RForestRegressionResponse rsp = RForestRegressionResponse.newBuilder()
                             .setGisJoin(model.getGisJoin())
                             .setRmse(model.getRmse())
@@ -147,6 +145,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
 
 
     protected class GBRegressionTask implements SparkTask<List<ModelResponse>> {
+
         private final GBoostRegressionRequest gbRequest;
         private final Collection requestCollection;
         private final List<String> gisJoins;
@@ -160,70 +159,42 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
         @Override
         public List<ModelResponse> execute(JavaSparkContext sparkContext) throws Exception {
 
-            String mongoUri = String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT);
-            String dbName = Constants.DB.NAME;
-
-            Collection collection = requestCollection; // We only support 1 collection currently
-
-            // Initailize ReadConfig
+            // Create a custom Mongo-Spark ReadConfig
             Map<String, String> readOverrides = new HashMap<String, String>();
+            String mongoUri = String.format("mongodb://%s:%d", Constants.DB.HOST, Constants.DB.PORT);
             readOverrides.put("spark.mongodb.input.collection", requestCollection.getName());
             readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
             readOverrides.put("spark.mongodb.input.uri", mongoUri);
-
             ReadConfig readConfig = ReadConfig.create(sparkContext.getConf(), readOverrides);
 
-            // FETCHING MONGO COLLECTION ONCE FOR ALL MODELS
-            Dataset<Row> mongocollection = MongoSpark.load(sparkContext, readConfig).toDF();
+            // Lazy-load the collection in as a DF
+            Dataset<Row> mongoCollection = MongoSpark.load(sparkContext, readConfig).toDF();
             List<ModelResponse> modelResponses = new ArrayList<>();
 
             for (String gisJoin : this.gisJoins) {
-                GBoostRegressionModel model = new GBoostRegressionModel(mongoUri, dbName, collection.getName(),
-                        gisJoin);
 
-                model.setMongoCollection(mongocollection);
-                // Set parameters of Random Forest Regression Model
-
-                int featuresCount = collection.getFeaturesCount();
-                String[] features = new String[featuresCount];
-                for (int i = 0; i < featuresCount; i++) {
-                    features[i] = collection.getFeatures(i);
-                }
-
-                model.setFeatures(features);
-                model.setLabel(collection.getLabel());
-
-                if (gbRequest.getLossType() != null && !gbRequest.getLossType().isEmpty())
-                    model.setLossType(gbRequest.getLossType());
-                if (gbRequest.getMaxIter() > 0)
-                    model.setMaxIter(gbRequest.getMaxIter());
-                if (gbRequest.getSubsamplingRate() > 0 && gbRequest.getSubsamplingRate() <= 1)
-                    model.setSubsamplingRate(gbRequest.getSubsamplingRate());
-                if (gbRequest.getStepSize() > 0 && gbRequest.getStepSize() <= 1)
-                    model.setStepSize(gbRequest.getStepSize());
-                if (gbRequest.getFeatureSubsetStrategy() != null && !gbRequest.getFeatureSubsetStrategy().isEmpty())
-                    model.setFeatureSubsetStrategy(gbRequest.getFeatureSubsetStrategy());
-                if (gbRequest.getImpurity() != null && !gbRequest.getImpurity().isEmpty())
-                    model.setImpurity(gbRequest.getImpurity());
-                if (gbRequest.getMaxDepth() > 0)
-                    model.setMaxDepth(gbRequest.getMaxDepth());
-                if (gbRequest.getMaxBins() > 0)
-                    model.setMaxBins(gbRequest.getMaxBins());
-                if (gbRequest.getTrainSplit() > 0)
-                    model.setTrainSplit(gbRequest.getTrainSplit());
-                if (gbRequest.getMinInfoGain() > 0)
-                    model.setMinInfoGain(gbRequest.getMinInfoGain());
-                if (gbRequest.getMinInstancesPerNode() >= 1)
-                    model.setMinInstancesPerNode(gbRequest.getMinInstancesPerNode());
-                if (gbRequest.getMinWeightFractionPerNode() >= 0.0 && gbRequest.getMinWeightFractionPerNode() < 0.5)
-                    model.setMinWeightFractionPerNode(gbRequest.getMinWeightFractionPerNode());
-
+                GBoostRegressionModel model = new GBoostRegressionModel.GradientBoostRegressionBuilder()
+                        .forMongoCollection(mongoCollection)
+                        .forGISJoin(gisJoin)
+                        .forFeatures(requestCollection.getFeaturesList())
+                        .forLabel(requestCollection.getLabel())
+                        .withLossType(gbRequest.getLossType())
+                        .withImpurity(gbRequest.getImpurity())
+                        .withFeatureSubsetStrategy(gbRequest.getFeatureSubsetStrategy())
+                        .withMinInstancesPerNode(gbRequest.getMinInstancesPerNode())
+                        .withMaxDepth(gbRequest.getMaxDepth())
+                        .withMaxIterations(gbRequest.getMaxIter())
+                        .withMaxBins(gbRequest.getMaxBins())
+                        .withMinInfoGain(gbRequest.getMinInfoGain())
+                        .withMinWeightFractionPerNode(gbRequest.getMinWeightFractionPerNode())
+                        .withSubsamplingRate(gbRequest.getSubsamplingRate())
+                        .withStepSize(gbRequest.getStepSize())
+                        .withTrainSplit(gbRequest.getTrainSplit())
+                        .build();
 
                 // Submit task to Spark Manager
                 boolean ok = model.train();
-
                 if (ok) {
-
                     RForestRegressionResponse rsp = RForestRegressionResponse.newBuilder()
                             .setGisJoin(model.getGisJoin())
                             .setRmse(model.getRmse())
