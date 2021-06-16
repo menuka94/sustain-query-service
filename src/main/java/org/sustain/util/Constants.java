@@ -17,6 +17,12 @@ public class Constants {
         public static final Integer PORT     = Integer.parseInt(System.getenv("DB_PORT"));
     }
 
+    public static class Kubernetes {
+        public static final String KUBERNETES_SPARK_MASTER = System.getenv("KUBERNETES_SPARK_MASTER");
+        public static final boolean KUBERNETES_ENABLED = Boolean.parseBoolean(System.getenv("KUBERNETES_ENABLED"));
+        public static final String SPARK_CONTAINER_IMAGE = System.getenv("SPARK_KUBERNETES_CONTAINER_IMAGE");
+    }
+
     public static class Spark {
         public static final String MASTER = System.getenv("SPARK_MASTER");
         public static final String EXECUTOR_CORES = System.getenv("SPARK_EXECUTOR_CORES");

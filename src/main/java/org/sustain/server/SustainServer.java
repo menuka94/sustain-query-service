@@ -47,6 +47,12 @@ public class SustainServer {
                 "DB_USERNAME: {}\n" +
                 "DB_PASSWORD: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
             Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
+
+        log.info("\n\n--- Spark Environment ---\n" +
+            "SPARK_MASTER: {}\n" +
+            "KUBERNETES_SPARK_MASTER: {}\n" +
+            "KUBERNETES_ENABLED: {}\n", Constants.Spark.MASTER, Constants.Kubernetes.KUBERNETES_SPARK_MASTER,
+            Constants.Kubernetes.KUBERNETES_ENABLED);
     }
 
     public void start() throws IOException {

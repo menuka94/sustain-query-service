@@ -1,10 +1,13 @@
 package org.sustain;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 
+import org.sustain.server.SustainServer;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
@@ -16,13 +19,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 public class SparkManager {
-    protected ExecutorService executorService; 
+    private static final Logger log = LogManager.getLogger(SparkManager.class);
+
+    protected ExecutorService executorService;
     protected List<String> jars;
     private String sparkMaster;
 
     public SparkManager(String sparkMaster) {
         this.sparkMaster = sparkMaster;
-        this.jars = new ArrayList();
+        this.jars = new ArrayList<>();
         this.executorService = Executors.newCachedThreadPool();
     }
 
@@ -33,7 +38,7 @@ public class SparkManager {
     protected void cancel(String jobGroup) throws Exception {
         // initialize spark session
         SparkSession sparkSession = getOrCreateSparkSession();
-        JavaSparkContext sparkContext = 
+        JavaSparkContext sparkContext =
             new JavaSparkContext(sparkSession.sparkContext());
 
         // cancel job group
@@ -42,26 +47,54 @@ public class SparkManager {
 
     protected SparkSession getOrCreateSparkSession() throws Exception {
         // get or create SparkSession
-        SparkSession sparkSession = SparkSession.builder()
-            .master(this.sparkMaster)
-            .appName("sustain-query-service-" + Constants.Server.HOST)
-            .config("spark.executor.cores",
-                Constants.Spark.EXECUTOR_CORES)
-            .config("spark.executor.memory",
-                Constants.Spark.EXECUTOR_MEMORY)
-            .config("spark.dynamicAllocation.enabled", "true")
-            .config("spark.dynamicAllocation.shuffleTracking.enabled", "true")
-            .config("spark.dynamicAllocation.initialExecutors",
-                Constants.Spark.INITIAL_EXECUTORS)
-            .config("spark.dynamicAllocation.minExecutors",
-                Constants.Spark.MIN_EXECUTORS)
-            .config("spark.dynamicAllocation.maxExecutors",
-                Constants.Spark.MAX_EXECUTORS)
-            .config("spark.dynamicAllocation.schedulerBacklogTimeout",
-                Constants.Spark.BACKLOG_TIMEOUT)
-            .config("spark.dynamicAllocation.executorIdleTimeout",
-                Constants.Spark.IDLE_TIMEOUT)
-            .getOrCreate();
+        SparkSession sparkSession;
+        if (Constants.Kubernetes.KUBERNETES_ENABLED) {
+            log.info("Running on Kubernetes ...");
+            log.info("Kubernetes Spark Master: {}", Constants.Kubernetes.KUBERNETES_SPARK_MASTER);
+            sparkSession = SparkSession.builder()
+                .master(Constants.Kubernetes.KUBERNETES_SPARK_MASTER)
+                .appName("sustain-query-service-" + Constants.Server.HOST)
+                .config("spark.executor.cores",
+                    Constants.Spark.EXECUTOR_CORES)
+                .config("spark.executor.memory",
+                    Constants.Spark.EXECUTOR_MEMORY)
+                .config("spark.dynamicAllocation.enabled", "true")
+                .config("spark.dynamicAllocation.shuffleTracking.enabled", "true")
+                .config("spark.dynamicAllocation.initialExecutors",
+                    Constants.Spark.INITIAL_EXECUTORS)
+                .config("spark.dynamicAllocation.minExecutors",
+                    Constants.Spark.MIN_EXECUTORS)
+                .config("spark.dynamicAllocation.maxExecutors",
+                    Constants.Spark.MAX_EXECUTORS)
+                .config("spark.dynamicAllocation.schedulerBacklogTimeout",
+                    Constants.Spark.BACKLOG_TIMEOUT)
+                .config("spark.dynamicAllocation.executorIdleTimeout",
+                    Constants.Spark.IDLE_TIMEOUT)
+                .config("spark.kubernetes.container.image",
+                    Constants.Kubernetes.SPARK_CONTAINER_IMAGE)
+                .getOrCreate();
+        } else {
+            sparkSession = SparkSession.builder()
+                .master(this.sparkMaster)
+                .appName("sustain-query-service-" + Constants.Server.HOST)
+                .config("spark.executor.cores",
+                    Constants.Spark.EXECUTOR_CORES)
+                .config("spark.executor.memory",
+                    Constants.Spark.EXECUTOR_MEMORY)
+                .config("spark.dynamicAllocation.enabled", "true")
+                .config("spark.dynamicAllocation.shuffleTracking.enabled", "true")
+                .config("spark.dynamicAllocation.initialExecutors",
+                    Constants.Spark.INITIAL_EXECUTORS)
+                .config("spark.dynamicAllocation.minExecutors",
+                    Constants.Spark.MIN_EXECUTORS)
+                .config("spark.dynamicAllocation.maxExecutors",
+                    Constants.Spark.MAX_EXECUTORS)
+                .config("spark.dynamicAllocation.schedulerBacklogTimeout",
+                    Constants.Spark.BACKLOG_TIMEOUT)
+                .config("spark.dynamicAllocation.executorIdleTimeout",
+                    Constants.Spark.IDLE_TIMEOUT)
+                .getOrCreate();
+        }
 
         // if they don't exist - add JARs to SparkContext
         JavaSparkContext sparkContext =
@@ -76,11 +109,11 @@ public class SparkManager {
     }
 
     public <T> Future<T> submit(SparkTask<T> sparkTask,
-            String jobGroup) throws Exception {
+                                String jobGroup) throws Exception {
         Future<T> future = this.executorService.submit(() -> {
             // initialize spark session
             SparkSession sparkSession = getOrCreateSparkSession();
-            JavaSparkContext sparkContext = 
+            JavaSparkContext sparkContext =
                 new JavaSparkContext(sparkSession.sparkContext());
 
             // set job group so all jobs submitted from this thread
