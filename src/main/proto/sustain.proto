@@ -47,6 +47,8 @@ service Sustain {
   // Issue a query directly from the gRPC client to MongoDB
   rpc DirectQuery (DirectRequest) returns (stream DirectResponse) {}
 
+  rpc DruidDirectQuery (DruidDirectRequest) returns (stream DruidDirectResponse) {}
+
   rpc SlidingWindowQuery (SlidingWindowRequest) returns (stream SlidingWindowResponse) {}
 
   rpc EchoQuery (DirectRequest) returns (stream DirectResponse) {}
@@ -284,4 +286,12 @@ message DirectRequest {
 
 message DirectResponse {
   string data = 1;
+}
+
+message DruidDirectRequest {
+  string query = 1; // JSON for druid native query
+}
+
+message DruidDirectResponse {
+  string data = 1; // Will also be JSON
 }
