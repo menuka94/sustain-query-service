@@ -29,7 +29,7 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
 
         try {
             HttpRequest druidRequest = HttpRequest.newBuilder()
-                .uri(new URI("http://lattice-123.cs.colostate.edu:8088/druid/v2"))
+                .uri(new URI("http://lattice-123.cs.colostate.edu:8082/druid/v2"))
                 .POST(HttpRequest.BodyPublishers.ofString(request.getQuery()))
                 .build();
 
