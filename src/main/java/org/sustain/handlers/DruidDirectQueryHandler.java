@@ -25,6 +25,7 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
     @Override
     public void handleRequest() {
         log.info("Received a Druid query");
+        long startTime = System.currentTimeMillis();
 
         try {
             HttpRequest druidRequest = HttpRequest.newBuilder()
@@ -45,7 +46,8 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
                 }
             }
 
-
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("Processed {} results in {} ms", results.length(), duration);
         } catch (JSONException e) {
             log.error("Deserialization of Druid response failed", e);
             responseObserver.onError(e);
@@ -53,6 +55,7 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
             log.error("Failed to evaluate query", e);
             responseObserver.onError(e);
         }
+
     }
 
     private static class DruidStreamWriter extends StreamWriter<JSONObject, DruidDirectResponse> {
@@ -65,7 +68,9 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
 
         @Override
         public DruidDirectResponse convert(JSONObject queryResultRow) {
-            return DruidDirectResponse.newBuilder().setData(queryResultRow.toString()).build();
+            return DruidDirectResponse.newBuilder()
+                .setData(queryResultRow.toString())
+                .build();
         }
     }
 }
