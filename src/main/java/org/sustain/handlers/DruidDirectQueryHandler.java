@@ -88,7 +88,7 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
                     if ((row = arrayResults.optJSONObject(i)) != null) {
                         writer.add(row);
                     } else {
-                        log.warn("Encountered an unexpected (non-object) row in result set: {}", row);
+                        log.warn("Encountered an unexpected (non-object) row in result set");
                     }
                 }
             } else {
