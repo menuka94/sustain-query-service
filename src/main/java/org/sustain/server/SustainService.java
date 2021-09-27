@@ -4,29 +4,10 @@ import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.sustain.CompoundRequest;
-import org.sustain.CompoundResponse;
-import org.sustain.CountRequest;
-import org.sustain.CountResponse;
-import org.sustain.DirectRequest;
-import org.sustain.DirectResponse;
-import org.sustain.ModelRequest;
-import org.sustain.ModelResponse;
-import org.sustain.ModelType;
-import org.sustain.SlidingWindowRequest;
-import org.sustain.SlidingWindowResponse;
-import org.sustain.SparkManager;
-import org.sustain.SustainGrpc;
-import org.sustain.handlers.ClusteringQueryHandler;
-import org.sustain.handlers.CompoundQueryHandler;
-import org.sustain.handlers.CountQueryHandler;
+import org.sustain.*;
+import org.sustain.handlers.*;
 import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.RegressionQueryHandler;
-import org.sustain.handlers.DirectQueryHandler;
-import org.sustain.handlers.EnsembleQueryHandler;
-import org.sustain.handlers.GrpcHandler;
-import org.sustain.handlers.RegressionQueryHandler;
-import org.sustain.handlers.SlidingWindowQueryHandler;
 
 public class SustainService extends SustainGrpc.SustainImplBase {
     private static final Logger log = LogManager.getLogger(SustainService.class);
@@ -104,6 +85,12 @@ public class SustainService extends SustainGrpc.SustainImplBase {
     @Override
     public void directQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
         GrpcHandler<DirectRequest, DirectResponse> handler = new DirectQueryHandler(request, responseObserver);
+        handler.handleRequest();
+    }
+
+    @Override
+    public void druidDirectQuery(DruidDirectRequest request, StreamObserver<DruidDirectResponse> responseObserver) {
+        GrpcHandler<DruidDirectRequest, DruidDirectResponse> handler = new DruidDirectQueryHandler(request, responseObserver);
         handler.handleRequest();
     }
 
