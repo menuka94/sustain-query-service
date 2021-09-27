@@ -26,28 +26,20 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
     public void handleRequest() {
         log.info("Received a Druid query");
         long startTime = System.currentTimeMillis();
+        DruidStreamWriter writer = new DruidStreamWriter(responseObserver, 1);
 
         try {
             HttpRequest druidRequest = HttpRequest.newBuilder()
                 .uri(new URI("http://lattice-123.cs.colostate.edu:8082/druid/v2"))
                 .POST(HttpRequest.BodyPublishers.ofString(request.getQuery()))
                 .build();
-
-            // Druid provides responses in the form of JSON arrays.
             HttpResponse<String> druidResponse = httpClient.send(druidRequest, HttpResponse.BodyHandlers.ofString());
-            DruidStreamWriter writer = new DruidStreamWriter(responseObserver, 1);
-            JSONArray results = new JSONArray(druidResponse.body());
-            for (int i = 0; i < results.length(); i++) {
-                JSONObject row;
-                if ((row = results.optJSONObject(i)) != null) {
-                    writer.add(row);
-                } else {
-                    log.warn("Encountered an unexpected (non-object) row in result set: {}", row);
-                }
-            }
+
+            DruidQueryResult result = new DruidQueryResult(druidResponse.body());
+            result.sendToWriter(writer);
 
             long duration = System.currentTimeMillis() - startTime;
-            log.info("Processed {} results in {} ms", results.length(), duration);
+            log.info("Processed in {} ms", duration);
         } catch (JSONException e) {
             log.error("Deserialization of Druid response failed", e);
             responseObserver.onError(e);
@@ -71,6 +63,37 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
             return DruidDirectResponse.newBuilder()
                 .setData(queryResultRow.toString())
                 .build();
+        }
+    }
+
+    private static class DruidQueryResult {
+        private JSONArray arrayResults;
+        private JSONObject objectResults;
+        private boolean isArray;
+
+        public DruidQueryResult(String response) {
+            try {
+                arrayResults = new JSONArray(response);
+                isArray = true;
+            } catch (JSONException e) {
+                objectResults = new JSONObject(response);
+                isArray = false;
+            }
+        }
+
+        public void sendToWriter(DruidStreamWriter writer) throws Exception {
+            if (isArray) {
+                for (int i = 0; i < arrayResults.length(); i++) {
+                    JSONObject row;
+                    if ((row = arrayResults.optJSONObject(i)) != null) {
+                        writer.add(row);
+                    } else {
+                        log.warn("Encountered an unexpected (non-object) row in result set: {}", row);
+                    }
+                }
+            } else {
+                writer.add(objectResults);
+            }
         }
     }
 }
