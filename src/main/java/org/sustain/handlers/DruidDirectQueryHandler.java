@@ -26,7 +26,6 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
     public void handleRequest() {
         log.info("Received a Druid query");
         long startTime = System.currentTimeMillis();
-        DruidStreamWriter writer = new DruidStreamWriter(responseObserver, 1);
 
         try {
             HttpRequest druidRequest = HttpRequest.newBuilder()
@@ -35,8 +34,14 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
                 .build();
             HttpResponse<String> druidResponse = httpClient.send(druidRequest, HttpResponse.BodyHandlers.ofString());
 
+            DruidStreamWriter writer = new DruidStreamWriter(responseObserver, 1);
+            writer.start();
+
             DruidQueryResult result = new DruidQueryResult(druidResponse.body());
             result.sendToWriter(writer);
+
+            writer.stop(false);
+            responseObserver.onCompleted();
 
             long duration = System.currentTimeMillis() - startTime;
             log.info("Processed in {} ms", duration);
