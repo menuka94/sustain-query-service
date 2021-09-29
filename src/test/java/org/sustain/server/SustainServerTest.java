@@ -4,26 +4,24 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.sustain.DirectRequest;
-import org.sustain.DirectResponse;
-import org.sustain.JsonModelRequest;
-import org.sustain.JsonModelResponse;
-import org.sustain.JsonProxyGrpc;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.junit.jupiter.api.*;
+import org.sustain.*;
 import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
-import org.sustain.JsonSlidingWindowRequest;
-import org.sustain.JsonSlidingWindowResponse;
-import org.sustain.SustainGrpc;
 import org.sustain.SustainGrpc.SustainBlockingStub;
 import org.sustain.util.Constants;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -177,6 +175,37 @@ public class SustainServerTest {
     }
 
     /**
+     * Running this requires the Druid cluster to be operational and accessible.
+     */
+    @Test
+    public void testDirectDruidRequest() {
+        try {
+            String resourceName = "requests/direct_druid_query.json";
+            String testQuery = new String(getClass().getClassLoader().getResourceAsStream(resourceName).readAllBytes());
+
+            DruidDirectRequest request = DruidDirectRequest.newBuilder().setQuery(testQuery).build();
+            Iterator<DruidDirectResponse> response = sustainBlockingStub.druidDirectQuery(request);
+
+            StringBuilder results = new StringBuilder("[");
+            while (response.hasNext()) {
+                results.append(response.next().getData()).append(",");
+            }
+            JSONArray arrayResults = new JSONArray(results.append("]").toString());
+
+            assertEquals(20, arrayResults.length());
+        } catch (JSONException e) {
+            log.error("Failed to deserialize results: ", e);
+            Assertions.fail();
+        } catch (NullPointerException e) {
+            log.error("NullPtr: Failed to read testing resource file: ", e);
+            Assertions.fail();
+        } catch (IOException e) {
+            log.error("Failed to read testing resource file: ", e);
+            Assertions.fail();
+        }
+    }
+
+    /**
      * Tests the end-to-end Model Request functionality.
      * Due to the long-running nature of this test, it should not be included as a unit test, but rather manually
      * invoked and verified on an as-need basis.
@@ -203,4 +232,5 @@ public class SustainServerTest {
             log.error("Failed to read testing resource file: ", e.getCause());
         }
     }
+
 }
