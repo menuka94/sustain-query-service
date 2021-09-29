@@ -8,6 +8,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.sustain.DruidDirectRequest;
 import org.sustain.DruidDirectResponse;
+import org.sustain.util.Constants;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -31,7 +32,7 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
         try {
             // Druid does not have a native connector. This is the only way to query it.
             HttpRequest druidRequest = HttpRequest.newBuilder()
-                .uri(new URI("http://lattice-123.cs.colostate.edu:8082/druid/v2"))
+                .uri(new URI(String.format("http://%s.cs.colostate.edu:%s/druid/v2", Constants.Druid.QUERY_HOST, Constants.Druid.QUERY_PORT)))
                 .POST(HttpRequest.BodyPublishers.ofString(request.getQuery()))
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
