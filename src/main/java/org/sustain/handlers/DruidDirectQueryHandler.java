@@ -13,6 +13,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 
 public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, DruidDirectResponse> {
     public static final Logger log = LogManager.getLogger(DruidDirectQueryHandler.class);
@@ -28,9 +29,12 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
         long startTime = System.currentTimeMillis();
 
         try {
+            // Druid does not have a native connector. This is the only way to query it.
             HttpRequest druidRequest = HttpRequest.newBuilder()
                 .uri(new URI("http://lattice-123.cs.colostate.edu:8082/druid/v2"))
                 .POST(HttpRequest.BodyPublishers.ofString(request.getQuery()))
+                .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
                 .build();
             HttpResponse<String> druidResponse = httpClient.send(druidRequest, HttpResponse.BodyHandlers.ofString());
 
@@ -64,14 +68,15 @@ public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, Dru
         }
 
         @Override
-        public DruidDirectResponse convert(JSONObject queryResultRow) {
+        public DruidDirectResponse convert(JSONObject object) {
             return DruidDirectResponse.newBuilder()
-                .setData(queryResultRow.toString())
+                .setData(object.toString())
                 .build();
         }
     }
 
     private static class DruidQueryResult {
+        // Results from a query are either a JSON object or JSON array.
         private JSONArray arrayResults;
         private JSONObject objectResults;
         private boolean isArray;

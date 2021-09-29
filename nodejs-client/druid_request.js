@@ -41,10 +41,10 @@ let druidRequest = {
     ]
 };
 
-let call = stub.DruidDirectQuery(druidRequest);
+let call = stub.DruidDirectQuery(JSON.stringify(druidRequest));
 
 call.on('data', function (response) {
-    console.log(response.response, "\n");
+    console.log(response.data, "\n");
 });
 
 call.on('end', function () {
