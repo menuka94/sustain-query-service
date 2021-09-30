@@ -6,7 +6,7 @@
 # Author: Caleb Carlson
 # ------------------------------------------------------------------------------------*/
 
-FROM node:latest AS base
+FROM gradle:7.2.0-jdk11 AS base
 
 # --- Dependencies ---
 
@@ -28,7 +28,6 @@ COPY bin/ ./bin
 COPY gradle/ ./gradle
 
 # Build project
-COPY ./configurations/config.properties ./src/main/resources/config.properties
 RUN ./gradlew install
 
 ENTRYPOINT ["./bin/sustain-server.sh"]
