@@ -45,8 +45,12 @@ public class SustainServer {
                 "DB_PORT: {}\n" +
                 "DB_NAME: {}\n" +
                 "DB_USERNAME: {}\n" +
-                "DB_PASSWORD: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
-            Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD);
+                "DB_PASSWORD: {}\n" +
+                "\n\n--- Druid Environment ---\n" +
+                "QUERY_HOST: {}\n" +
+                "QUERY_POST: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
+            Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD,
+            Constants.Druid.QUERY_HOST, Constants.Druid.QUERY_PORT);
     }
 
     public void start() throws IOException {

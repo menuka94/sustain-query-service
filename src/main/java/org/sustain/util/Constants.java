@@ -26,4 +26,9 @@ public class Constants {
         public static final String BACKLOG_TIMEOUT = System.getenv("SPARK_BACKLOG_TIMEOUT");
         public static final String IDLE_TIMEOUT = System.getenv("SPARK_IDLE_TIMEOUT");
     }
+
+    public static class Druid {
+        public static final String QUERY_HOST = System.getenv("DRUID_QUERY_HOST");
+        public static final String QUERY_PORT = System.getenv("DRUID_QUERY_PORT");
+    }
 }
