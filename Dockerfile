@@ -10,16 +10,27 @@ FROM gradle:7.2.0-jdk11 AS base
 
 # --- Dependencies ---
 
-# Install default Java JDK
-RUN apt-get update && apt-get install -y default-jdk
-
-
 # --- Project ---
 
 # Add in source code
 ENV PROJECT="sustain-query-service"
 RUN mkdir -p /code/$PROJECT
 WORKDIR /code/$PROJECT
+
+ENV SERVER_HOST="lattice-150"
+ENV SERVER_PORT=50051
+ENV DB_NAME="sustaindb"
+ENV DB_HOST="lattice-100"
+ENV DB_PORT=27018
+ENV SPARK_MASTER="spark://lattice-150:8079"
+ENV SPARK_THREAD_COUNT=4
+ENV SPARK_EXECUTOR_CORES=5
+ENV SPARK_EXECUTOR_MEMORY="8G"
+ENV SPARK_INITIAL_EXECUTORS=5
+ENV SPARK_MIN_EXECUTORS=1
+ENV SPARK_MAX_EXECUTORS=10
+ENV SPARK_BACKLOG_TIMEOUT="10s"
+ENV SPARK_IDLE_TIMEOUT="10s"
 
 COPY Makefile gradlew gradlew.bat build.gradle settings.gradle ./
 COPY nodejs-client/ ./nodejs-client
