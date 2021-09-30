@@ -6,6 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.jupiter.api.*;
 import org.sustain.*;
 import org.sustain.JsonProxyGrpc.JsonProxyBlockingStub;
@@ -192,7 +193,18 @@ public class SustainServerTest {
             }
             JSONArray arrayResults = new JSONArray(results.append("]").toString());
 
+            // Check we have roughly the right structure in the response
+            // The "accuracy" of the results does not matter since that is Druid's responsibility
             assertEquals(20, arrayResults.length());
+            for (Object o : arrayResults) {
+                JSONObject row = (JSONObject) o;
+                assertEquals(row.getString("version"), "v1");
+
+                // Testing if these fields exist or not: if they don't an exception is thrown and the test fails
+                JSONObject event = row.getJSONObject("event");
+                event.getDouble("pa_mean");
+                event.getDouble("atm_count");
+            }
         } catch (JSONException e) {
             log.error("Failed to deserialize results: ", e);
             Assertions.fail();
