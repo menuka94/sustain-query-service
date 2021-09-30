@@ -43,8 +43,8 @@ dependencies {
     compileOnly "org.apache.tomcat:annotations-api:6.0.53"
     runtimeOnly "io.netty:netty-tcnative-boringssl-static:${nettyTcNativeVersion}"
 
-    testCompile "io.grpc:grpc-testing:${grpcVersion}"
-    testCompile "org.mockito:mockito-core:1.9.5"
+    testImplementation "io.grpc:grpc-testing:${grpcVersion}"
+    testImplementation "org.mockito:mockito-core:1.9.5"
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.6.0'
 }
