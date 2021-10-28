@@ -258,3 +258,31 @@ Example:
 
 
 ## Dataset Query
+
+### Druid
+
+Used for querying data that is only held in our Druid cluster.
+
+#### DruidDirectRequest
+
+Allows for a raw Druid request to be sent directly to the cluster.
+See https://druid.apache.org/docs/latest/querying/querying.html.
+
+To make this request, create a native Druid query, serialize it, and place it into the `query` field of the request object.
+
+```json5
+{
+  "query": " < serialized Druid query ... > "
+}
+```
+
+#### DirectDruidResponse
+
+The response is as simple as the request.
+The `data` field will be a serialized JSON array in the case of a successful query, or a JSON object in the case of an unsuccessful query.
+
+```json5
+{
+  "data": " < serialized results - may be either an array or object > "
+}
+```
