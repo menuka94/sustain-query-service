@@ -41,4 +41,4 @@ COPY gradle/ ./gradle
 # Build project
 RUN ./gradlew install
 
-ENTRYPOINT ["./bin/sustain-server.sh", ">", "sustain.log"]
+ENTRYPOINT ["./bin/sustain-server.sh"]
