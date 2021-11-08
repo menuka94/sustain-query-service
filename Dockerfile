@@ -16,7 +16,7 @@ WORKDIR /code/$PROJECT
 # Environment variables
 ENV SERVER_PORT=50051
 ENV DB_NAME="sustaindb"
-ENV DB_HOST="localhost"
+ENV DB_HOST="lattice-100"
 ENV DB_PORT=27018
 ENV SPARK_MASTER="spark://lattice-100:8079"
 ENV SPARK_THREAD_COUNT=4
