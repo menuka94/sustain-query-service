@@ -28,7 +28,6 @@ COPY bin/ ./bin
 COPY gradle/ ./gradle
 
 # Build project
-COPY ./configurations/config.properties ./src/main/resources/config.properties
 RUN ./gradlew install
 
 ENTRYPOINT ["./bin/sustain-server.sh"]
