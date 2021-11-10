@@ -34,6 +34,12 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 50051
+      - name: mongos-router
+        image: mongo:4.4.4
+        imagePullPolicy: Always
+        command: ['sh', '-c', 'mongos --configdb cfgrs/lattice-147:27017,lattice-148:27017,lattice-149:27017 --bind_ip_all --port 27018']
+        ports:
+          - containerPort: 27018
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
