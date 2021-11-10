@@ -19,7 +19,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.sustain.util.Constants;
-import org.sustain.util.Task;
+import org.sustain.util.TaskProfiler;
 import scala.collection.JavaConverters;
 
 import org.apache.logging.log4j.LogManager;
@@ -32,13 +32,11 @@ import java.util.*;
  * Provides an interface for building generalized Linear Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class LRModel {
+public class LRModel extends RegressionModel {
 
     protected static final Logger log = LogManager.getLogger(LRModel.class);
 
-    private Dataset<Row>     mongoCollection;
-    private List<String>     features;
-    private String           gisJoin, label, loss, solver;
+    private String           loss, solver;
     private Integer          aggregationDepth, maxIterations, totalIterations;
     private Double           elasticNetParam, epsilon, regularizationParam, convergenceTolerance, rmse, r2, intercept;
     private List<Double>     coefficients, objectiveHistory;
@@ -49,9 +47,7 @@ public class LRModel {
      */
     private LRModel() {}
 
-    public String getGisJoin() {
-        return gisJoin;
-    }
+    // Getters for training results
 
     public Double getRmse() {
         return rmse;
@@ -78,54 +74,9 @@ public class LRModel {
     }
 
     /**
-     * Compiles a List<String> of column names we desire from the loaded collection, using the features String array.
-     * @return A Scala Seq<String> of desired column names.
-     */
-    private Seq<String> desiredColumns() {
-        List<String> cols = new ArrayList<>();
-        cols.add("gis_join");
-        cols.addAll(this.features);
-        cols.add(this.label);
-        return convertListToSeq(cols);
-    }
-
-    /**
-     * Converts a Java List<String> of inputs to a Scala Seq<String>
-     * @param inputList The Java List<String> we wish to transform
-     * @return A Scala Seq<String> representing the original input list
-     */
-    public Seq<String> convertListToSeq(List<String> inputList) {
-        return JavaConverters.asScalaIteratorConverter(inputList.iterator()).asScala().toSeq();
-    }
-
-    /**
      * Trains a Linear Regression model for a single GISJoin.
      */
-    public boolean train() {
-
-        // Begin a profiling task for how long it takes to train this gisJoin
-        log.info(">>> Building model for GISJoin {}", this.gisJoin);
-        Task trainTask = new Task(String.format("LRModel train(%s)", this.gisJoin), 0);
-
-        // Select just the columns we want, discard the rest
-        Dataset<Row> selected = this.mongoCollection.select("_id", desiredColumns());
-
-        // Filter collection by our GISJoin
-        Dataset<Row> gisDataset = selected.filter(selected.col("gis_join").$eq$eq$eq(this.gisJoin))
-                .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
-
-        if (gisDataset.count() == 0) {
-            log.info(">>> Dataset for GISJoin {} is empty!", this.gisJoin);
-            return false;
-        }
-
-        // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
-        VectorAssembler vectorAssembler = new VectorAssembler()
-                .setInputCols(this.features.toArray(new String[0]))
-                .setOutputCol("features");
-
-        // Transform the gisDataset to have the new "features" column vector
-        Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
+    public void train(Dataset<Row> trainingDataset) {
 
         // Create a SparkML Linear Regression object using user-specified parameters
         LinearRegression linearRegression = new LinearRegression()
@@ -141,17 +92,19 @@ public class LRModel {
                 .setStandardization(this.setStandardization);
 
         // Fit the dataset with the "features" and "label" columns
-        LinearRegressionModel lrModel = linearRegression.fit(mergedDataset);
+        LinearRegressionModel lrModel = linearRegression.fit(trainingDataset);
 
         // Save training summary
         LinearRegressionTrainingSummary summary = lrModel.summary();
 
+        // Add all coefficients to ArrayList
         this.coefficients = new ArrayList<>();
         double[] primitiveCoefficients = lrModel.coefficients().toArray();
         for (double d: primitiveCoefficients) {
             this.coefficients.add(d);
         }
 
+        // Add all iteration RMSE values to objective history
         this.objectiveHistory = new ArrayList<>();
         double[] primitiveObjHistory = summary.objectiveHistory();
         for (double d: primitiveObjHistory) {
@@ -162,10 +115,6 @@ public class LRModel {
         this.totalIterations = summary.totalIterations();
         this.rmse = summary.rootMeanSquaredError();
         this.r2 = summary.r2();
-
-        trainTask.finish();
-        log.info(">>> Finished building model for GISJoin: {}, Task: {}", this.gisJoin, trainTask);
-        return true;
     }
 
     /**
@@ -186,13 +135,9 @@ public class LRModel {
         ReadConfig readConfig = ReadConfig.create(sparkContext);
 
         LRModel lrModel = new LRModelBuilder()
-                .forMongoCollection(MongoSpark.load(sparkContext, readConfig).toDF())
-                .forGISJoin("G0100290") // Cleburne County, Alabama
-                .forFeatures(Collections.singletonList("timestamp"))
-                .forLabel("max_max_air_temperature")
                 .build();
 
-        lrModel.train();
+        lrModel.train(MongoSpark.load(sparkContext, readConfig).toDF());
         log.info("Executed LRModel.main() successfully");
         sparkContext.close();
     }
@@ -202,35 +147,11 @@ public class LRModel {
      */
     public static class LRModelBuilder implements ModelBuilder<LRModel> {
 
-        private Dataset<Row>     mongoCollection;
-        private List<String>     features;
-        private String           gisJoin, label;
-
         // Model parameters and their defaults
         private String           loss="squaredError", solver="auto";
         private Integer          aggregationDepth=2, maxIterations=10;
         private Double           elasticNetParam=0.0, epsilon=1.35, regularizationParam=0.5, convergenceTolerance=1E-6;
         private Boolean          fitIntercept=true, setStandardization=true;
-
-        public LRModelBuilder forMongoCollection(Dataset<Row> mongoCollection) {
-            this.mongoCollection = mongoCollection;
-            return this;
-        }
-
-        public LRModelBuilder forGISJoin(String gisJoin) {
-            this.gisJoin = gisJoin;
-            return this;
-        }
-
-        public LRModelBuilder forLabel(String label) {
-            this.label = label;
-            return this;
-        }
-
-        public LRModelBuilder forFeatures(List<String> features) {
-            this.features = features;
-            return this;
-        }
 
         public LRModelBuilder withLoss(String loss) {
             if (!loss.isBlank()) {
@@ -304,10 +225,6 @@ public class LRModel {
         @Override
         public LRModel build() {
             LRModel model = new LRModel();
-            model.mongoCollection = this.mongoCollection;
-            model.gisJoin = this.gisJoin;
-            model.features = this.features;
-            model.label = this.label;
             model.loss = this.loss;
             model.solver = this.solver;
             model.aggregationDepth = this.aggregationDepth;

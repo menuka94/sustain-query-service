@@ -37,7 +37,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.sustain.util.Constants;
-import org.sustain.util.Task;
+import org.sustain.util.TaskProfiler;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -58,12 +58,16 @@ public class RFRegressionModel {
     private List<String> features;
     private String label, gisJoin;
     private final String queryField = "gis_join";
-    private double rmse = 0.0;
-    private double r2 = 0.0;
 
-    // MODEL PARAMETERS
+    // Root Mean Squared Error
+    private Double rmse = 0.0;
+
+    // R^2 (r-squared)
+    private Double r2 = 0.0;
+
     // Criterion used for information gain calculation. Supported values: "variance".
     private String impurity = null;
+
     // Number of features to consider for splits at each node. Supported: "auto", "all", "sqrt", "log2", "onethird".
     // If "auto" is set, this parameter is set based on numTrees: if numTrees == 1, set to "all";
     // if numTrees > 1 (forest) set to "onethird".
@@ -72,21 +76,27 @@ public class RFRegressionModel {
     // Minimum number of instances each child must have after split. If a split causes the left or right child to have
     // fewer than minInstancesPerNode, the split will be discarded as invalid. Must be at least 1. (default = 1)
     private Integer minInstancesPerNode = null;
+
     // Number of trees to train (at least 1). If 1, then no bootstrapping is used. If greater than 1, then
     // bootstrapping is done.
     private Integer numTrees = null;
+
     // Maximum depth of the tree. (e.g., depth 0 means 1 leaf node, depth 1 means 1 internal node + 2 leaf nodes).
     // (suggested value: 4)
     private Integer maxDepth = null;
+
     // Maximum number of bins used for splitting features. (suggested value: 100)
     private Integer maxBins = null;
 
     // Minimum information gain for a split to be considered at a tree node. default 0.0
     private Double minInfoGain = null;
+
     // Minimum fraction of the weighted sample count that each child must have after split. Should be in the interval [0.0, 0.5). (default = 0.0)
     private Double minWeightFractionPerNode = null;
+
     // Fraction of the training data used for learning each decision tree, in range (0, 1]. (default = 1.0)
     private Double subsamplingRate = null;
+
     // Ratio of Training Data size to Test Data size . Range - (0, 1).
     private Double trainSplit = 0.8;
 
@@ -134,7 +144,7 @@ public class RFRegressionModel {
 
         // Begin a profiling task for how long it takes to train this gisJoin
         log.info(">>> Building Random-Forest model for GISJoin {}", this.gisJoin);
-        Task trainTask = new Task(String.format("RFModel train(%s)", this.gisJoin), 0);
+        TaskProfiler trainTask = new TaskProfiler(String.format("RFModel train(%s)", this.gisJoin));
 
         // Select just the columns we want, discard the rest, then filter by the model's GISJoin
         Dataset<Row> selected = this.mongoCollection.select("_id", desiredColumns());
@@ -184,47 +194,6 @@ public class RFRegressionModel {
     }
 
     /**
-     * Injecting user-defined parameters into model
-     * @param rf - Random Forest Regression model Object
-     */
-    private void ingestParameters(RandomForestRegressor rf) {
-        if (this.isBootstrap != null) {
-            rf.setBootstrap(this.isBootstrap);
-        }
-        if (this.subsamplingRate != null) {
-            rf.setSubsamplingRate(this.subsamplingRate);
-        }
-        if (this.numTrees != null) {
-            rf.setNumTrees(this.numTrees);
-        }
-        if (this.featureSubsetStrategy != null) {
-            rf.setFeatureSubsetStrategy(this.featureSubsetStrategy);
-        }
-        if (this.impurity != null) {
-            rf.setImpurity(this.impurity);
-        }
-        if (this.maxDepth != null) {
-            rf.setMaxDepth(this.maxDepth);
-        }
-        if (this.maxBins != null) {
-            rf.setMaxBins(this.maxBins);
-        }
-
-        if (this.minInfoGain != null) {
-            rf.setMinInfoGain(this.minInfoGain);
-        }
-
-        if (this.minInstancesPerNode != null) {
-            rf.setMinInstancesPerNode(this.minInstancesPerNode);
-        }
-
-        if (this.minWeightFractionPerNode != null) {
-            rf.setMinWeightFractionPerNode(this.minWeightFractionPerNode);
-        }
-
-    }
-
-    /**
      * Used exclusively for testing and running a linear model directly, without having to interface with gRPC.
      * @param args Usually not used.
      */
@@ -247,7 +216,7 @@ public class RFRegressionModel {
 
         RFRegressionModel model = new RFRegressionModel.RFRegressionBuilder()
                 .forMongoCollection(MongoSpark.load(sparkContext, readConfig).toDF())
-                .forGISJoin(gisJoin)
+                .forGisJoin(gisJoin)
                 .forFeatures(features)
                 .forLabel(label)
                 .build();
@@ -277,7 +246,7 @@ public class RFRegressionModel {
             return this;
         }
 
-        public RFRegressionBuilder forGISJoin(String gisJoin) {
+        public RFRegressionBuilder forGisJoin(String gisJoin) {
             this.gisJoin = gisJoin;
             return this;
         }

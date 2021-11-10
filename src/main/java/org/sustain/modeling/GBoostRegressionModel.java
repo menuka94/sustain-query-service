@@ -37,7 +37,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.sustain.util.Constants;
-import org.sustain.util.Task;
+import org.sustain.util.TaskProfiler;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
@@ -54,43 +54,55 @@ public class GBoostRegressionModel {
     protected static final Logger log = LogManager.getLogger(GBoostRegressionModel.class);
 
     private Dataset<Row> mongoCollection;
-    private String database, collection, mongoUri;
     private List<String> features;
     private String label, gisJoin;
     private final String queryField = "gis_join";
-    private double rmse = 0.0;
-    private double r2 = 0.0;
+
+    // Root Mean Squared Error
+    private Double rmse = 0.0;
+
+    // R^2 (r-squared)
+    private Double r2 = 0.0;
 
     // Loss function which GBT tries to minimize. (case-insensitive) Supported: "squared" (L2) and "absolute" (L1)
     // (default = squared)
     private String lossType = null;
+
     // Criterion used for information gain calculation. Supported values: "variance".
     private String impurity = null;
+
     // If "auto" is set, this parameter is set based on numTrees: if numTrees == 1, set to "all";
-    // if numTrees > 1 (forest) set to "onethird".
+    // If numTrees > 1 (forest) set to "onethird".
     private String featureSubsetStrategy = null;
 
     // Minimum number of instances each child must have after split. If a split causes the left or right child to have
     // fewer than minInstancesPerNode, the split will be discarded as invalid. Must be at least 1. (default = 1)
     private Integer minInstancesPerNode = null;
+
     // Max number of iterations
     private Integer maxIter = null;
+
     // Maximum depth of the tree. (e.g., depth 0 means 1 leaf node, depth 1 means 1 internal node + 2 leaf nodes).
     // (suggested value: 4)
     private Integer maxDepth = null;
+
     // Maximum number of bins used for splitting features. (suggested value: 100)
     private Integer maxBins = null;
 
     // Minimum information gain for a split to be considered at a tree node. default 0.0
     private Double minInfoGain = null;
+
     // Minimum fraction of the weighted sample count that each child must have after split. Should be in the
     // interval [0.0, 0.5). (default = 0.0)
     private Double minWeightFractionPerNode = null;
+
     // Fraction of the training data used for learning each decision tree, in range (0, 1]. (default = 1.0)
     private Double subsamplingRate = null;
+
     // Param for Step size (a.k.a. learning rate) in interval (0, 1] for shrinking the contribution of each estimator.
     // (default = 0.1)
     private Double stepSize = null;
+
     // Ratio of Training Data size to Test Data size . Range - (0, 1).
     private Double trainSplit = null;
 
@@ -113,7 +125,6 @@ public class GBoostRegressionModel {
 
     private Seq<String> desiredColumns() {
         List<String> cols = new ArrayList<>();
-        cols.add(queryField);
         cols.addAll(this.features);
         cols.add(this.label);
         return convertListToSeq(cols);
@@ -129,34 +140,46 @@ public class GBoostRegressionModel {
     }
 
     /**
-     * Creates Spark context and trains the distributed model
+     * Creates a VectorAssembler to assemble all feature columns of inputDataset into a single column vector
+     * named "features". For example:
+     *
+     *
+     * @param inputDataset Dataset<Row> containing all the unmerged named feature columns
+     * @return Dataset<Row> containing only two columns: "features", and "label"
      */
-    public boolean train() {
-
-        log.info(">>> Building Gradient-Boosted Model for GISJoin {}...", this.gisJoin);
-        Task trainTask = new Task(String.format("GBRModel train(%s)", this.gisJoin), 0);
-
-        // Select just the columns we want, discard the rest, then filter by the model's GISJoin
-        Dataset<Row> selected = this.mongoCollection.select("_id", desiredColumns());
-        Dataset<Row> gisDataset = selected.filter(selected.col(this.queryField).equalTo(this.gisJoin))
-                .withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
-
-        if (gisDataset.count() == 0) {
-            log.info(">>> Dataset for GISJoin {} is empty!", this.gisJoin);
-            return false;
-        }
-
+    public Dataset<Row> createFeaturesColumn(Dataset<Row> inputDataset) {
         // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
         VectorAssembler vectorAssembler = new VectorAssembler()
                 .setInputCols(this.features.toArray(new String[0]))
                 .setOutputCol("features");
 
         // Transform the gisDataset to have the new "features" column vector
-        Dataset<Row> mergedDataset = vectorAssembler.transform(gisDataset);
+        return vectorAssembler.transform(inputDataset).select("features", "label");
+    }
 
+    public Dataset<Row> selectFeaturesAndFilter(Dataset<Row> inputDataset) {
+        // Select just the columns we want, discard the rest, then filter by the model's GISJOIN
+        Dataset<Row> selected = inputDataset.select("GISJOIN", desiredColumns());
+        return selected.filter(
+                    selected.col(this.queryField).equalTo(this.gisJoin) // filter by GISJOIN
+                ).withColumnRenamed(this.label, "label"); // Rename the chosen label column to "label"
+    }
+
+    /**
+     * Creates Spark context and trains the distributed model
+     */
+    public boolean train() {
+        log.info("Building Gradient-Boosted Model for GISJoin {}...", this.gisJoin);
+        TaskProfiler trainTask = new TaskProfiler(String.format("GBRModel train(%s)", this.gisJoin));
+
+        Dataset<Row> dataset = selectFeaturesAndFilter(this.mongoCollection);
+        Dataset<Row> mergedDataset = createFeaturesColumn(dataset);
+
+        // Get training/testing input splits
         Dataset<Row>[] splits = mergedDataset.randomSplit(new double[]{this.trainSplit , 1.0 - this.trainSplit});
         Dataset<Row> trainSet = splits[0]; Dataset<Row> testSet  = splits[1];
 
+        // Build org.apache.spark.ml.regression.GBTRegressor using requested parameters
         GBTRegressor gradientBoost = new GBTRegressor()
                 .setFeaturesCol("features")
                 .setLabelCol("label")
@@ -172,16 +195,18 @@ public class GBoostRegressionModel {
                 .setSubsamplingRate(this.subsamplingRate)
                 .setStepSize(this.stepSize);
 
+        // Fit to training set
         GBTRegressionModel gbModel = gradientBoost.fit(trainSet);
 
-        Dataset<Row> predictions = gbModel.transform(testSet).select("label", "prediction");
-        RegressionMetrics metrics = new RegressionMetrics(predictions);
+        Dataset<Row> predictions = gbModel.transform(testSet) // adds the "prediction" column
+                .select("label", "prediction");
 
+        RegressionMetrics metrics = new RegressionMetrics(predictions);
         this.rmse = metrics.rootMeanSquaredError();
         this.r2 = metrics.r2();
 
         trainTask.finish();
-        log.info(">>> Finished building model for GISJoin: {}, Task: {}", this.gisJoin, trainTask);
+        log.info("Finished building model for GISJoin: {}, Task: {}", this.gisJoin, trainTask);
         return true;
     }
 
@@ -208,7 +233,7 @@ public class GBoostRegressionModel {
 
         GBoostRegressionModel model = new GBoostRegressionModel.GradientBoostRegressionBuilder()
                 .forMongoCollection(MongoSpark.load(sparkContext, readConfig).toDF())
-                .forGISJoin(gisJoin)
+                .forGisJoin(gisJoin)
                 .forFeatures(features)
                 .forLabel(label)
                 .build();
@@ -238,7 +263,7 @@ public class GBoostRegressionModel {
             return this;
         }
 
-        public GradientBoostRegressionBuilder forGISJoin(String gisJoin) {
+        public GradientBoostRegressionBuilder forGisJoin(String gisJoin) {
             this.gisJoin = gisJoin;
             return this;
         }

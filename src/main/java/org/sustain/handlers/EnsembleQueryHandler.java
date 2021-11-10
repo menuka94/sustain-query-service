@@ -32,7 +32,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.sustain.*;
-import org.sustain.SparkTask;
+import org.sustain.handlers.tasks.SparkTask;
 import org.sustain.modeling.GBoostRegressionModel;
 import org.sustain.modeling.RFRegressionModel;
 import org.sustain.util.Constants;
@@ -83,7 +83,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
 
                 RFRegressionModel model = new RFRegressionModel.RFRegressionBuilder()
                         .forMongoCollection(mongoCollection)
-                        .forGISJoin(gisJoin)
+                        .forGisJoin(gisJoin)
                         .forFeatures(requestCollection.getFeaturesList())
                         .forLabel(requestCollection.getLabel())
                         .withImpurity(rfRequest.getImpurity())
@@ -151,7 +151,7 @@ public class EnsembleQueryHandler extends GrpcSparkHandler<ModelRequest, ModelRe
 
                 GBoostRegressionModel model = new GBoostRegressionModel.GradientBoostRegressionBuilder()
                         .forMongoCollection(mongoCollection)
-                        .forGISJoin(gisJoin)
+                        .forGisJoin(gisJoin)
                         .forFeatures(requestCollection.getFeaturesList())
                         .forLabel(requestCollection.getLabel())
                         .withLossType(gbRequest.getLossType())

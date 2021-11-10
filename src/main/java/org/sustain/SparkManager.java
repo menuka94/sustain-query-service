@@ -1,16 +1,14 @@
 package org.sustain;
 
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 
+import org.sustain.handlers.tasks.SparkTask;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -77,7 +75,7 @@ public class SparkManager {
     }
 
     public <T> Future<T> submit(SparkTask<T> sparkTask,
-            String jobGroup) throws Exception {
+                                String jobGroup) throws Exception {
         Future<T> future = this.executorService.submit(() -> {
             // initialize spark session
             SparkSession sparkSession = getOrCreateSparkSession();
