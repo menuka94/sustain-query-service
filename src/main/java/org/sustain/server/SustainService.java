@@ -8,6 +8,7 @@ import org.sustain.*;
 import org.sustain.handlers.*;
 import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.RegressionQueryHandler;
+import org.sustain.util.Constants;
 
 public class SustainService extends SustainGrpc.SustainImplBase {
     private static final Logger log = LogManager.getLogger(SustainService.class);
@@ -102,9 +103,12 @@ public class SustainService extends SustainGrpc.SustainImplBase {
      */
     @Override
     public void echoQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
-        log.info("RPC method echoQuery() invoked; returning request query body");
+        log.info("Received echoQuery request: {}", request.getQuery());
+        String responseString = String.format("Request received on node %s: %s", Constants.Kubernetes.NODE_HOSTNAME,
+                request.getQuery());
+
         DirectResponse echoResponse = DirectResponse.newBuilder()
-            .setData(StringEscapeUtils.unescapeJavaScript(request.getQuery()))
+            .setData(responseString)
             .build();
         responseObserver.onNext(echoResponse);
         responseObserver.onCompleted();
