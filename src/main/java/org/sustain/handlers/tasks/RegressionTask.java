@@ -37,7 +37,7 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
      * @return A new ReadConfig for overriding the default one.
      */
     public static ReadConfig createReadConfig(JavaSparkContext sparkContext, String collectionName) {
-        Map<String, String> readOverrides = new HashMap<String, String>();
+        Map<String, String> readOverrides = new HashMap<>();
         String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
         readOverrides.put("uri", mongoUri);
         readOverrides.put("database", Constants.DB.NAME);
