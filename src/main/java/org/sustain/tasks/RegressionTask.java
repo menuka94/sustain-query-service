@@ -1,4 +1,4 @@
-package org.sustain.handlers.tasks;
+package org.sustain.tasks;
 
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
@@ -10,7 +10,7 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.sustain.Collection;
 import org.sustain.ModelResponse;
-import org.sustain.modeling.RegressionModel;
+import org.sustain.modeling.SustainRegressionModel;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -151,8 +151,9 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
             Dataset<Row> trainSet = splits[0];
             Dataset<Row> testSet  = splits[1];
 
-            RegressionModel model = buildRegressionModel();
-            model.train(trainSet); // Launches the Spark Model
+            SustainRegressionModel model = buildRegressionModel();
+            model.train(trainSet); // Trains a Spark RegressionModel
+            model.test(testSet); // Evaluates the trained Spark RegressionModel
             modelResponses.add(buildModelResponse(gisJoin, model));
         }
         return modelResponses;
@@ -162,14 +163,14 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
      * Builds a RegressionModel, as implemented by the concrete regression subclasses.
      * @return A RegressionModel concrete instance.
      */
-    public abstract RegressionModel buildRegressionModel();
+    public abstract SustainRegressionModel buildRegressionModel();
 
     /**
      * Builds a ModelResponse from the trained/tested RegressionModel, as implemented by the concrete
      * regression subclasses.
-     * @param gisJoin The GISJOIN the ModelResponse is for
+     * @param gisJoin The GISJOIN that the ModelResponse was built for
      * @param model The trained/tested RegressionModel instance
      * @return A ModelResponse to be sent back via gRPC
      */
-    public abstract ModelResponse buildModelResponse(String gisJoin, RegressionModel model);
+    public abstract ModelResponse buildModelResponse(String gisJoin, SustainRegressionModel model);
 }

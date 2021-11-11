@@ -1,25 +1,11 @@
-package org.sustain.handlers.tasks;
+package org.sustain.tasks;
 
-import com.mongodb.spark.MongoSpark;
-import com.mongodb.spark.config.ReadConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.ml.feature.VectorAssembler;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 import org.sustain.*;
-import org.sustain.handlers.RegressionQueryHandler;
-import org.sustain.modeling.LRModel;
-import org.sustain.modeling.RegressionModel;
-import org.sustain.util.Constants;
-import scala.collection.JavaConverters;
-import scala.collection.Seq;
-
-import java.util.ArrayList;
-import java.util.HashMap;
+import org.sustain.modeling.SustainLinearRegressionModel;
+import org.sustain.modeling.SustainRegressionModel;
 import java.util.List;
-import java.util.Map;
 
 public class LinearRegressionTask extends RegressionTask {
 
@@ -35,8 +21,8 @@ public class LinearRegressionTask extends RegressionTask {
     }
 
     @Override
-    public RegressionModel buildRegressionModel() {
-        return new LRModel.LRModelBuilder()
+    public SustainRegressionModel buildRegressionModel() {
+        return new SustainLinearRegressionModel.LinearRegressionModelBuilder()
                 .withLoss(this.lrRequest.getLoss())
                 .withSolver(this.lrRequest.getSolver())
                 .withAggregationDepth(this.lrRequest.getAggregationDepth())
@@ -51,17 +37,17 @@ public class LinearRegressionTask extends RegressionTask {
     }
 
     @Override
-    public ModelResponse buildModelResponse(String gisJoin, RegressionModel model) {
-        if (model instanceof LRModel) {
-            LRModel lrModel = (LRModel) model;
+    public ModelResponse buildModelResponse(String gisJoin, SustainRegressionModel model) {
+        if (model instanceof SustainLinearRegressionModel) {
+            SustainLinearRegressionModel sustainLinearRegressionModel = (SustainLinearRegressionModel) model;
             LinearRegressionResponse modelResults = LinearRegressionResponse.newBuilder()
                     .setGisJoin(gisJoin)
-                    .setTotalIterations(lrModel.getTotalIterations())
-                    .setRmseResidual(lrModel.getRmse())
-                    .setR2Residual(lrModel.getR2())
-                    .setIntercept(lrModel.getIntercept())
-                    .addAllSlopeCoefficients(lrModel.getCoefficients())
-                    .addAllObjectiveHistory(lrModel.getObjectiveHistory())
+                    .setTotalIterations(sustainLinearRegressionModel.getTotalIterations())
+                    .setRmseResidual(sustainLinearRegressionModel.getRmse())
+                    .setR2Residual(sustainLinearRegressionModel.getR2())
+                    .setIntercept(sustainLinearRegressionModel.getIntercept())
+                    .addAllSlopeCoefficients(sustainLinearRegressionModel.getCoefficients())
+                    .addAllObjectiveHistory(sustainLinearRegressionModel.getObjectiveHistory())
                     .build();
 
             return ModelResponse.newBuilder()

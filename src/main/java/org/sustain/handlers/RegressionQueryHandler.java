@@ -1,37 +1,23 @@
 package org.sustain.handlers;
 
-import com.mongodb.spark.MongoSpark;
-import com.mongodb.spark.config.ReadConfig;
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.sustain.Collection;
-import org.sustain.LinearRegressionRequest;
-import org.sustain.LinearRegressionResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
-import org.sustain.ModelType;
 import org.sustain.SparkManager;
-import org.sustain.handlers.tasks.LinearRegressionTask;
-import org.sustain.handlers.tasks.SparkTask;
-import org.sustain.modeling.LRModel;
-import org.sustain.util.Constants;
+import org.sustain.tasks.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Future;
 
 /**
  * Handler for the gRPC Regression requests.
  * handleRequest() is invoked when a LinearRegressionRequest is received by the gRPC service.
  */
-public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> {
+public abstract class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> {
 
     private static final Logger log = LogManager.getLogger(RegressionQueryHandler.class);
 
@@ -43,9 +29,9 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
 	/**
 	 * Batches a List of GISJOINs into a List of Lists based on the batchSize.
-	 * @param gisJoins
-	 * @param batchSize
-	 * @return
+	 * @param gisJoins Total list of GISJOINs to batch
+	 * @param batchSize Size of each batch
+	 * @return A List of GISJOIN String batches
 	 */
     private List<List<String>> batchGisJoins(List<String> gisJoins, int batchSize) {
 		List<List<String>> batches = new ArrayList<>();
@@ -78,21 +64,25 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
             logRequest(this.request);
 			try {
 
-				// For each batch of GISJoins in the request, submit a task to Spark Manager
+				// Create batches of GISJOINs
 				List<List<String>> gisJoinBatches = batchGisJoins(
-						this.request.getLinearRegressionRequest().getGisJoinsList(),
-						20
+					this.request.getLinearRegressionRequest().getGisJoinsList(),
+					20
 				);
 
-				List<Future<List<ModelResponse>>> batchedModelTasks = new ArrayList<>();
+				// Create RegressionTasks for each of the GISJOIN batches, and submit them to Spark
+				List<Future<List<ModelResponse>>> batchedTasks = new ArrayList<>();
 				for (List<String> gisJoinBatch: gisJoinBatches) {
-					LinearRegressionTask lrTask = new LinearRegressionTask(this.request, gisJoinBatch);
-					batchedModelTasks.add(this.sparkManager.submit(lrTask, "regression-query"));
+					batchedTasks.add(
+						this.sparkManager.submit(
+							this.createRegressionTask(gisJoinBatch), "regression-query"
+						)
+					);
 				}
 
 				// Wait for each task to complete and return their ModelResponses
-				for (Future<List<ModelResponse>> lrModelTask: batchedModelTasks) {
-					List<ModelResponse> batchedModelResponses = lrModelTask.get();
+				for (Future<List<ModelResponse>> completedTask: batchedTasks) {
+					List<ModelResponse> batchedModelResponses = completedTask.get();
 					for (ModelResponse modelResponse: batchedModelResponses) {
 						this.responseObserver.onNext(modelResponse);
 					}
@@ -100,22 +90,39 @@ public class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, Model
 
 			} catch (Exception e) {
 				log.error("Failed to evaluate query", e);
-				responseObserver.onError(e);
+				this.responseObserver.onError(e);
 			}
         } else {
             log.warn("Invalid Model Request!");
         }
     }
 
+	/**
+	 * Checks the validity of the gRPC ModelRequest according to the type of Regression requested.
+	 * @param modelRequest gRPC ModelRequest object.
+	 * @return True if valid, false if not.
+	 */
     @Override
     public boolean isValid(ModelRequest modelRequest) {
-        if (modelRequest.getType().equals(ModelType.LINEAR_REGRESSION)) {
-            if (modelRequest.getCollectionsCount() == 1) {
-                if (modelRequest.getCollections(0).getFeaturesCount() == 1) {
-                    return modelRequest.hasLinearRegressionRequest();
-                }
-            }
-        }
-        return false;
+		if (modelRequest.getCollectionsCount() == 1) {
+			return this.hasAppropriateRegressionRequest(modelRequest);
+		}
+		log.error("isValid(ModelRequest): Expected 1 collection, got {}", modelRequest.getCollectionsCount());
+        return false; // Must have exactly 1 collection
     }
+
+	/**
+	 * Determines if the appropriate Regression Request has been included in the model request,
+	 * using the concrete subclass instance.
+	 * @param modelRequest gRPC ModelRequest object, which should contain an appropriate Regression Request object.
+	 * @return True if the appropriate object is included in the request, false if not.
+	 */
+	public abstract boolean hasAppropriateRegressionRequest(ModelRequest modelRequest);
+
+	/**
+	 * Creates an appropriate RegressionTask concrete instance, as defined by the subclass implementation.
+	 * @param gisJoinBatch The batch of GISJOINs for the task.
+	 * @return A concrete instance of a RegressionTask.
+	 */
+	public abstract RegressionTask createRegressionTask(List<String> gisJoinBatch);
 }

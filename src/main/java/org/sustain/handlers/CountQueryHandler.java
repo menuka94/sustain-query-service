@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.sustain.CountResponse;
 import org.sustain.CountRequest;
 import org.sustain.SparkManager;
-import org.sustain.handlers.tasks.SparkTask;
+import org.sustain.tasks.SparkTask;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountRespo
     public void handleRequest() {
         try {
             // submit a CountSparkTask for each collection
-            List<Future<Long>> futures = new ArrayList();
+            List<Future<Long>> futures = new ArrayList<>();
             for (String collection : request.getCollectionsList()) {
                 // initialize CountSparkTask
                 CountSparkTask countSparkTask = new CountSparkTask(collection);
@@ -77,7 +77,7 @@ public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountRespo
         @Override
         public Long execute(JavaSparkContext sparkContext) throws Exception {
             // initialize ReadConfig
-            Map<String, String> readOverrides = new HashMap();
+            Map<String, String> readOverrides = new HashMap<>();
             readOverrides.put("spark.mongodb.input.collection", this.collection);
             readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
             readOverrides.put("spark.mongodb.input.uri",
@@ -91,8 +91,7 @@ public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountRespo
                 MongoSpark.load(sparkContext, readConfig);
 
             // perform count evaluation
-            long count = rdd.count();
-            return count;
+            return rdd.count();
         }
     }
 }

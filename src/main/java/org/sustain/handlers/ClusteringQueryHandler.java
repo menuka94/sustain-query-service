@@ -30,7 +30,7 @@ import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
-import org.sustain.handlers.tasks.SparkTask;
+import org.sustain.tasks.SparkTask;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -270,7 +270,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         }
 
 		// Initialize mongodb read configuration
-        Map<String, String> readOverrides = new HashMap();
+        Map<String, String> readOverrides = new HashMap<>();
         readOverrides.put("spark.mongodb.input.collection", resolution + "_stats");
         readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
         readOverrides.put("spark.mongodb.input.uri",

@@ -3,7 +3,7 @@ package org.sustain;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 
-import org.sustain.handlers.tasks.SparkTask;
+import org.sustain.tasks.SparkTask;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ public class SparkManager {
 
     public SparkManager(String sparkMaster) {
         this.sparkMaster = sparkMaster;
-        this.jars = new ArrayList();
+        this.jars = new ArrayList<>();
         this.executorService = Executors.newCachedThreadPool();
     }
 
@@ -28,7 +28,7 @@ public class SparkManager {
         this.jars.add(jar);
     }
 
-    protected void cancel(String jobGroup) throws Exception {
+    protected void cancel(String jobGroup) {
         // initialize spark session
         SparkSession sparkSession = getOrCreateSparkSession();
         JavaSparkContext sparkContext = 
@@ -38,7 +38,7 @@ public class SparkManager {
         sparkContext.cancelJobGroup(jobGroup);
     }
 
-    protected SparkSession getOrCreateSparkSession() throws Exception {
+    protected SparkSession getOrCreateSparkSession() {
         // get or create SparkSession
         SparkSession sparkSession = SparkSession.builder()
             .master(this.sparkMaster)
@@ -74,9 +74,8 @@ public class SparkManager {
         return sparkSession;
     }
 
-    public <T> Future<T> submit(SparkTask<T> sparkTask,
-                                String jobGroup) throws Exception {
-        Future<T> future = this.executorService.submit(() -> {
+    public <T> Future<T> submit(SparkTask<T> sparkTask, String jobGroup) {
+        return this.executorService.submit(() -> {
             // initialize spark session
             SparkSession sparkSession = getOrCreateSparkSession();
             JavaSparkContext sparkContext = 
@@ -96,7 +95,5 @@ public class SparkManager {
                 throw e;
             }
         });
-
-        return future;
     }
 }
