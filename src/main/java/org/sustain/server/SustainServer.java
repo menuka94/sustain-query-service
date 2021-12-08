@@ -56,7 +56,7 @@ public class SustainServer {
                 "\n\n--- Druid Environment ---\n" +
                 "QUERY_HOST: {}\n" +
                 "QUERY_POST: {}\n",
-                Constants.Server.HOST, Constants.Server.PORT,
+                Constants.Kubernetes.NODE_HOSTNAME, Constants.Kubernetes.POD_NAME, Constants.Server.HOST, Constants.Server.PORT,
                 Constants.DB.HOST, Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD,
                 Constants.Spark.MASTER, Constants.Spark.EXECUTOR_CORES, Constants.Spark.EXECUTOR_MEMORY, Constants.Spark.INITIAL_EXECUTORS,
                 Constants.Druid.QUERY_HOST, Constants.Druid.QUERY_PORT
