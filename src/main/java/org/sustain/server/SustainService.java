@@ -7,7 +7,10 @@ import org.apache.logging.log4j.Logger;
 import org.sustain.*;
 import org.sustain.handlers.*;
 import org.sustain.handlers.GrpcHandler;
-import org.sustain.handlers.RegressionQueryHandler;
+import org.sustain.handlers.regression.GradientBoostRegressionQueryHandler;
+import org.sustain.handlers.regression.LinearRegressionQueryHandler;
+import org.sustain.handlers.regression.RandomForestRegressionQueryHandler;
+import org.sustain.handlers.regression.RegressionQueryHandler;
 import org.sustain.util.Constants;
 
 public class SustainService extends SustainGrpc.SustainImplBase {
