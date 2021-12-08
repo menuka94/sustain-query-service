@@ -1,4 +1,4 @@
-package org.sustain.handlers;
+package org.sustain.handlers.regression;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
@@ -6,16 +6,16 @@ import org.apache.logging.log4j.Logger;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
-import org.sustain.tasks.GradientBoostRegressionTask;
-import org.sustain.tasks.RegressionTask;
+import org.sustain.handlers.tasks.LinearRegressionTask;
+import org.sustain.handlers.tasks.RegressionTask;
 
 import java.util.List;
 
-public class GradientBoostRegressionQueryHandler extends RegressionQueryHandler {
+public class LinearRegressionQueryHandler extends RegressionQueryHandler {
 
-    private static final Logger log = LogManager.getLogger(GradientBoostRegressionQueryHandler.class);
+    private static final Logger log = LogManager.getLogger(LinearRegressionQueryHandler.class);
 
-    public GradientBoostRegressionQueryHandler(ModelRequest request,
+    public LinearRegressionQueryHandler(ModelRequest request,
                                         StreamObserver<ModelResponse> responseObserver,
                                         SparkManager sparkManager) {
         super(request, responseObserver, sparkManager);
@@ -23,11 +23,12 @@ public class GradientBoostRegressionQueryHandler extends RegressionQueryHandler 
 
     @Override
     public boolean hasAppropriateRegressionRequest(ModelRequest modelRequest) {
-        return modelRequest.hasGBoostRegressionRequest();
+        return modelRequest.hasLinearRegressionRequest();
     }
 
     @Override
     public RegressionTask createRegressionTask(List<String> gisJoinBatch) {
-        return new GradientBoostRegressionTask(this.request, gisJoinBatch);
+        return new LinearRegressionTask(this.request, gisJoinBatch);
     }
+
 }

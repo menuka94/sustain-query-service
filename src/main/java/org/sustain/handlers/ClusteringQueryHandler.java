@@ -30,7 +30,7 @@ import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
-import org.sustain.tasks.SparkTask;
+import org.sustain.handlers.tasks.SparkTask;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;

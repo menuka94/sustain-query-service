@@ -1,4 +1,4 @@
-package org.sustain.handlers;
+package org.sustain.handlers.regression;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
@@ -6,8 +6,8 @@ import org.apache.logging.log4j.Logger;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
-import org.sustain.tasks.RandomForestRegressionTask;
-import org.sustain.tasks.RegressionTask;
+import org.sustain.handlers.tasks.RandomForestRegressionTask;
+import org.sustain.handlers.tasks.RegressionTask;
 
 import java.util.List;
 

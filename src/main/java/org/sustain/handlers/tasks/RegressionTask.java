@@ -1,4 +1,4 @@
-package org.sustain.tasks;
+package org.sustain.handlers.tasks;
 
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;

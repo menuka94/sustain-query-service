@@ -1,4 +1,4 @@
-package org.sustain.tasks;
+package org.sustain.handlers.tasks;
 
 import org.apache.spark.api.java.JavaSparkContext;
 

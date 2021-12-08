@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.sustain.CountResponse;
 import org.sustain.CountRequest;
 import org.sustain.SparkManager;
-import org.sustain.tasks.SparkTask;
+import org.sustain.handlers.tasks.SparkTask;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
