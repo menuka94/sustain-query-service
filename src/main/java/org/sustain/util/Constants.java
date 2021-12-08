@@ -3,8 +3,13 @@ package org.sustain.util;
 public class Constants {
     public static final String GIS_JOIN = "GISJOIN";
 
+    public static class Kubernetes {
+        public static final String NODE_HOSTNAME = System.getenv("NODE_HOSTNAME");
+        public static final String POD_NAME = System.getenv("POD_NAME");
+    }
+
     public static class Server {
-        public static final String  HOST = System.getenv("SERVER_HOST");
+        public static final String  HOST = System.getenv("HOSTNAME");
         public static final Integer PORT = Integer.parseInt(System.getenv("SERVER_PORT"));
     }
 
