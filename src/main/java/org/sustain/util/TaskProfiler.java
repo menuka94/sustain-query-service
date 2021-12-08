@@ -2,21 +2,19 @@ package org.sustain.util;
 
 import java.time.Duration;
 
-public class Task implements Comparable<Task> {
+public class TaskProfiler implements Comparable<TaskProfiler> {
 
     private final Long startTime;
     private Long endTime;
     private final String name;
-    private final int indentLevel;
 
-    public Task(String name, int indentLevel) {
-        this(name, System.currentTimeMillis(), indentLevel);
+    public TaskProfiler(String name) {
+        this(name, System.currentTimeMillis());
     }
 
-    public Task(String name, Long startTime, int indentLevel) {
+    public TaskProfiler(String name, Long startTime) {
         this.startTime = startTime;
         this.name = name;
-        this.indentLevel = indentLevel;
     }
 
     public void finish() {
@@ -35,10 +33,6 @@ public class Task implements Comparable<Task> {
         return name;
     }
 
-    public int getIndentLevel() {
-        return this.indentLevel;
-    }
-
     public Long timeTaken() {
         return this.endTime - this.startTime;
     }
@@ -55,22 +49,18 @@ public class Task implements Comparable<Task> {
         return minutes == 0 ? String.format("%d sec", seconds) : String.format("%d min %d sec", minutes, seconds);
     }
 
-    private String indent() {
-        return "  ".repeat(this.indentLevel);
-    }
-
     @Override
     public String toString() {
-        return String.format("%s{ %s : %s }", indent(), this.name, timeToEnglish());
+        return String.format("{ %s : %s }", this.name, timeToEnglish());
     }
 
     @Override
-    public int compareTo(Task other) {
+    public int compareTo(TaskProfiler other) {
         if (this.startTime < other.getStartTime()) {
             return -1;
         } else if (this.startTime > other.getStartTime()) {
             return 1;
         }
-        return 0; // This would be weird if two tasks started at the same time
+        return 0; // Unlikely that two tasks started at the same time in ms
     }
 }

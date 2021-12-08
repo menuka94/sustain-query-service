@@ -34,6 +34,49 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 50051
+        env:
+          - name: NODE_HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: SERVER_PORT
+            value: "50051"
+          - name: DB_NAME
+            value: "sustaindb"
+          - name: DB_HOST
+            value: "localhost"
+          - name: DB_PORT
+            value: "27018"
+          - name: SPARK_MASTER
+            value: "spark://lattice-100.cs.colostate.edu:8079"
+          - name: SPARK_THREAD_COUNT
+            value: "4"
+          - name: SPARK_EXECUTOR_CORES
+            value: "5"
+          - name: SPARK_EXECUTOR_CORES
+            value: "5"
+          - name: SPARK_EXECUTOR_MEMORY
+            value: "8G"
+          - name: SPARK_INITIAL_EXECUTORS
+            value: "5"
+          - name: SPARK_MIN_EXECUTORS
+            value: "1"
+          - name: SPARK_MAX_EXECUTORS
+            value: "10"
+          - name: SPARK_BACKLOG_TIMEOUT
+            value: "10s"
+          - name: SPARK_IDLE_TIMEOUT
+            value: "10s"
+      - name: mongos-router
+        image: mongo:4.4.4
+        imagePullPolicy: Always
+        command: ['sh', '-c', 'mongos --configdb cfgrs/lattice-147:27017,lattice-148:27017,lattice-149:27017 --bind_ip_all --port 27018']
+        ports:
+          - containerPort: 27018
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:

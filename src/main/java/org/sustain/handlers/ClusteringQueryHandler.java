@@ -23,23 +23,20 @@ import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.SparkSession;
 import org.sustain.BisectingKMeansResponse;
 import org.sustain.GaussianMixtureResponse;
 import org.sustain.KMeansClusteringResponse;
 import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
-import org.sustain.ModelType;
 import org.sustain.SparkManager;
-import org.sustain.SparkTask;
+import org.sustain.handlers.tasks.SparkTask;
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -273,7 +270,7 @@ public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, Model
         }
 
 		// Initialize mongodb read configuration
-        Map<String, String> readOverrides = new HashMap();
+        Map<String, String> readOverrides = new HashMap<>();
         readOverrides.put("spark.mongodb.input.collection", resolution + "_stats");
         readOverrides.put("spark.mongodb.input.database", Constants.DB.NAME);
         readOverrides.put("spark.mongodb.input.uri",

@@ -38,6 +38,8 @@ public class SustainServer {
      */
     public static void logEnvironment() {
         log.info("\n\n--- Server Environment ---\n" +
+                "NODE_HOSTNAME: {}\n" +
+                "POD_NAME: {}\n" +
                 "SERVER_HOST: {}\n" +
                 "SERVER_PORT: {}\n" +
                 "\n\n--- Database Environment ---\n" +
@@ -46,11 +48,19 @@ public class SustainServer {
                 "DB_NAME: {}\n" +
                 "DB_USERNAME: {}\n" +
                 "DB_PASSWORD: {}\n" +
+                "\n\n--- Spark Environment ---\n" +
+                "SPARK_MASTER: {}\n" +
+                "EXECUTOR_CORES: {}\n" +
+                "EXECUTOR_MEMORY: {}\n" +
+                "INITIAL_EXECUTORS: {}\n" +
                 "\n\n--- Druid Environment ---\n" +
                 "QUERY_HOST: {}\n" +
-                "QUERY_POST: {}\n", Constants.Server.HOST, Constants.Server.PORT, Constants.DB.HOST,
-            Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD,
-            Constants.Druid.QUERY_HOST, Constants.Druid.QUERY_PORT);
+                "QUERY_POST: {}\n",
+                Constants.Kubernetes.NODE_HOSTNAME, Constants.Kubernetes.POD_NAME, Constants.Server.HOST, Constants.Server.PORT,
+                Constants.DB.HOST, Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD,
+                Constants.Spark.MASTER, Constants.Spark.EXECUTOR_CORES, Constants.Spark.EXECUTOR_MEMORY, Constants.Spark.INITIAL_EXECUTORS,
+                Constants.Druid.QUERY_HOST, Constants.Druid.QUERY_PORT
+        );
     }
 
     public void start() throws IOException {

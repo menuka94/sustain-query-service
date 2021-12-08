@@ -8,6 +8,7 @@ import org.sustain.*;
 import org.sustain.handlers.*;
 import org.sustain.handlers.GrpcHandler;
 import org.sustain.handlers.RegressionQueryHandler;
+import org.sustain.util.Constants;
 
 public class SustainService extends SustainGrpc.SustainImplBase {
     private static final Logger log = LogManager.getLogger(SustainService.class);
@@ -28,12 +29,12 @@ public class SustainService extends SustainGrpc.SustainImplBase {
     @Override
     public void modelQuery(ModelRequest request, StreamObserver<ModelResponse> responseObserver) {
 
-        GrpcHandler handler;
+        GrpcHandler<ModelRequest, ModelResponse> handler;
         ModelType type = request.getType();
         switch (type) {
             case LINEAR_REGRESSION:
                 log.info("Received a Linear Regression Model request");
-                handler = new RegressionQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new LinearRegressionQueryHandler(request, responseObserver, this.sparkManager);
                 break;
             case K_MEANS_CLUSTERING:
                 log.info("Received a K-Means Clustering Model request");
@@ -49,11 +50,11 @@ public class SustainService extends SustainGrpc.SustainImplBase {
                 break;
             case R_FOREST_REGRESSION:
                 log.info("Received a Random Forest Regression Model request");
-                handler = new EnsembleQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new RandomForestRegressionQueryHandler(request, responseObserver, this.sparkManager);
                 break;
             case G_BOOST_REGRESSION:
                 log.info("Received a Gradient Boost Regression Model request");
-                handler = new EnsembleQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new GradientBoostRegressionQueryHandler(request, responseObserver, this.sparkManager);
                 break;
             case LATENT_DIRICHLET_ALLOCATION:
                 log.info("Received a Latent Dirichlet Allocation Request");
@@ -102,9 +103,12 @@ public class SustainService extends SustainGrpc.SustainImplBase {
      */
     @Override
     public void echoQuery(DirectRequest request, StreamObserver<DirectResponse> responseObserver) {
-        log.info("RPC method echoQuery() invoked; returning request query body");
+        log.info("Received echoQuery request: {}", request.getQuery());
+        String responseString = String.format("Request received on node %s: %s", Constants.Kubernetes.NODE_HOSTNAME,
+                request.getQuery());
+
         DirectResponse echoResponse = DirectResponse.newBuilder()
-            .setData(StringEscapeUtils.unescapeJavaScript(request.getQuery()))
+            .setData(responseString)
             .build();
         responseObserver.onNext(echoResponse);
         responseObserver.onCompleted();
