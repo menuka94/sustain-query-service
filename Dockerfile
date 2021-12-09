@@ -27,7 +27,6 @@ ENV SPARK_MIN_EXECUTORS=1
 ENV SPARK_MAX_EXECUTORS=10
 ENV SPARK_BACKLOG_TIMEOUT="10s"
 ENV SPARK_IDLE_TIMEOUT="10s"
-ENV JAVA_HOME="/usr/lib/jvm/java-11-openjdk-amd64"
 
 COPY Makefile gradlew gradlew.bat build.gradle settings.gradle ./
 COPY nodejs-client/ ./nodejs-client
@@ -36,6 +35,6 @@ COPY bin/ ./bin
 COPY gradle/ ./gradle
 
 # Build project
-RUN ./gradlew install
+RUN ./gradlew clean && ./gradlew generateProto && ./gradlew install -x test
 
 ENTRYPOINT ["./bin/sustain-server.sh"]
