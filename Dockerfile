@@ -31,10 +31,9 @@ ENV SPARK_IDLE_TIMEOUT="10s"
 COPY Makefile gradlew gradlew.bat build.gradle settings.gradle ./
 COPY nodejs-client/ ./nodejs-client
 COPY src/ ./src
-COPY bin/ ./bin
 COPY gradle/ ./gradle
 
 # Build project
 RUN ./gradlew clean && ./gradlew generateProto && ./gradlew install -x test
 
-ENTRYPOINT ["./bin/sustain-server.sh"]
+ENTRYPOINT ["./build/install/sustain-query-service/bin/sustain-server"]
