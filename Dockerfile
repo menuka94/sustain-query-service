@@ -28,12 +28,14 @@ ENV SPARK_MAX_EXECUTORS=10
 ENV SPARK_BACKLOG_TIMEOUT="10s"
 ENV SPARK_IDLE_TIMEOUT="10s"
 
+# Copy source code and files
 COPY Makefile gradlew gradlew.bat build.gradle settings.gradle ./
 COPY nodejs-client/ ./nodejs-client
 COPY src/ ./src
 COPY gradle/ ./gradle
 
 # Build project
-RUN ./gradlew clean && ./gradlew generateProto && ./gradlew install -x test
+RUN ./gradlew clean && ./gradlew generateProto && ./gradlew build -x test && ./gradlew install -x test
 
+# Set default container execution entrypoint
 ENTRYPOINT ["./build/install/sustain-query-service/bin/sustain-server"]
