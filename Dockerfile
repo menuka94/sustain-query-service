@@ -34,6 +34,9 @@ COPY nodejs-client/ ./nodejs-client
 COPY src/ ./src
 COPY gradle/ ./gradle
 
+# Make JAVA_HOME symlink that matches host JAVA_HOME
+RUN mkdir -p /usr/lib/jvm && ln -s /opt/java/openjdk /usr/lib/jvm/java-11-openjdk-11.0.13.0.8-3.el8_5.x86_64
+
 # Build project
 RUN ./gradlew clean && ./gradlew generateProto && ./gradlew build -x test && ./gradlew install -x test
 
