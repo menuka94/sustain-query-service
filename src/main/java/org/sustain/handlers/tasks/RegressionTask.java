@@ -119,8 +119,11 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
      */
     public static Dataset<Row> loadAndProcessDataset(JavaSparkContext sparkContext, String collectionName,
                                                      List<String> features, String label, String gisJoin) {
+        log.info("Loading and processing collection {}", collectionName);
         Dataset<Row> mongoCollectionDs = MongoSpark.load(sparkContext, createReadConfig(sparkContext, collectionName))
                 .toDS(Row.class);
+
+        mongoCollectionDs.show(25);
 
         Dataset<Row> selectedAndFilteredDs = selectColsAndFilterByGisJoin(mongoCollectionDs, features, label, gisJoin);
         return createFeaturesColumn(selectedAndFilteredDs, features);
