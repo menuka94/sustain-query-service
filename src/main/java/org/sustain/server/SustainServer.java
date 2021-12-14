@@ -40,6 +40,8 @@ public class SustainServer {
         log.info("\n\n--- Server Environment ---\n" +
                 "NODE_HOSTNAME: {}\n" +
                 "POD_NAME: {}\n" +
+                "POD_IP: {}\n" +
+                "JAVA_HOME: {}\n" +
                 "SERVER_HOST: {}\n" +
                 "SERVER_PORT: {}\n" +
                 "\n\n--- Database Environment ---\n" +
@@ -50,15 +52,18 @@ public class SustainServer {
                 "DB_PASSWORD: {}\n" +
                 "\n\n--- Spark Environment ---\n" +
                 "SPARK_MASTER: {}\n" +
+                "SPARK_DRIVER_PORT: {}\n" +
                 "EXECUTOR_CORES: {}\n" +
                 "EXECUTOR_MEMORY: {}\n" +
                 "INITIAL_EXECUTORS: {}\n" +
                 "\n\n--- Druid Environment ---\n" +
                 "QUERY_HOST: {}\n" +
                 "QUERY_POST: {}\n",
-                Constants.Kubernetes.NODE_HOSTNAME, Constants.Kubernetes.POD_NAME, Constants.Server.HOST, Constants.Server.PORT,
+                Constants.Kubernetes.NODE_HOSTNAME, Constants.Kubernetes.POD_NAME, Constants.Kubernetes.POD_IP,
+                Constants.Java.HOME,
+                Constants.Server.HOST, Constants.Server.PORT,
                 Constants.DB.HOST, Constants.DB.PORT, Constants.DB.NAME, Constants.DB.USERNAME, Constants.DB.PASSWORD,
-                Constants.Spark.MASTER, Constants.Spark.EXECUTOR_CORES, Constants.Spark.EXECUTOR_MEMORY, Constants.Spark.INITIAL_EXECUTORS,
+                Constants.Spark.MASTER, Constants.Spark.DRIVER_PORT, Constants.Spark.EXECUTOR_CORES, Constants.Spark.EXECUTOR_MEMORY, Constants.Spark.INITIAL_EXECUTORS,
                 Constants.Druid.QUERY_HOST, Constants.Druid.QUERY_PORT
         );
     }

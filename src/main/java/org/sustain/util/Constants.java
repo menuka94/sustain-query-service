@@ -6,6 +6,7 @@ public class Constants {
     public static class Kubernetes {
         public static final String NODE_HOSTNAME = System.getenv("NODE_HOSTNAME");
         public static final String POD_NAME = System.getenv("POD_NAME");
+        public static final String POD_IP = System.getenv("POD_IP");
     }
 
     public static class Server {
@@ -23,6 +24,7 @@ public class Constants {
 
     public static class Spark {
         public static final String MASTER = System.getenv("SPARK_MASTER");
+        public static final String DRIVER_PORT = System.getenv("SPARK_DRIVER_PORT");
         public static final String EXECUTOR_CORES = System.getenv("SPARK_EXECUTOR_CORES");
         public static final String EXECUTOR_MEMORY = System.getenv("SPARK_EXECUTOR_MEMORY");
         public static final String INITIAL_EXECUTORS = System.getenv("SPARK_INITIAL_EXECUTORS");
@@ -35,5 +37,9 @@ public class Constants {
     public static class Druid {
         public static final String QUERY_HOST = System.getenv("DRUID_QUERY_HOST");
         public static final String QUERY_PORT = System.getenv("DRUID_QUERY_PORT");
+    }
+
+    public static class Java {
+        public static final String HOME = System.getenv("JAVA_HOME");
     }
 }

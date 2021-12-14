@@ -6,7 +6,7 @@ metadata:
 spec:
   clusterIP: 10.98.54.124
   selector:
-    app: sqs-pod 
+    app: sqs-pod
   ports:
   - port: 50051
     targetPort: 50051
@@ -34,6 +34,8 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 50051
+        - containerPort: 50052
+        - containerPort: 9079
         env:
           - name: NODE_HOSTNAME
             valueFrom:
@@ -43,6 +45,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
+          - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           - name: SERVER_PORT
             value: "50051"
           - name: DB_NAME
@@ -53,6 +59,8 @@ spec:
             value: "27018"
           - name: SPARK_MASTER
             value: "spark://lattice-100.cs.colostate.edu:8079"
+          - name: SPARK_DRIVER_PORT
+            value: "50052"
           - name: SPARK_THREAD_COUNT
             value: "4"
           - name: SPARK_EXECUTOR_CORES
