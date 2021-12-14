@@ -34,6 +34,8 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 50051
+        - containerPort: 50052
+        - containerPort: 9079
         env:
           - name: NODE_HOSTNAME
             valueFrom:
@@ -44,9 +46,9 @@ spec:
               fieldRef:
                 fieldPath: metadata.name
           - name: POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
           - name: SERVER_PORT
             value: "50051"
           - name: DB_NAME
