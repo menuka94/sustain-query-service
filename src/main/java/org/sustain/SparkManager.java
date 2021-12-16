@@ -1,16 +1,14 @@
 package org.sustain;
 
-import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 
+import org.sustain.handlers.tasks.SparkTask;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -22,7 +20,7 @@ public class SparkManager {
 
     public SparkManager(String sparkMaster) {
         this.sparkMaster = sparkMaster;
-        this.jars = new ArrayList();
+        this.jars = new ArrayList<>();
         this.executorService = Executors.newCachedThreadPool();
     }
 
@@ -30,7 +28,7 @@ public class SparkManager {
         this.jars.add(jar);
     }
 
-    protected void cancel(String jobGroup) throws Exception {
+    protected void cancel(String jobGroup) {
         // initialize spark session
         SparkSession sparkSession = getOrCreateSparkSession();
         JavaSparkContext sparkContext = 
@@ -40,27 +38,24 @@ public class SparkManager {
         sparkContext.cancelJobGroup(jobGroup);
     }
 
-    protected SparkSession getOrCreateSparkSession() throws Exception {
+    protected SparkSession getOrCreateSparkSession() {
         // get or create SparkSession
         SparkSession sparkSession = SparkSession.builder()
             .master(this.sparkMaster)
             .appName("sustain-query-service-" + Constants.Server.HOST)
-            .config("spark.executor.cores",
-                Constants.Spark.EXECUTOR_CORES)
-            .config("spark.executor.memory",
-                Constants.Spark.EXECUTOR_MEMORY)
+            .config("spark.submit.deployMode", "client") // Launch driver program locally.
+            .config("spark.driver.bindAddress", "0.0.0.0") // Hostname or IP address where to bind listening sockets.
+            .config("spark.driver.host", Constants.Kubernetes.POD_IP) // Hostname or IP address for the driver. This is used for communicating with the executors and the standalone Master.
+            .config("spark.driver.port", Constants.Spark.DRIVER_PORT) // Port for the driver to listen on. This is used for communicating with the executors and the standalone Master.
+            .config("spark.executor.cores", Constants.Spark.EXECUTOR_CORES)
+            .config("spark.executor.memory", Constants.Spark.EXECUTOR_MEMORY)
             .config("spark.dynamicAllocation.enabled", "true")
             .config("spark.dynamicAllocation.shuffleTracking.enabled", "true")
-            .config("spark.dynamicAllocation.initialExecutors",
-                Constants.Spark.INITIAL_EXECUTORS)
-            .config("spark.dynamicAllocation.minExecutors",
-                Constants.Spark.MIN_EXECUTORS)
-            .config("spark.dynamicAllocation.maxExecutors",
-                Constants.Spark.MAX_EXECUTORS)
-            .config("spark.dynamicAllocation.schedulerBacklogTimeout",
-                Constants.Spark.BACKLOG_TIMEOUT)
-            .config("spark.dynamicAllocation.executorIdleTimeout",
-                Constants.Spark.IDLE_TIMEOUT)
+            .config("spark.dynamicAllocation.initialExecutors", Constants.Spark.INITIAL_EXECUTORS)
+            .config("spark.dynamicAllocation.minExecutors", Constants.Spark.MIN_EXECUTORS)
+            .config("spark.dynamicAllocation.maxExecutors", Constants.Spark.MAX_EXECUTORS)
+            .config("spark.dynamicAllocation.schedulerBacklogTimeout", Constants.Spark.BACKLOG_TIMEOUT)
+            .config("spark.dynamicAllocation.executorIdleTimeout", Constants.Spark.IDLE_TIMEOUT)
             .config("mongodb.keep_alive_ms", "100000")
             .getOrCreate();
 
@@ -76,9 +71,8 @@ public class SparkManager {
         return sparkSession;
     }
 
-    public <T> Future<T> submit(SparkTask<T> sparkTask,
-            String jobGroup) throws Exception {
-        Future<T> future = this.executorService.submit(() -> {
+    public <T> Future<T> submit(SparkTask<T> sparkTask, String jobGroup) {
+        return this.executorService.submit(() -> {
             // initialize spark session
             SparkSession sparkSession = getOrCreateSparkSession();
             JavaSparkContext sparkContext = 
@@ -98,7 +92,5 @@ public class SparkManager {
                 throw e;
             }
         });
-
-        return future;
     }
 }

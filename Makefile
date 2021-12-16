@@ -10,7 +10,7 @@ build: executable
 	./gradlew install -x test
 
 server: build
-	./build/install/sustain-census-grpc/bin/sustain-server
+	./build/install/sustain-query-service/bin/sustain-server
 
 test: build
 	./gradlew test
@@ -20,11 +20,11 @@ proto: executable
 
 rforest: executable
 	chmod +x ./gradlew
-	./build/install/sustain-census-grpc/bin/rforest
+	./build/install/sustain-query-service/bin/rforest
 
 gboost:executable
 	chmod +x ./gradlew
-	./build/install/sustain-census-grpc/bin/gboost
+	./build/install/sustain-query-service/bin/gboost
 
 executable:
 	chmod +x ./gradlew

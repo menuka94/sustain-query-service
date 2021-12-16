@@ -6,28 +6,21 @@
 # Author: Caleb Carlson
 # ------------------------------------------------------------------------------------*/
 
-FROM node:latest AS base
-
-# --- Dependencies ---
-
-# Install default Java JDK
-RUN apt-get update && apt-get install -y default-jdk
-
-
-# --- Project ---
+FROM gradle:7.2.0-jdk11 AS base
 
 # Add in source code
 ENV PROJECT="sustain-query-service"
 RUN mkdir -p /code/$PROJECT
 WORKDIR /code/$PROJECT
 
+# Copy source code and files
 COPY Makefile gradlew gradlew.bat build.gradle settings.gradle ./
 COPY nodejs-client/ ./nodejs-client
 COPY src/ ./src
-COPY bin/ ./bin
 COPY gradle/ ./gradle
 
 # Build project
-RUN ./gradlew install
+RUN ./gradlew clean && ./gradlew generateProto && ./gradlew build -x test && ./gradlew install -x test
 
-ENTRYPOINT ["./bin/sustain-server.sh"]
+# Set default container execution entrypoint
+ENTRYPOINT ["./build/install/sustain-query-service/bin/sustain-server"]
