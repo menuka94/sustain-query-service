@@ -4,9 +4,10 @@ public class Constants {
     public static final String GIS_JOIN = "GISJOIN";
 
     public static class Kubernetes {
-        public static final String NODE_HOSTNAME = System.getenv("NODE_HOSTNAME");
-        public static final String POD_NAME = System.getenv("POD_NAME");
-        public static final String POD_IP = System.getenv("POD_IP");
+        public static final Boolean KUBERNETES_ENV = System.getenv("KUBERNETES_ENV").equals("true");
+        public static final String  NODE_HOSTNAME = System.getenv("NODE_HOSTNAME");
+        public static final String  POD_NAME = System.getenv("POD_NAME");
+        public static final String  POD_IP = System.getenv("POD_IP");
     }
 
     public static class Server {
@@ -25,6 +26,9 @@ public class Constants {
     public static class Spark {
         public static final String MASTER = System.getenv("SPARK_MASTER");
         public static final String DRIVER_PORT = System.getenv("SPARK_DRIVER_PORT");
+        public static final String DRIVER_BLOCKMANAGER_PORT = System.getenv("SPARK_DRIVER_BLOCKMANAGER_PORT");
+        public static final String DRIVER_UI_PORT = System.getenv("SPARK_DRIVER_UI_PORT");
+        public static final String DEFAULT_EXECUTOR_PORT = System.getenv("SPARK_DEFAULT_EXECUTOR_PORT");
         public static final String EXECUTOR_CORES = System.getenv("SPARK_EXECUTOR_CORES");
         public static final String EXECUTOR_MEMORY = System.getenv("SPARK_EXECUTOR_MEMORY");
         public static final String INITIAL_EXECUTORS = System.getenv("SPARK_INITIAL_EXECUTORS");
