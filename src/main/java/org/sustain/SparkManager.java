@@ -39,14 +39,14 @@ public class SparkManager {
     }
 
     protected SparkSession getOrCreateSparkSession() {
-        // get or create SparkSession
         SparkSession sparkSession = SparkSession.builder()
             .master(this.sparkMaster)
-            .appName("sustain-query-service-" + Constants.Server.HOST)
+            .appName("sqs-" + Constants.Server.HOST)
             .config("spark.submit.deployMode", "client") // Launch driver program locally.
             .config("spark.driver.bindAddress", "0.0.0.0") // Hostname or IP address where to bind listening sockets.
             .config("spark.driver.host", Constants.Kubernetes.POD_IP) // Hostname or IP address for the driver. This is used for communicating with the executors and the standalone Master.
             .config("spark.driver.port", Constants.Spark.DRIVER_PORT) // Port for the driver to listen on. This is used for communicating with the executors and the standalone Master.
+            .config("spark.driver.blockManager.port", Constants.Spark.DRIVER_BLOCKMANAGER_PORT) // Port for driver's blockmanager
             .config("spark.executor.cores", Constants.Spark.EXECUTOR_CORES)
             .config("spark.executor.memory", Constants.Spark.EXECUTOR_MEMORY)
             .config("spark.dynamicAllocation.enabled", "true")
@@ -59,7 +59,7 @@ public class SparkManager {
             .config("mongodb.keep_alive_ms", "100000")
             .getOrCreate();
 
-        // if they don't exist - add JARs to SparkContext
+        // if they don't exist, add JARs to SparkContext
         JavaSparkContext sparkContext =
             new JavaSparkContext(sparkSession.sparkContext());
         for (String jar : this.jars) {
