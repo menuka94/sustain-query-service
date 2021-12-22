@@ -101,7 +101,7 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
         String matchStage = String.format("{ $match: { \"GISJOIN\": \"%s\" } }", gisJoin); // only get records for matching gisJoin
         String projectStage = String.format("{ $project: { " +
                 "\"_id\": 0, " + // exclude _id field
-                "\"%s\":  1" +   // label
+                "\"%s\":  1, " +   // label
                 "\"%s\":  1 " +  // feature
                 "} }", label, features.get(0)
         );
