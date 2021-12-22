@@ -2,23 +2,20 @@ package org.sustain.handlers.tasks;
 
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
+import com.mongodb.spark.rdd.api.java.JavaMongoRDD;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.feature.VectorAssembler;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.bson.Document;
 import org.sustain.Collection;
 import org.sustain.ModelResponse;
 import org.sustain.modeling.SustainRegressionModel;
 import org.sustain.util.Constants;
-import scala.collection.JavaConverters;
-import scala.collection.Seq;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
 
@@ -38,61 +35,28 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
      */
     public static ReadConfig createReadConfig(JavaSparkContext sparkContext, String collectionName) {
         Map<String, String> readOverrides = new HashMap<>();
-        String mongoUri = String.format("mongodb://%s:%s", Constants.DB.HOST, Constants.DB.PORT);
+        String mongoUri = String.format("mongodb://%s:%s/", Constants.DB.HOST, Constants.DB.PORT);
         readOverrides.put("uri", mongoUri);
         readOverrides.put("database", Constants.DB.NAME);
         readOverrides.put("collection", collectionName);
+        readOverrides.put("readConcern.level", "available");
         return ReadConfig.create(sparkContext.getConf(), readOverrides);
     }
 
     /**
-     * Converts a Java List<String> of inputs to a Scala Seq<String>
-     * @param features The Java List<String> of column names for features we wish to use from the dataset
-     * @param label The String name of the column we wish to use as the label for prediction
-     * @return A Scala Seq<String> with the feature names, and label name
-     */
-    private static Seq<String> desiredColumnsAsSeq(List<String> features, String label) {
-        List<String> columns = new ArrayList<>(features);
-        columns.add(label);
-        return JavaConverters.asScalaIteratorConverter(columns.iterator()).asScala().toSeq();
-    }
-
-    /**
-     * Creates a VectorAssembler to assemble all feature columns of inputDataset into a single column vector
-     * named "features". For example:
-     *
-     *
+     * Creates a VectorAssembler to assemble all feature columns of the input Dataset into a single column vector
+     * named "features".
      * @param inputDataset Dataset<Row> containing all the unmerged named feature columns
      * @return Dataset<Row> containing only two columns: "features", and "label"
      */
-    public static Dataset<Row> createFeaturesColumn(Dataset<Row> inputDataset, List<String> features) {
+    public static Dataset<Row> createFeaturesVectorColumn(Dataset<Row> inputDataset, List<String> features) {
         // Create a VectorAssembler to assemble all the feature columns into a single column vector named "features"
         VectorAssembler vectorAssembler = new VectorAssembler()
                 .setInputCols(features.toArray(new String[0]))
                 .setOutputCol("features");
 
-        // Transform the gisDataset to have the new "features" column vector
+        // Transform to have the new "features" vector column, and select only the "features" and "label" columns
         return vectorAssembler.transform(inputDataset).select("features", "label");
-    }
-
-    /**
-     * Selects only the columns we need from the original Dataset, dropping the rest.
-     * The columns kept are the GISJOIN column, all feature columns, and the label column.
-     * Filters by GISJOIN, keeping only the Rows which have a match.
-     * @param inputDataset Original Dataset without modifications.
-     * @param features List<String> of column names to use as features.
-     * @param label String name of column to use as label
-     * @param gisJoin GISJOIN identifying which spatial extent we want records for.
-     * @return A new Dataset<Row> containing the GISJOIN, features, and label column after filtering.
-     */
-    public static Dataset<Row> selectColsAndFilterByGisJoin(Dataset<Row> inputDataset, List<String> features,
-                                                            String label, String gisJoin) {
-        // Select just the columns we want, discard the rest, then filter by the model's GISJOIN
-        Seq<String> columns = desiredColumnsAsSeq(features, label);
-        Dataset<Row> selected = inputDataset.select("GISJOIN", columns);
-        return selected.filter(
-                selected.col("GISJOIN").equalTo(gisJoin) // filter by GISJOIN
-        ).withColumnRenamed(label, "label"); // Rename the chosen label column to "label"
     }
 
     /**
@@ -120,13 +84,40 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
     public static Dataset<Row> loadAndProcessDataset(JavaSparkContext sparkContext, String collectionName,
                                                      List<String> features, String label, String gisJoin) {
         log.info("Loading and processing collection {}", collectionName);
-        Dataset<Row> mongoCollectionDs = MongoSpark.load(sparkContext, createReadConfig(sparkContext, collectionName))
-                .toDS(Row.class);
 
-        mongoCollectionDs.show(25);
+        // Load Dataset (lazily, really just connect to Mongo Router)
+        JavaMongoRDD<Document> mongoCollectionRdd = MongoSpark.load(
+                sparkContext,
+                createReadConfig(sparkContext, collectionName)
+        );
 
-        Dataset<Row> selectedAndFilteredDs = selectColsAndFilterByGisJoin(mongoCollectionDs, features, label, gisJoin);
-        return createFeaturesColumn(selectedAndFilteredDs, features);
+        // Specify MongoDB pipeline for loading data
+        String matchStage = String.format("{ $match: { \"GISJOIN\": \"%s\" } }", gisJoin); // only get records for matching gisJoin
+        String projectStage = String.format("{ $project: { " +
+                "\"_id\": 0, " + // exclude _id field
+                "\"%s\":  1" +   // label
+                "\"%s\":  1 " +  // feature
+                "} }", label, features.get(0)
+        );
+        log.info("MongoDB Aggregation Pipeline: [\n\t{},\n\t{}\n]\n", matchStage, projectStage);
+        JavaMongoRDD<Document> aggregatedRdd = mongoCollectionRdd.withPipeline(
+                Arrays.asList(
+                        Document.parse(matchStage),
+                        Document.parse(projectStage)
+                )
+        );
+
+        // Pull collection from MongoDB into Spark and print inferred schema
+        Dataset<Row> mongoCollectionDs = aggregatedRdd.toDF();
+        mongoCollectionDs.printSchema();
+
+        // Rename label column to "label"
+        Dataset<Row> labeledDs = mongoCollectionDs.withColumnRenamed(
+                label, "label"
+        );
+
+        // Create "features" vector column, selecting only "features"/"label" columns, then return
+        return createFeaturesVectorColumn(labeledDs, features);
     }
 
     /**
@@ -139,6 +130,7 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
     public List<ModelResponse> execute(JavaSparkContext sparkContext) throws Exception {
         List<ModelResponse> modelResponses = new ArrayList<>();
         for (String gisJoin: this.gisJoins) {
+            log.info("Building regression model for GISJOIN {}...", gisJoin);
 
             // Get training/testing input splits
             Dataset<Row>[] splits = getTrainAndTestSplits(
