@@ -45,7 +45,13 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
 
     /**
      * Creates a VectorAssembler to assemble all feature columns of the input Dataset into a single column vector
-     * named "features".
+     * named "features". Example: Given the following row:
+     * | Feature_Column_A | Feature_Column_B | Feature_Column_C | label |
+     * | 12.35            | 15.68            | 19.23            | 9.2   |
+     *
+     * the following transformation is applied:
+     * | features              | label |
+     * | [12.35, 15.68, 19.23] | 9.2   |
      * @param inputDataset Dataset<Row> containing all the unmerged named feature columns
      * @return Dataset<Row> containing only two columns: "features", and "label"
      */
@@ -78,7 +84,7 @@ public abstract class RegressionTask implements SparkTask<List<ModelResponse>> {
      * @param collectionName Name of the collection in MongoDB
      * @param features List<String> of features to use
      * @param label String name of feature to use as label
-     * @param gisJoin String spatial GISJOIN identifier to filter by
+     * @param gisJoin String spatial GISJOIN identifier to filter by (in MongoDB pipeline $match)
      * @return Dataset<Row> containing a "GISJOIN" column, vector "features" column, and "label" column.
      */
     public static Dataset<Row> loadAndProcessDataset(JavaSparkContext sparkContext, String collectionName,
