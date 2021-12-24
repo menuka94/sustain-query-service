@@ -6,13 +6,14 @@
  * Author: Caleb Carlson
  * ------------------------------------------------------------------------------------------------------------------ */
 
-package org.sustain.modeling;
+package org.sustain.modeling.spark.regression;
 
 import org.apache.spark.ml.regression.LinearRegression;
 import org.apache.spark.ml.regression.LinearRegressionModel;
 import org.apache.spark.ml.regression.LinearRegressionTrainingSummary;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.sustain.modeling.ModelBuilder;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -1,4 +1,4 @@
-package org.sustain.handlers;
+package org.sustain.handlers.query;
 
 import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
@@ -11,6 +11,7 @@ import org.sustain.SlidingWindowRequest;
 import org.sustain.SlidingWindowResponse;
 import org.sustain.mongodb.DBConnection;
 import org.sustain.util.Constants;
+import org.sustain.handlers.GrpcHandler;
 
 import java.util.ArrayList;
 import java.util.Arrays;

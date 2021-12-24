@@ -1,4 +1,4 @@
-package org.sustain.handlers.tasks;
+package org.sustain.tasks.spark.regression;
 
 
 import org.apache.logging.log4j.LogManager;
@@ -7,8 +7,8 @@ import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.RForestRegressionRequest;
 import org.sustain.RForestRegressionResponse;
-import org.sustain.modeling.SustainRandomForestRegressionModel;
-import org.sustain.modeling.SustainRegressionModel;
+import org.sustain.modeling.spark.regression.SustainRandomForestRegressionModel;
+import org.sustain.modeling.spark.regression.SustainRegressionModel;
 
 import java.util.List;
 

@@ -7,10 +7,13 @@ import org.apache.logging.log4j.Logger;
 import org.sustain.*;
 import org.sustain.handlers.*;
 import org.sustain.handlers.GrpcHandler;
-import org.sustain.handlers.regression.GradientBoostRegressionQueryHandler;
-import org.sustain.handlers.regression.LinearRegressionQueryHandler;
-import org.sustain.handlers.regression.RandomForestRegressionQueryHandler;
-import org.sustain.handlers.regression.RegressionQueryHandler;
+import org.sustain.handlers.spark.clustering.ClusteringHandler;
+import org.sustain.handlers.spark.regression.GradientBoostRegressionHandler;
+import org.sustain.handlers.spark.regression.LinearRegressionHandler;
+import org.sustain.handlers.spark.regression.RandomForestRegressionHandler;
+import org.sustain.handlers.spark.regression.RegressionHandler;
+import org.sustain.handlers.druid.DruidHandler;
+import org.sustain.handlers.query.*;
 import org.sustain.util.Constants;
 
 public class SustainService extends SustainGrpc.SustainImplBase {
@@ -37,31 +40,31 @@ public class SustainService extends SustainGrpc.SustainImplBase {
         switch (type) {
             case LINEAR_REGRESSION:
                 log.info("Received a Linear Regression Model request");
-                handler = new LinearRegressionQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new LinearRegressionHandler(request, responseObserver, this.sparkManager);
                 break;
             case K_MEANS_CLUSTERING:
                 log.info("Received a K-Means Clustering Model request");
-                handler = new ClusteringQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new ClusteringHandler(request, responseObserver, this.sparkManager);
                 break;
             case BISECTING_K_MEANS:
                 log.info("Received a Bisecting K-Means Model Request");
-                handler = new ClusteringQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new ClusteringHandler(request, responseObserver, this.sparkManager);
                 break;
             case GAUSSIAN_MIXTURE:
                 log.info("Received a Gaussian Mixture Request");
-                handler = new ClusteringQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new ClusteringHandler(request, responseObserver, this.sparkManager);
                 break;
             case R_FOREST_REGRESSION:
                 log.info("Received a Random Forest Regression Model request");
-                handler = new RandomForestRegressionQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new RandomForestRegressionHandler(request, responseObserver, this.sparkManager);
                 break;
             case G_BOOST_REGRESSION:
                 log.info("Received a Gradient Boost Regression Model request");
-                handler = new GradientBoostRegressionQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new GradientBoostRegressionHandler(request, responseObserver, this.sparkManager);
                 break;
             case LATENT_DIRICHLET_ALLOCATION:
                 log.info("Received a Latent Dirichlet Allocation Request");
-                handler = new ClusteringQueryHandler(request, responseObserver, this.sparkManager);
+                handler = new ClusteringHandler(request, responseObserver, this.sparkManager);
                 break;
             default:
                 responseObserver.onError(new Exception("Invalid Model Type"));
@@ -94,7 +97,7 @@ public class SustainService extends SustainGrpc.SustainImplBase {
 
     @Override
     public void druidDirectQuery(DruidDirectRequest request, StreamObserver<DruidDirectResponse> responseObserver) {
-        GrpcHandler<DruidDirectRequest, DruidDirectResponse> handler = new DruidDirectQueryHandler(request, responseObserver);
+        GrpcHandler<DruidDirectRequest, DruidDirectResponse> handler = new DruidHandler(request, responseObserver);
         handler.handleRequest();
     }
 

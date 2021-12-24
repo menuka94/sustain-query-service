@@ -26,6 +26,7 @@ public class SustainServer {
     private SparkManager sparkManager;
 
     public static void main(String[] args) throws IOException, InterruptedException {
+        log.info("\nKJ-108 BRANCH\n");
         logEnvironment();
 
         final SustainServer server = new SustainServer();

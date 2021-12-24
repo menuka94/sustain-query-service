@@ -1,4 +1,4 @@
-package org.sustain.modeling;
+package org.sustain.modeling.spark.regression;
 
 
 import org.apache.spark.ml.regression.RegressionModel;

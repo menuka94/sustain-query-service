@@ -1,6 +1,6 @@
 /* ========================================================
- * RFRegressionModel.java -
- *      Defines a generalized random forest regression model that can be
+ * GBoostRegressionModel.java -
+ *      Defines a generalized gradient boost regression model that can be
  *      built and executed over a set of MongoDB documents.
  *
  * Author: Saptashwa Mitra
@@ -22,27 +22,26 @@
  * specific language governing permissions and limitations
  * under the License.
  * ======================================================== */
-package org.sustain.modeling;
+package org.sustain.modeling.spark.regression;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.spark.ml.regression.RandomForestRegressionModel;
-import org.apache.spark.ml.regression.RandomForestRegressor;
+import org.apache.spark.ml.regression.GBTRegressionModel;
+import org.apache.spark.ml.regression.GBTRegressor;
 import org.apache.spark.mllib.evaluation.RegressionMetrics;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-
-import java.util.List;
+import org.sustain.modeling.ModelBuilder;
 
 /**
- * Provides an interface for building generalized Random Forest Regression
+ * Provides an interface for building generalized Gradient Boost Regression
  * models on data pulled in using Mongo's Spark Connector.
  */
-public class SustainRandomForestRegressionModel extends SustainRegressionModel {
+public class SustainGradientBoostRegressionModel extends SustainRegressionModel {
 
-    protected static final Logger log = LogManager.getLogger(SustainRandomForestRegressionModel.class);
+    protected static final Logger log = LogManager.getLogger(SustainGradientBoostRegressionModel.class);
 
-    private RandomForestRegressionModel sparkRandomForestRegressionModel;
+    private GBTRegressionModel sparkGradientBoostRegressionModel;
 
     // Root Mean Squared Error
     private Double rmse;
@@ -50,21 +49,23 @@ public class SustainRandomForestRegressionModel extends SustainRegressionModel {
     // R^2 (r-squared)
     private Double r2;
 
+    // Loss function which GBT tries to minimize. (case-insensitive) Supported: "squared" (L2) and "absolute" (L1)
+    // (default = squared)
+    private String lossType;
+
     // Criterion used for information gain calculation. Supported values: "variance".
     private String impurity;
 
-    // Number of features to consider for splits at each node. Supported: "auto", "all", "sqrt", "log2", "onethird".
     // If "auto" is set, this parameter is set based on numTrees: if numTrees == 1, set to "all";
-    // if numTrees > 1 (forest) set to "onethird".
+    // If numTrees > 1 (forest) set to "onethird".
     private String featureSubsetStrategy;
 
     // Minimum number of instances each child must have after split. If a split causes the left or right child to have
     // fewer than minInstancesPerNode, the split will be discarded as invalid. Must be at least 1. (default = 1)
     private Integer minInstancesPerNode;
 
-    // Number of trees to train (at least 1). If 1, then no bootstrapping is used. If greater than 1, then
-    // bootstrapping is done.
-    private Integer numTrees;
+    // Max number of iterations
+    private Integer maxIter;
 
     // Maximum depth of the tree. (e.g., depth 0 means 1 leaf node, depth 1 means 1 internal node + 2 leaf nodes).
     // (suggested value: 4)
@@ -76,19 +77,21 @@ public class SustainRandomForestRegressionModel extends SustainRegressionModel {
     // Minimum information gain for a split to be considered at a tree node. default 0.0
     private Double minInfoGain;
 
-    // Minimum fraction of the weighted sample count that each child must have after split. Should be in the interval [0.0, 0.5). (default = 0.0)
+    // Minimum fraction of the weighted sample count that each child must have after split. Should be in the
+    // interval [0.0, 0.5). (default = 0.0)
     private Double minWeightFractionPerNode;
 
     // Fraction of the training data used for learning each decision tree, in range (0, 1]. (default = 1.0)
     private Double subsamplingRate;
 
-    // Whether bootstrap samples are used when building trees.
-    private Boolean isBootstrap;
+    // Param for Step size (a.k.a. learning rate) in interval (0, 1] for shrinking the contribution of each estimator.
+    // (default = 0.1)
+    private Double stepSize;
 
     /**
      * Default constructor, made private so only the Builder class may access it.
      */
-    private SustainRandomForestRegressionModel() {}
+    private SustainGradientBoostRegressionModel() {}
 
     public double getRmse() {
         return rmse;
@@ -100,30 +103,34 @@ public class SustainRandomForestRegressionModel extends SustainRegressionModel {
 
     @Override
     public void train(Dataset<Row> trainingDataset) {
-
-        RandomForestRegressor sparkRandomForestRegressor = new RandomForestRegressor()
+        // Build org.apache.spark.ml.regression.GBTRegressor using requested parameters
+        GBTRegressor gradientBoost = new GBTRegressor()
                 .setFeaturesCol("features")
                 .setLabelCol("label")
+                .setLossType(this.lossType)
                 .setImpurity(this.impurity)
                 .setFeatureSubsetStrategy(this.featureSubsetStrategy)
                 .setMinInstancesPerNode(this.minInstancesPerNode)
-                .setNumTrees(this.numTrees)
+                .setMaxIter(this.maxIter)
                 .setMaxDepth(this.maxDepth)
                 .setMaxBins(this.maxBins)
                 .setMinInfoGain(this.minInfoGain)
                 .setMinWeightFractionPerNode(this.minWeightFractionPerNode)
                 .setSubsamplingRate(this.subsamplingRate)
-                .setBootstrap(this.isBootstrap);
+                .setStepSize(this.stepSize);
 
-        this.sparkRandomForestRegressionModel = sparkRandomForestRegressor.fit(trainingDataset);
+        // Fit to training set
+        this.sparkGradientBoostRegressionModel = gradientBoost.fit(trainingDataset);
     }
 
     @Override
     public void test(Dataset<Row> testingDataset) {
-        Dataset<Row> predictions = this.sparkRandomForestRegressionModel.transform(testingDataset)
+        // Adds the "prediction" column
+        Dataset<Row> predictions = this.sparkGradientBoostRegressionModel.transform(testingDataset)
                 .select("label", "prediction");
-        RegressionMetrics metrics = new RegressionMetrics(predictions);
 
+        // Take metrics
+        RegressionMetrics metrics = new RegressionMetrics(predictions);
         this.rmse = metrics.rootMeanSquaredError();
         this.r2 = metrics.r2();
     }
@@ -132,131 +139,110 @@ public class SustainRandomForestRegressionModel extends SustainRegressionModel {
      * Used exclusively for testing and running a linear model directly, without having to interface with gRPC.
      * @param args Usually not used.
      */
-    public static void main(String[] args) {}
+    public static void main(String[] args) {
+
+    }
 
     /**
-     * Builder class for the RFRegressionModel object.
+     * Builder class for the GBoostRegressionModel object.
      */
-    public static class RFRegressionBuilder implements ModelBuilder<SustainRandomForestRegressionModel> {
-
-        private Dataset<Row>     mongoCollection;
-        private List<String>     features;
-        private String           gisJoin, label;
+    public static class GradientBoostRegressionModelBuilder implements ModelBuilder<SustainGradientBoostRegressionModel> {
 
         // Model parameters and their defaults
-        private String           impurity="variance", featureSubsetStrategy="auto";
-        private Integer          minInstancesPerNode=1, numTrees=20, maxDepth=5, maxBins=32;
-        private Double           minInfoGain=0.0, minWeightFractionPerNode=0.0, subsamplingRate=1.0, trainSplit = 0.8;
-        private Boolean          isBootstrap=false;
+        private String           lossType="squared", impurity="variance", featureSubsetStrategy="auto";
+        private Integer          minInstancesPerNode=1, maxDepth=5, maxIterations=10, maxBins=32;
+        private Double           minInfoGain=0.0, minWeightFractionPerNode=0.0, subsamplingRate=1.0, stepSize=0.1;
 
-        public RFRegressionBuilder forMongoCollection(Dataset<Row> mongoCollection) {
-            this.mongoCollection = mongoCollection;
+        public GradientBoostRegressionModelBuilder withLossType(String lossType) {
+            if (!lossType.isBlank()) {
+                this.lossType = lossType;
+            }
             return this;
         }
 
-        public RFRegressionBuilder forGisJoin(String gisJoin) {
-            this.gisJoin = gisJoin;
-            return this;
-        }
-
-        public RFRegressionBuilder forLabel(String label) {
-            this.label = label;
-            return this;
-        }
-
-        public RFRegressionBuilder forFeatures(List<String> features) {
-            this.features = features;
-            return this;
-        }
-
-        public RFRegressionBuilder withImpurity(String impurity) {
+        public GradientBoostRegressionModelBuilder withImpurity(String impurity) {
             if (!impurity.isBlank()) {
                 this.impurity = impurity;
             }
             return this;
         }
 
-        public RFRegressionBuilder withFeatureSubsetStrategy(String featureSubsetStrategy) {
+        public GradientBoostRegressionModelBuilder withFeatureSubsetStrategy(String featureSubsetStrategy) {
             if (!featureSubsetStrategy.isBlank()) {
                 this.featureSubsetStrategy = featureSubsetStrategy;
             }
             return this;
         }
 
-        public RFRegressionBuilder withMinInstancesPerNode(Integer minInstancesPerNode) {
+        public GradientBoostRegressionModelBuilder withMinInstancesPerNode(Integer minInstancesPerNode) {
             if (minInstancesPerNode != null && minInstancesPerNode >= 0 && minInstancesPerNode <= 10000) {
                 this.minInstancesPerNode = minInstancesPerNode;
             }
             return this;
         }
 
-        public RFRegressionBuilder withNumTrees(Integer numTrees) {
-            if (numTrees != null && numTrees >= 1 && numTrees <= 1000) {
-                this.numTrees = numTrees;
+        public GradientBoostRegressionModelBuilder withMaxIterations(Integer maxIterations) {
+            if (maxIterations != null && maxIterations >= 0 && maxIterations <= 10000) {
+                this.maxIterations = maxIterations;
             }
             return this;
         }
 
-        public RFRegressionBuilder withMaxDepth(Integer maxDepth) {
+        public GradientBoostRegressionModelBuilder withMaxDepth(Integer maxDepth) {
             if (maxDepth != null && maxDepth >= 0 && maxDepth <= 15) {
                 this.maxDepth = maxDepth;
             }
             return this;
         }
 
-        public RFRegressionBuilder withMaxBins(Integer maxBins) {
+        public GradientBoostRegressionModelBuilder withMaxBins(Integer maxBins) {
             if (maxBins != null && maxBins >= 2 && maxBins <= 100) {
                 this.maxBins = maxBins;
             }
             return this;
         }
 
-        public RFRegressionBuilder withMinInfoGain(Double minInfoGain) {
+        public GradientBoostRegressionModelBuilder withMinInfoGain(Double minInfoGain) {
             if ((minInfoGain != null) && minInfoGain >= 0.0 && minInfoGain <= 1.0 ) {
                 this.minInfoGain = minInfoGain;
             }
             return this;
         }
 
-        public RFRegressionBuilder withMinWeightFractionPerNode(Double minWeightFractionPerNode) {
+        public GradientBoostRegressionModelBuilder withMinWeightFractionPerNode(Double minWeightFractionPerNode) {
             if (minWeightFractionPerNode != null && minWeightFractionPerNode >= 0.0 && minWeightFractionPerNode < 0.5) {
                 this.minWeightFractionPerNode = minWeightFractionPerNode;
             }
             return this;
         }
 
-        public RFRegressionBuilder withSubsamplingRate(Double subsamplingRate) {
+        public GradientBoostRegressionModelBuilder withSubsamplingRate(Double subsamplingRate) {
             if (subsamplingRate != null && subsamplingRate > 0.0 && subsamplingRate <= 1.0 ) {
                 this.subsamplingRate = subsamplingRate;
             }
             return this;
         }
 
-        public RFRegressionBuilder withTrainSplit(Double trainSplit) {
-            if (trainSplit != null && trainSplit > 0.0 && trainSplit < 1.0 )
-                this.trainSplit = trainSplit;
-            return this;
-        }
-
-        public RFRegressionBuilder withIsBootstrap(Boolean isBootstrap) {
-            if (isBootstrap != null)
-                this.isBootstrap = isBootstrap;
+        public GradientBoostRegressionModelBuilder withStepSize(Double stepSize) {
+            if (stepSize != null && stepSize > 0.0 && stepSize <= 1.0 )
+                this.stepSize = stepSize;
             return this;
         }
 
         @Override
-        public SustainRandomForestRegressionModel build() {
-            SustainRandomForestRegressionModel model = new SustainRandomForestRegressionModel();
+        public SustainGradientBoostRegressionModel build() {
+            SustainGradientBoostRegressionModel model = new SustainGradientBoostRegressionModel();
+            model.lossType = this.lossType;
             model.impurity = this.impurity;
-            model.numTrees = this.numTrees;
             model.featureSubsetStrategy = this.featureSubsetStrategy;
             model.minInstancesPerNode = this.minInstancesPerNode;
             model.maxDepth = this.maxDepth;
+            model.maxIter = this.maxIterations;
             model.maxBins = this.maxBins;
             model.minInfoGain = this.minInfoGain;
             model.minWeightFractionPerNode = this.minWeightFractionPerNode;
             model.subsamplingRate = this.subsamplingRate;
-            model.isBootstrap = this.isBootstrap;
+            model.stepSize = this.stepSize;
             return model;
         }
     }

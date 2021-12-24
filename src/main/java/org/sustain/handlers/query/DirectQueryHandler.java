@@ -1,4 +1,4 @@
-package org.sustain.handlers;
+package org.sustain.handlers.query;
 
 import com.mongodb.client.AggregateIterable;
 import io.grpc.stub.StreamObserver;
@@ -10,6 +10,7 @@ import org.bson.Document;
 import org.sustain.DirectResponse;
 import org.sustain.DirectRequest;
 import org.sustain.mongodb.queries.AggregateQuery;
+import org.sustain.handlers.*;
 
 public class DirectQueryHandler extends GrpcHandler<DirectRequest, DirectResponse> {
 

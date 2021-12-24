@@ -3,7 +3,7 @@ package org.sustain;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
 
-import org.sustain.handlers.tasks.SparkTask;
+import org.sustain.tasks.spark.SparkTask;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
