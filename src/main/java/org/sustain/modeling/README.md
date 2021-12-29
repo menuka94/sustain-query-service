@@ -8,5 +8,5 @@ in a way specific to the category of model being used.
 
 The following packages are provided for categories of modeling with Spark:
 
-- Regression: [org.sustain.modeling.regression](./regression/README.md)
+- Regression: [org.sustain.modeling.spark.regression](./regression/README.md)
 - Clustering: *TODO*

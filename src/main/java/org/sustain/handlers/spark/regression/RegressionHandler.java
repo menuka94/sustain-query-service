@@ -1,4 +1,4 @@
-package org.sustain.handlers.regression;
+package org.sustain.handlers.spark.regression;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
@@ -7,8 +7,8 @@ import org.apache.logging.log4j.Logger;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
-import org.sustain.handlers.GrpcSparkHandler;
-import org.sustain.handlers.tasks.RegressionTask;
+import org.sustain.handlers.spark.SparkHandler;
+import org.sustain.tasks.spark.regression.RegressionTask;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,11 +18,11 @@ import java.util.concurrent.Future;
  * Handler for the gRPC Regression requests.
  * handleRequest() is invoked when a LinearRegressionRequest is received by the gRPC service.
  */
-public abstract class RegressionQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> {
+public abstract class RegressionHandler extends SparkHandler<ModelRequest, ModelResponse> {
 
-    private static final Logger log = LogManager.getLogger(RegressionQueryHandler.class);
+    private static final Logger log = LogManager.getLogger(RegressionHandler.class);
 
-    public RegressionQueryHandler(ModelRequest request,
+    public RegressionHandler(ModelRequest request,
 								  StreamObserver<ModelResponse> responseObserver,
 								  SparkManager sparkManager) {
         super(request, responseObserver, sparkManager);

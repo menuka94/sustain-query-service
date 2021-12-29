@@ -1,10 +1,10 @@
-package org.sustain.handlers.tasks;
+package org.sustain.tasks.spark.regression;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.sustain.*;
-import org.sustain.modeling.SustainLinearRegressionModel;
-import org.sustain.modeling.SustainRegressionModel;
+import org.sustain.modeling.spark.regression.SustainLinearRegressionModel;
+import org.sustain.modeling.spark.regression.SustainRegressionModel;
 import java.util.List;
 
 public class LinearRegressionTask extends RegressionTask {

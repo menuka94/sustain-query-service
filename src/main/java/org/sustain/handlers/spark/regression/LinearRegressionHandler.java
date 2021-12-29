@@ -1,4 +1,4 @@
-package org.sustain.handlers.regression;
+package org.sustain.handlers.spark.regression;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
@@ -6,16 +6,16 @@ import org.apache.logging.log4j.Logger;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
-import org.sustain.handlers.tasks.RandomForestRegressionTask;
-import org.sustain.handlers.tasks.RegressionTask;
+import org.sustain.tasks.spark.regression.LinearRegressionTask;
+import org.sustain.tasks.spark.regression.RegressionTask;
 
 import java.util.List;
 
-public class RandomForestRegressionQueryHandler extends RegressionQueryHandler {
+public class LinearRegressionHandler extends RegressionHandler {
 
-    private static final Logger log = LogManager.getLogger(RandomForestRegressionQueryHandler.class);
+    private static final Logger log = LogManager.getLogger(LinearRegressionHandler.class);
 
-    public RandomForestRegressionQueryHandler(ModelRequest request,
+    public LinearRegressionHandler(ModelRequest request,
                                         StreamObserver<ModelResponse> responseObserver,
                                         SparkManager sparkManager) {
         super(request, responseObserver, sparkManager);
@@ -23,11 +23,12 @@ public class RandomForestRegressionQueryHandler extends RegressionQueryHandler {
 
     @Override
     public boolean hasAppropriateRegressionRequest(ModelRequest modelRequest) {
-        return modelRequest.hasRForestRegressionRequest();
+        return modelRequest.hasLinearRegressionRequest();
     }
 
     @Override
     public RegressionTask createRegressionTask(List<String> gisJoinBatch) {
-        return new RandomForestRegressionTask(this.request, gisJoinBatch);
+        return new LinearRegressionTask(this.request, gisJoinBatch);
     }
+
 }

@@ -1,4 +1,4 @@
-package org.sustain.handlers;
+package org.sustain.handlers.druid;
 
 import io.grpc.stub.StreamObserver;
 import org.apache.logging.log4j.LogManager;
@@ -8,6 +8,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.sustain.DruidDirectRequest;
 import org.sustain.DruidDirectResponse;
+import org.sustain.handlers.*;
 import org.sustain.util.Constants;
 
 import java.net.URI;
@@ -16,11 +17,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 
-public class DruidDirectQueryHandler extends GrpcHandler<DruidDirectRequest, DruidDirectResponse> {
-    public static final Logger log = LogManager.getLogger(DruidDirectQueryHandler.class);
+public class DruidHandler extends GrpcHandler<DruidDirectRequest, DruidDirectResponse> {
+    public static final Logger log = LogManager.getLogger(DruidHandler.class);
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    public DruidDirectQueryHandler(DruidDirectRequest request, StreamObserver<DruidDirectResponse> responseObserver) {
+    public DruidHandler(DruidDirectRequest request, StreamObserver<DruidDirectResponse> responseObserver) {
         super(request, responseObserver);
     }
 

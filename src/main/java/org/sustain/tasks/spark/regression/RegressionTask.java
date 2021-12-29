@@ -1,4 +1,4 @@
-package org.sustain.handlers.tasks;
+package org.sustain.tasks.spark.regression;
 
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.config.ReadConfig;
@@ -12,8 +12,9 @@ import org.apache.spark.sql.Row;
 import org.bson.Document;
 import org.sustain.Collection;
 import org.sustain.ModelResponse;
-import org.sustain.modeling.SustainRegressionModel;
+import org.sustain.modeling.spark.regression.SustainRegressionModel;
 import org.sustain.util.Constants;
+import org.sustain.tasks.spark.SparkTask;
 
 import java.util.*;
 

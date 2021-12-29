@@ -5,7 +5,7 @@ An appropriate response is returned from the `Task` to the `Handler`, which is t
 
 Specific categories of handlers exist based on their context, see the following packages for more information:
 
-- Regression Request Handlers: [org.sustain.handlers.regression](./regression)
+- Regression Request Handlers: [org.sustain.handlers.spark.regression](./regression)
 - Clustering Request Handlers *TODO*
 - Query Request Handlers *TODO*
 - Druid Request Handlers *TODO*

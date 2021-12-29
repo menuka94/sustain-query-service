@@ -1,4 +1,4 @@
-package org.sustain.handlers;
+package org.sustain.handlers.spark.clustering;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
@@ -30,7 +30,9 @@ import org.sustain.LatentDirichletAllocationResponse;
 import org.sustain.ModelRequest;
 import org.sustain.ModelResponse;
 import org.sustain.SparkManager;
-import org.sustain.handlers.tasks.SparkTask;
+import org.sustain.tasks.spark.SparkTask;
+import org.sustain.handlers.spark.SparkHandler;
+
 import org.sustain.util.Constants;
 import scala.collection.JavaConverters;
 import scala.collection.Seq;
@@ -42,11 +44,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-public class ClusteringQueryHandler extends GrpcSparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
+public class ClusteringHandler extends SparkHandler<ModelRequest, ModelResponse> implements SparkTask<Boolean> {
 
-    private static final Logger log = LogManager.getFormatterLogger(ClusteringQueryHandler.class);
+    private static final Logger log = LogManager.getFormatterLogger(ClusteringHandler.class);
 
-    public ClusteringQueryHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
+    public ClusteringHandler(ModelRequest request, StreamObserver<ModelResponse> responseObserver, SparkManager sparkManager) {
         super(request, responseObserver, sparkManager);
     }
 

@@ -16,7 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.sustain.CountResponse;
 import org.sustain.CountRequest;
 import org.sustain.SparkManager;
-import org.sustain.handlers.tasks.SparkTask;
+import org.sustain.tasks.spark.SparkTask;
+import org.sustain.handlers.spark.SparkHandler;
 import org.sustain.util.Constants;
 
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-public class CountQueryHandler extends GrpcSparkHandler<CountRequest, CountResponse> {
+public class CountQueryHandler extends SparkHandler<CountRequest, CountResponse> {
     protected static final Logger log =
         LoggerFactory.getLogger(CountQueryHandler.class);
 

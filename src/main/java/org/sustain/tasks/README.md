@@ -1,4 +1,4 @@
-## `org.sustain.handlers.tasks`
+## `org.sustain.tasks`
 
 Package for `Task` classes, which are wrappers around an entire request process.
 A task encompasses everything from retrieving requested data from MongoDB and preprocessing it, to building, training, and testing models,
