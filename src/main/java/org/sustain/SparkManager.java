@@ -39,12 +39,18 @@ public class SparkManager {
     }
 
     protected SparkSession getOrCreateSparkSession() {
+        String sparkDriverHost;
+        if(Constants.Kubernetes.KUBERNETES_ENV)
+            sparkDriverHost = Constants.Kubernetes.POD_IP;
+        else
+            sparkDriverHost = Constants.Server.HOST;
+
         SparkSession sparkSession = SparkSession.builder()
             .master(this.sparkMaster)
             .appName("sqs-" + Constants.Server.HOST)
             .config("spark.submit.deployMode", "client") // Launch driver program locally.
             .config("spark.driver.bindAddress", "0.0.0.0") // Hostname or IP address where to bind listening sockets.
-            .config("spark.driver.host", Constants.Kubernetes.POD_IP) // Hostname or IP address for the driver. This is used for communicating with the executors and the standalone Master.
+            .config("spark.driver.host", sparkDriverHost) // Hostname or IP address for the driver. This is used for communicating with the executors and the standalone Master.
             .config("spark.driver.port", Constants.Spark.DRIVER_PORT) // Port for the driver to listen on. This is used for communicating with the executors and the standalone Master.
             .config("spark.driver.blockManager.port", Constants.Spark.DRIVER_BLOCKMANAGER_PORT) // Port for driver's blockmanager
             .config("spark.executor.cores", Constants.Spark.EXECUTOR_CORES)

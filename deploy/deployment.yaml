@@ -77,8 +77,6 @@ spec:
             value: "4"
           - name: SPARK_EXECUTOR_CORES
             value: "5"
-          - name: SPARK_EXECUTOR_CORES
-            value: "5"
           - name: SPARK_EXECUTOR_MEMORY
             value: "8G"
           - name: SPARK_INITIAL_EXECUTORS
