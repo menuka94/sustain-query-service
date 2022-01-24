@@ -90,9 +90,8 @@ spec:
           - name: SPARK_IDLE_TIMEOUT
             value: "10s"
       - name: mongos-router
-        image: mongo:4.4.4
+        image: sustain/mongos:latest
         imagePullPolicy: Always
-        command: ['sh', '-c', 'mongos --configdb cfgrs/lattice-147:27017,lattice-148:27017,lattice-149:27017 --bind_ip_all --port 27018']
         ports:
           - containerPort: 27018
       affinity:
