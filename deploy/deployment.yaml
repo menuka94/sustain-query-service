@@ -89,6 +89,10 @@ spec:
             value: "10s"
           - name: SPARK_IDLE_TIMEOUT
             value: "10s"
+          - name: DRUID_QUERY_HOST 
+            value: "lattice-123"
+          - name: DRUID_QUERY_PORT
+            value: "8082" 
       - name: mongos-router
         image: sustain/mongos:latest
         imagePullPolicy: Always
